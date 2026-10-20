@@ -1,0 +1,98 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.phoenixperpsfunding",
+    "module": "phoenixperps-sdk",
+    "version": "1.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.9"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "dependencies": [
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-databind",
+          "version": {
+            "requires": "2.17.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "phoenixperps-sdk-1.0.0.jar",
+          "url": "phoenixperps-sdk-1.0.0.jar",
+          "size": 419239,
+          "sha512": "8d8c32467e7b17ad90d7cd69bd5db497fbd4b0e9bf34b27556fb716b9c28f59a7e40c74ec654f853ceebb5462c2aaaabad5cf1ca98959d2940b0334c1c0b043f",
+          "sha256": "15c4be365ba8cf5c9bbec076fb01db7792658b2308ba5efa02885979f637a9c8",
+          "sha1": "5cd3e1ab7e0a5c57b0f93d1e44cad3b98592615f",
+          "md5": "172c2f15ccfe488f4b26b450d97b83ad"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-databind",
+          "version": {
+            "requires": "2.17.2"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "phoenixperps-sdk-1.0.0.jar",
+          "url": "phoenixperps-sdk-1.0.0.jar",
+          "size": 419239,
+          "sha512": "8d8c32467e7b17ad90d7cd69bd5db497fbd4b0e9bf34b27556fb716b9c28f59a7e40c74ec654f853ceebb5462c2aaaabad5cf1ca98959d2940b0334c1c0b043f",
+          "sha256": "15c4be365ba8cf5c9bbec076fb01db7792658b2308ba5efa02885979f637a9c8",
+          "sha1": "5cd3e1ab7e0a5c57b0f93d1e44cad3b98592615f",
+          "md5": "172c2f15ccfe488f4b26b450d97b83ad"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "phoenixperps-sdk-1.0.0-sources.jar",
+          "url": "phoenixperps-sdk-1.0.0-sources.jar",
+          "size": 255371,
+          "sha512": "58a58d1bf92d081e7431bda97dad9f0c4171eb1c3b0cb8dd119899534d8b3380a6141900535558a2da1677f59d12d9c701cf870c87001c09c35ca8cd3adfa200",
+          "sha256": "bec10a9e007dbfe33441adb7a0ee7dc9c490641f66216149cf519b35491dbe4f",
+          "sha1": "6d0be973000ea35720743593f4818497ab82829b",
+          "md5": "3b77226e4be1f17a1f6dcde67cc77926"
+        }
+      ]
+    }
+  ]
+}
