@@ -33,7 +33,8 @@ jobs:
       - name: one version everywhere
         run: node scripts/release.js --check
       - name: shellcheck
-        run: shellcheck scripts/*.sh
+        # (the public repo has no shell script: verify-published.sh stays private)
+        run: if compgen -G 'scripts/*.sh' > /dev/null; then shellcheck scripts/*.sh; fi
 
   typescript:
     runs-on: ubuntu-latest
