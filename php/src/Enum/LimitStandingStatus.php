@@ -1,0 +1,19 @@
+<?php
+
+// Generated from the API spec by generator/printers/php.js. Do not edit: run `node generator`.
+
+declare(strict_types=1);
+
+namespace PhoenixPerps\Enum;
+
+/** Where it stands. Open: the field is a string, and a value from a newer API version is kept as is. */
+final class LimitStandingStatus
+{
+    public const OK = 'ok';
+    public const WARNING = 'warning';
+    public const CRITICAL = 'critical';
+    public const BREACHED = 'breached';
+
+    /** Every value this SDK version knows. */
+    public const ALL_VALUES = [self::OK, self::WARNING, self::CRITICAL, self::BREACHED];
+}

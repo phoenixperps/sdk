@@ -1,0 +1,12 @@
+# The starter bot (../README.md): cargo run. It uses the published SDK; the conformance run patches in a local one:
+#   cargo run --config 'patch."https://github.com/phoenixperps/sdk".phoenixperps.path="<the SDK's rust folder>"'
+[package]
+name = "phoenixperps-starter"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+phoenixperps = { git = "https://github.com/phoenixperps/sdk", tag = "v1.0.0" }
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }

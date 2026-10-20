@@ -1,0 +1,17 @@
+{
+    "name": "phoenixperps/starter",
+    "description": "A starting point for a Phoenix Perpetuals bot: an EMA cross with a stop loss on the API's servers.",
+    "type": "project",
+    "license": "proprietary",
+    "repositories": {
+        "phoenixperps": {
+            "type": "composer",
+            "url": "https://phoenixperps.github.io/sdk/composer"
+        }
+    },
+    "require": {
+        "php": ">=8.2",
+        "ext-bcmath": "*",
+        "phoenixperps/sdk": "^1.0"
+    }
+}

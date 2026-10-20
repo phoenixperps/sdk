@@ -1,0 +1,10 @@
+<Project>
+  <!-- The examples are file-based apps (dotnet run examples/01-accounts.cs, .NET 10): the SDK's own strictness, the
+       language version their #: directives need. -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>

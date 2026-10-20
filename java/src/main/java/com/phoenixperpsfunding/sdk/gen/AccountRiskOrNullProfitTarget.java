@@ -1,0 +1,108 @@
+// Generated from the API spec by generator/printers/java.js. Do not edit: run `node generator`.
+package com.phoenixperpsfunding.sdk.gen;
+
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/** AccountRiskOrNullProfitTarget */
+public final class AccountRiskOrNullProfitTarget {
+    @JsonProperty("goal_balance")
+    private BigDecimal goalBalance;
+
+    @JsonProperty("remaining")
+    private BigDecimal remaining;
+
+    @JsonProperty("progress_pct")
+    private BigDecimal progressPct;
+
+    @JsonProperty("requires_flat")
+    private Boolean requiresFlat;
+
+    /** The balance that reaches it. */
+    public BigDecimal goalBalance() {
+        return goalBalance;
+    }
+
+    /** Sets goal_balance. */
+    public AccountRiskOrNullProfitTarget goalBalance(BigDecimal value) {
+        this.goalBalance = value;
+        return this;
+    }
+
+    /** Still to make. */
+    public BigDecimal remaining() {
+        return remaining;
+    }
+
+    /** Sets remaining. */
+    public AccountRiskOrNullProfitTarget remaining(BigDecimal value) {
+        this.remaining = value;
+        return this;
+    }
+
+    /** How far, in percent. */
+    public BigDecimal progressPct() {
+        return progressPct;
+    }
+
+    /** Sets progress_pct. */
+    public AccountRiskOrNullProfitTarget progressPct(BigDecimal value) {
+        this.progressPct = value;
+        return this;
+    }
+
+    /** Positions must be closed when it is reached. */
+    public Boolean requiresFlat() {
+        return requiresFlat;
+    }
+
+    /** Sets requires_flat. */
+    public AccountRiskOrNullProfitTarget requiresFlat(Boolean value) {
+        this.requiresFlat = value;
+        return this;
+    }
+
+    @JsonIgnore
+    private final Map<String, Object> extra = new LinkedHashMap<>();
+
+    /** Fields this SDK version does not know yet (a newer API's), kept as they came. */
+    @JsonAnyGetter
+    public Map<String, Object> extra() {
+        return extra;
+    }
+
+    @JsonAnySetter
+    void putExtra(String key, Object value) {
+        extra.put(key, value);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (!(other instanceof AccountRiskOrNullProfitTarget)) {
+            return false;
+        }
+        AccountRiskOrNullProfitTarget o = (AccountRiskOrNullProfitTarget) other;
+        return Objects.equals(goalBalance, o.goalBalance)
+            && Objects.equals(remaining, o.remaining)
+            && Objects.equals(progressPct, o.progressPct)
+            && Objects.equals(requiresFlat, o.requiresFlat);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(goalBalance, remaining, progressPct, requiresFlat);
+    }
+
+    @Override
+    public String toString() {
+        return "AccountRiskOrNullProfitTarget{" + "goal_balance=" + goalBalance + ", remaining=" + remaining + ", progress_pct=" + progressPct + ", requires_flat=" + requiresFlat + "}";
+    }
+}

@@ -1,0 +1,4 @@
+{
+  "compilerOptions": { "strict": true, "noEmit": true, "module": "nodenext", "moduleResolution": "nodenext", "target": "es2022", "skipLibCheck": false, "types": ["node"] },
+  "files": ["types-check.ts", "types-check.mts", "snippets.ts"]
+}

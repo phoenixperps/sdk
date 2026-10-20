@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The starter bot (../README.md). It uses the published SDK; -p:PhoenixPerpsSdk=<its .csproj> builds it against a local
+       one instead (the conformance run). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <AssemblyName>starter</AssemblyName>
+    <RollForward>Major</RollForward>
+    <!-- the SDK's feed (GitHub Pages of github.com/phoenixperps/sdk), beside nuget.org -->
+    <RestoreAdditionalProjectSources>https://phoenixperps.github.io/sdk/nuget/index.json</RestoreAdditionalProjectSources>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(PhoenixPerpsSdk)' == ''">
+    <PackageReference Include="PhoenixPerps.Sdk" Version="1.*" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(PhoenixPerpsSdk)' != ''">
+    <ProjectReference Include="$(PhoenixPerpsSdk)" />
+  </ItemGroup>
+</Project>

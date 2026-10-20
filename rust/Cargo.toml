@@ -1,0 +1,29 @@
+[package]
+name = "phoenixperps"
+version = "1.0.0"
+edition = "2024"
+rust-version = "1.85"
+description = "The Phoenix Perpetuals API: REST, the account stream and market data, with retries, idempotency keys, paging and typed errors."
+license = "MIT"
+repository = "https://github.com/phoenixperps/sdk"
+homepage = "https://docs.phoenixperpsfunding.com"
+documentation = "https://docs.rs/phoenixperps"
+readme = "README.md"
+keywords = ["perpetuals", "trading", "api", "sdk"]
+categories = ["api-bindings", "finance"]
+
+[dependencies]
+futures-util = { version = "0.3", default-features = false, features = ["std", "sink"] }
+hmac = "0.12"
+httpdate = "1"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"] }
+rust_decimal = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tokio = { version = "1", features = ["macros", "rt", "sync", "time"] }
+tokio-tungstenite = { version = "0.26", features = ["rustls-tls-webpki-roots"] }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <RootNamespace>PhoenixPerps</RootNamespace>
+    <AssemblyName>PhoenixPerps.Sdk</AssemblyName>
+    <PackageId>PhoenixPerps.Sdk</PackageId>
+    <Version>1.0.0</Version>
+    <Description>The Phoenix Perpetuals API: REST, the account stream and market data, with retries, idempotency keys, paging and typed errors.</Description>
+    <PackageTags>phoenix perpetuals;perpetuals;trading;api;sdk</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://docs.phoenixperpsfunding.com</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/phoenixperps/sdk</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsTrimmable>true</IsTrimmable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PhoenixPerps.Sdk.Tests" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,20 @@
+{
+  "name": "phoenixperps-starter",
+  "private": true,
+  "description": "A starting point for a Phoenix Perpetuals bot: an EMA cross with a stop loss on the API's servers.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node bot.mts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@phoenixperps/sdk": "https://github.com/phoenixperps/sdk/releases/download/v1.0.0/phoenixperps-sdk-1.0.0.tgz"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.2"
+  }
+}

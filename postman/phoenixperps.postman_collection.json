@@ -1,0 +1,2097 @@
+{
+  "info": {
+    "name": "Phoenix Perpetuals API",
+    "description": "The REST API, spec 1.0.0. Pick the live or sandbox environment and set apiKey in it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{apiKey}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// one Idempotency-Key per send: a retry of the same request in the same run reuses it",
+          "pm.variables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "accountId",
+      "value": ""
+    },
+    {
+      "key": "market",
+      "value": "BTC-USD"
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "strategyId",
+      "value": ""
+    },
+    {
+      "key": "endpointId",
+      "value": ""
+    },
+    {
+      "key": "deliveryId",
+      "value": ""
+    },
+    {
+      "key": "hookId",
+      "value": ""
+    },
+    {
+      "key": "alertId",
+      "value": ""
+    },
+    {
+      "key": "eventId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "platform",
+      "item": [
+        {
+          "name": "Get the API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "The environment of the host you called, the version, the server time, and whether the trading engine is reachable. No key needed.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get the OpenAPI document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "openapi.json"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "This API described as OpenAPI 3.1, the file the SDKs and these docs are built from.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get the status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "status"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Whether the environment takes requests, whether the trading engine is connected, and which features are on.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get the limits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/limits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "limits"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Every request budget and limit, as they stand now. Budgets are per minute; a request takes from each budget it belongs to, and the rate headers of each answer say what is left.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "me",
+      "item": [
+        {
+          "name": "Get your key",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "me"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "The key you called with: its access, the accounts it reaches, the limits you set on it and its budgets."
+          }
+        }
+      ]
+    },
+    {
+      "name": "markets",
+      "item": [
+        {
+          "name": "List markets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/markets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "markets"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Every market you can trade, with its tick size, size step, leverage, fee and exposure cap. The list is complete: it never pages.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "List market stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/markets/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "markets",
+                "stats"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Every market's last price, its 24 h change, range and volume, and its open interest, in one call (the market data stream's stats channel sends the same every 5 s). The list is complete: it never pages. as_of: when these figures were read.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Get a market",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/markets/:market",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "markets",
+                ":market"
+              ],
+              "variable": [
+                {
+                  "key": "market",
+                  "value": "{{market}}",
+                  "description": "A market id."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get a market",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "accounts",
+      "item": [
+        {
+          "name": "List accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "The accounts your key reaches in this environment, newest first, with their rule. On the live host: your evaluation and funded accounts. On the sandbox host: your sandbox accounts."
+          }
+        },
+        {
+          "name": "Open a sandbox account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Reserves a new sandbox account; it opens within moments (status pending, then active). Every account you open counts toward your sandbox accounts for life, see GET /v1/limits."
+          }
+        },
+        {
+          "name": "Get an account",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "description": "The account with its live risk (null while it is being opened)."
+          }
+        },
+        {
+          "name": "Get live risk",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/risk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "risk"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "description": "Equity, open P&L, margin, exposure per market, the room to each loss limit, the profit target and the nearest liquidation: the figures of your dashboard, computed the same way."
+          }
+        },
+        {
+          "name": "Get the trading policy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/trading-policy",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "trading-policy"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "description": "Everything that decides whether an order goes through: the rule, the trading day, slippage bounds, margin, order limits, the limits you set on the key and its budgets."
+          }
+        },
+        {
+          "name": "Get progress",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/progress",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "progress"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "description": "Each objective (profit target, trading days) and each loss limit, with where it stands."
+          }
+        }
+      ]
+    },
+    {
+      "name": "history",
+      "item": [
+        {
+          "name": "Get the equity curve",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/history/equity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "history",
+                "equity"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": [
+                {
+                  "key": "resolution",
+                  "value": "",
+                  "description": "One point per closed trade, or per trading day.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get the equity curve"
+          }
+        },
+        {
+          "name": "List daily results",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/history/daily",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "history",
+                "daily"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "description": "One row per trading day with a trade or a payout (midnight to midnight New York), newest first."
+          }
+        }
+      ]
+    },
+    {
+      "name": "margin",
+      "item": [
+        {
+          "name": "List margin settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/margin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "margin"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "description": "The leverage and margin mode of each market on this account."
+          }
+        },
+        {
+          "name": "Set leverage and margin mode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/margin/:market",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "margin",
+                ":market"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}",
+                  "description": "A market id."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"margin_mode\": \"isolated\",\n  \"leverage\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "The leverage and margin mode new positions on the market use. Changing the leverage of an open position changes its margin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "positions",
+      "item": [
+        {
+          "name": "List open positions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/positions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "positions"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "",
+                  "description": "Only this market.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Every open position, valued at the market price, with its liquidation and breach prices and the exits that protect it. The list is complete or the call fails: it is never partial."
+          }
+        },
+        {
+          "name": "Get an open position",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/positions/:market",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "positions",
+                ":market"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}",
+                  "description": "A market id."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get an open position"
+          }
+        },
+        {
+          "name": "List closed positions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/closed-positions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "closed-positions"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "",
+                  "description": "Only this market.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "next_cursor from the previous page, with the same filters.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Closed positions, newest first, each with the pieces it was closed in."
+          }
+        },
+        {
+          "name": "Close a position",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/positions/:market/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "positions",
+                ":market",
+                "close"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}",
+                  "description": "A market id."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Closes the position, or part of it, at the market. No other order is touched."
+          }
+        },
+        {
+          "name": "Flatten the account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/flatten",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "flatten"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "description": "Cancels every working order, then closes every position. A key limited to some markets does this on those only."
+          }
+        }
+      ]
+    },
+    {
+      "name": "orders",
+      "item": [
+        {
+          "name": "List orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "working: the complete set of working orders. history: past orders. all: both.",
+                  "disabled": true
+                },
+                {
+                  "key": "market",
+                  "value": "",
+                  "description": "Only this market.",
+                  "disabled": true
+                },
+                {
+                  "key": "client_order_id",
+                  "value": "",
+                  "description": "The order you placed through the API with this id.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "next_cursor from the previous page, with the same filters.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Orders, newest first: working ones and past ones. Orders placed on a trading platform are listed too (source platform)."
+          }
+        },
+        {
+          "name": "Place an order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"market\": \"BTC-USD\",\n  \"side\": \"buy\",\n  \"type\": \"limit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Places an order on the account. A market order waits a moment for its fill. When the engine's answer is lost on the way, the answer is 202 with status unconfirmed: read the order again (Location) rather than placing it again."
+          }
+        },
+        {
+          "name": "Get an order",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders/:order_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders",
+                ":order_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "order_id",
+                  "value": "{{orderId}}",
+                  "description": "The order."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get an order"
+          }
+        },
+        {
+          "name": "Change an order",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders/:order_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders",
+                ":order_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "order_id",
+                  "value": "{{orderId}}",
+                  "description": "The order."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Changes the size or price of a working order placed through the API, in place. Without an Idempotency-Key a change is sent once; with one, the same change sent again under it is done once."
+          }
+        },
+        {
+          "name": "Cancel an order",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders/:order_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders",
+                ":order_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "order_id",
+                  "value": "{{orderId}}",
+                  "description": "The order."
+                }
+              ],
+              "query": []
+            },
+            "description": "Cancels a working order of the account, placed through the API or on a trading platform. When it filled first, the answer is 409 order_not_working."
+          }
+        },
+        {
+          "name": "Preview an order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders",
+                "test"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"market\": \"BTC-USD\",\n  \"side\": \"buy\",\n  \"type\": \"limit\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "What an order would do now, sent nowhere: whether it would fill, rest or be refused (and why), its price, fee, margin, the position after it and the room under the exposure cap. Any key may call it."
+          }
+        },
+        {
+          "name": "Cancel all orders",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders/cancel-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders",
+                "cancel-all"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Cancels every working order of the account, from any platform, or only those of one market. A key limited to some markets cancels on those only."
+          }
+        },
+        {
+          "name": "Attach exits to an order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/orders/:order_id/exits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "orders",
+                ":order_id",
+                "exits"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "order_id",
+                  "value": "{{orderId}}",
+                  "description": "The order."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Sets (or, with an empty object, removes) the exits a working order of the API places when it fills."
+          }
+        }
+      ]
+    },
+    {
+      "name": "events",
+      "item": [
+        {
+          "name": "List events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "events"
+              ],
+              "variable": [],
+              "query": [
+                {
+                  "key": "account_id",
+                  "value": "",
+                  "description": "Only this account.",
+                  "disabled": true
+                },
+                {
+                  "key": "after",
+                  "value": "",
+                  "description": "The id of the last event you have: the ones after it, oldest first. Absent: from the oldest kept.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "What happened on your accounts, oldest first: the same events the account stream sends. Poll with after = the id of the last event you have (next_cursor of the previous page)."
+          }
+        },
+        {
+          "name": "Get an event",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/events/:event_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "events",
+                ":event_id"
+              ],
+              "variable": [
+                {
+                  "key": "event_id",
+                  "value": "{{eventId}}",
+                  "description": "The event."
+                }
+              ],
+              "query": []
+            },
+            "description": "One event of the log, as the stream and the webhooks send it."
+          }
+        }
+      ]
+    },
+    {
+      "name": "exits",
+      "item": [
+        {
+          "name": "Get a position's exits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/positions/:market/exits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "positions",
+                ":market",
+                "exits"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}",
+                  "description": "A market id."
+                }
+              ],
+              "query": []
+            },
+            "description": "The take-profit and stop-loss legs this API keeps on the position: native orders on the engine, so they protect even when the API is away. Each group is at most the position: a take-profit fill trims the stop-losses by its size, the last fill cancels the rest."
+          }
+        },
+        {
+          "name": "Change a position's exits",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/positions/:market/exits",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "positions",
+                ":market",
+                "exits"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "market",
+                  "value": "{{market}}",
+                  "description": "A market id."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"expected_position\": {\n    \"side\": \"long\",\n    \"size\": \"0.5\"\n  },\n  \"expected_exits\": null,\n  \"operations\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Places, changes and cancels take-profit and stop-loss legs together, against the state you read: when the position or a leg changed since, nothing is done (409 exits_changed, with the state now). The legs are reduce-only and never larger than the position."
+          }
+        }
+      ]
+    },
+    {
+      "name": "strategies",
+      "item": [
+        {
+          "name": "Create a strategy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/strategies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "strategies"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"trailing_stop\",\n  \"market\": \"BTC-USD\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Starts a strategy on the account. trailing_stop and break_even change the position's exits (the answer is the exits strategy). The programs (oco, twap, vwap, scaled, chase) place orders for you: each one is checked as an order you place yourself, and listed under the strategy."
+          }
+        },
+        {
+          "name": "List strategies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/strategies",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "strategies"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "active: waiting or working. ended: completed, canceled or ended. all: both.",
+                  "disabled": true
+                },
+                {
+                  "key": "market",
+                  "value": "",
+                  "description": "Only this market.",
+                  "disabled": true
+                },
+                {
+                  "key": "client_strategy_id",
+                  "value": "",
+                  "description": "The strategy you created with this id.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "next_cursor from the previous page, with the same filters.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "The account's strategies, newest first, with every order each one placed."
+          }
+        },
+        {
+          "name": "Get a strategy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/strategies/:strategy_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "strategies",
+                ":strategy_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "strategy_id",
+                  "value": "{{strategyId}}",
+                  "description": "The strategy."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get a strategy"
+          }
+        },
+        {
+          "name": "Cancel a strategy",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/strategies/:strategy_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "strategies",
+                ":strategy_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "strategy_id",
+                  "value": "{{strategyId}}",
+                  "description": "The strategy."
+                }
+              ],
+              "query": []
+            },
+            "description": "Stops the strategy and cancels its working orders (reason strategy). Orders that already filled stay filled."
+          }
+        }
+      ]
+    },
+    {
+      "name": "webhookEndpoints",
+      "item": [
+        {
+          "name": "List webhook endpoints",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Your endpoints in this environment. They are made, and their secrets rotated, in your dashboard only."
+          }
+        },
+        {
+          "name": "Get a webhook endpoint",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get a webhook endpoint"
+          }
+        },
+        {
+          "name": "Delete an endpoint",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                }
+              ],
+              "query": []
+            },
+            "description": "Delete an endpoint"
+          }
+        },
+        {
+          "name": "Send a test",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id/test",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id",
+                "test"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                }
+              ],
+              "query": []
+            },
+            "description": "Queues a webhook.ping (test true) to the endpoint; read the delivery for the outcome. It calls your server: a trade key or app."
+          }
+        },
+        {
+          "name": "List deliveries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id/deliveries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id",
+                "deliveries"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                }
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "next_cursor from the previous page, with the same filters.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "What was sent to the endpoint, newest first, with every try and what it answered."
+          }
+        },
+        {
+          "name": "Get a delivery",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id/deliveries/:delivery_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id",
+                "deliveries",
+                ":delivery_id"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                },
+                {
+                  "key": "delivery_id",
+                  "value": "{{deliveryId}}",
+                  "description": "The delivery."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get a delivery"
+          }
+        },
+        {
+          "name": "Send a delivery again",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id/deliveries/:delivery_id/resend",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id",
+                "deliveries",
+                ":delivery_id",
+                "resend"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                },
+                {
+                  "key": "delivery_id",
+                  "value": "{{deliveryId}}",
+                  "description": "The delivery."
+                }
+              ],
+              "query": []
+            },
+            "description": "Queues the same event again, marked test (the same event id: your receiver can tell it already has it). It calls your server: a trade key or app."
+          }
+        },
+        {
+          "name": "Pause an endpoint",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id/disable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id",
+                "disable"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                }
+              ],
+              "query": []
+            },
+            "description": "Stops sending to it; its events wait (enable sends them)."
+          }
+        },
+        {
+          "name": "Resume an endpoint",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-endpoints/:endpoint_id/enable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-endpoints",
+                ":endpoint_id",
+                "enable"
+              ],
+              "variable": [
+                {
+                  "key": "endpoint_id",
+                  "value": "{{endpointId}}",
+                  "description": "The endpoint."
+                }
+              ],
+              "query": []
+            },
+            "description": "Resume an endpoint"
+          }
+        },
+        {
+          "name": "List event types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/webhook-event-types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "webhook-event-types"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Every event an endpoint can receive, and the group that brings it."
+          }
+        }
+      ]
+    },
+    {
+      "name": "tradingview",
+      "item": [
+        {
+          "name": "List TradingView links",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/hooks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "hooks"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "Your TradingView alert links in this environment. Links are made, and their addresses rotated, in your dashboard only: the address is a credential."
+          }
+        },
+        {
+          "name": "Get a TradingView link",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/hooks/:hook_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "hooks",
+                ":hook_id"
+              ],
+              "variable": [
+                {
+                  "key": "hook_id",
+                  "value": "{{hookId}}",
+                  "description": "The TradingView link."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get a TradingView link"
+          }
+        },
+        {
+          "name": "Revoke a TradingView link",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/hooks/:hook_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "hooks",
+                ":hook_id"
+              ],
+              "variable": [
+                {
+                  "key": "hook_id",
+                  "value": "{{hookId}}",
+                  "description": "The TradingView link."
+                }
+              ],
+              "query": []
+            },
+            "description": "Revoke a TradingView link"
+          }
+        },
+        {
+          "name": "List a link's alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/hooks/:hook_id/alerts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "hooks",
+                ":hook_id",
+                "alerts"
+              ],
+              "variable": [
+                {
+                  "key": "hook_id",
+                  "value": "{{hookId}}",
+                  "description": "The TradingView link."
+                }
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Only alerts with this status.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "next_cursor from the previous page, with the same filters.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Every alert the link received, newest first, refused ones included, with what each did and why."
+          }
+        },
+        {
+          "name": "Get an alert",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/hooks/:hook_id/alerts/:alert_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "hooks",
+                ":hook_id",
+                "alerts",
+                ":alert_id"
+              ],
+              "variable": [
+                {
+                  "key": "hook_id",
+                  "value": "{{hookId}}",
+                  "description": "The TradingView link."
+                },
+                {
+                  "key": "alert_id",
+                  "value": "{{alertId}}",
+                  "description": "The alert."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get an alert"
+          }
+        },
+        {
+          "name": "Pause a TradingView link",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/hooks/:hook_id/disable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "hooks",
+                ":hook_id",
+                "disable"
+              ],
+              "variable": [
+                {
+                  "key": "hook_id",
+                  "value": "{{hookId}}",
+                  "description": "The TradingView link."
+                }
+              ],
+              "query": []
+            },
+            "description": "Its alerts are refused (link_paused) until it is resumed."
+          }
+        },
+        {
+          "name": "Resume a TradingView link",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/hooks/:hook_id/enable",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "hooks",
+                ":hook_id",
+                "enable"
+              ],
+              "variable": [
+                {
+                  "key": "hook_id",
+                  "value": "{{hookId}}",
+                  "description": "The TradingView link."
+                }
+              ],
+              "query": []
+            },
+            "description": "Resume a TradingView link"
+          }
+        },
+        {
+          "name": "Read an alert message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/tradingview/parse",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "tradingview",
+                "parse"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"{\\\"action\\\":\\\"buy\\\",\\\"symbol\\\":\\\"BTC-USD\\\",\\\"qty\\\":\\\"0.01\\\",\\\"tp_pct\\\":\\\"1.5\\\"}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "How an alert message would be read, sent nowhere: the action, sizes, prices, exits and market, and with a link what it would do now."
+          }
+        }
+      ]
+    },
+    {
+      "name": "fills",
+      "item": [
+        {
+          "name": "List fills",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/fills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "fills"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "",
+                  "description": "Only this market.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "next_cursor from the previous page, with the same filters.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Every execution with its price and fee, newest first."
+          }
+        }
+      ]
+    }
+  ]
+}

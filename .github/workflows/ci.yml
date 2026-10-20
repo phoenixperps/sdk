@@ -1,0 +1,235 @@
+# Every push and pull request: the generated code matches the spec, nothing says what it must not, and every SDK
+# passes the conformance suite (conformance/scenarios.json) on its oldest and newest supported runtime.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # the public repo's first run, once its release and Pages exist (scripts/publish-github.js)
+  workflow_call: # release.yml runs every check first
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - name: generated code matches the spec
+        run: node generator/check.js
+      - name: words guard
+        env:
+          PP_WORDS_DENYLIST: ${{ secrets.WORDS_DENYLIST }}
+        run: node scripts/words-guard.js
+      - name: one version everywhere
+        run: node scripts/release.js --check
+      - name: shellcheck
+        run: shellcheck scripts/*.sh
+
+  typescript:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    defaults:
+      run:
+        working-directory: typescript
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.13']
+    defaults:
+      run:
+        working-directory: python
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e '.[test]'
+      - run: pytest -q
+      - name: the examples
+        run: python -m pyflakes examples && python -m py_compile examples/*.py
+      - name: the types (what each call answers, as a customer's type checker sees it)
+        env:
+          MYPYPATH: src
+        run: python -m mypy src/phoenixperps tests/snippets_check.py examples
+
+  go:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ['1.23', 'stable']
+    defaults:
+      run:
+        working-directory: go
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: ${{ matrix.go }}
+      - name: gofmt
+        run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go test -race ./...
+
+  csharp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: csharp
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - run: dotnet test tests/PhoenixPerps.Sdk.Tests
+      - name: the examples (file-based apps)
+        run: for f in examples/*.cs; do dotnet build "$f" || exit 1; done
+
+  java:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: ['17', '21']
+    defaults:
+      run:
+        working-directory: java
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          gradle-version: '8.9'
+      - run: gradle test compileExamplesJava jar sourcesJar plainJavadocJar -Porg.gradle.java.installations.auto-download=false
+
+  rust:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain: ['1.85', 'stable']
+    defaults:
+      run:
+        working-directory: rust
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          components: clippy
+      - if: matrix.toolchain == 'stable'
+        run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test
+
+  php:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.2', '8.4']
+    defaults:
+      run:
+        working-directory: php
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: bcmath, sockets
+          tools: composer
+      - run: composer install --no-interaction --no-progress
+      - run: vendor/bin/phpunit
+      - name: the examples
+        run: for f in examples/*.php; do php -l "$f" || exit 1; done
+
+  # the starter bots against one scripted market (conformance/starter.json): the same requests from all seven, each
+  # built against this commit's SDK (users install the published one)
+  starters:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [typescript, python, go, csharp, java, rust, php]
+    defaults:
+      run:
+        working-directory: starters/${{ matrix.lang }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - if: matrix.lang == 'python'
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.13'
+      - if: matrix.lang == 'go'
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+      - if: matrix.lang == 'csharp'
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - if: matrix.lang == 'java'
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: '17'
+      - if: matrix.lang == 'java'
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+        with:
+          gradle-version: '8.9'
+      - if: matrix.lang == 'rust'
+        uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        with:
+          toolchain: stable
+          components: clippy
+      - if: matrix.lang == 'php'
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.2'
+          extensions: bcmath, sockets
+          tools: composer
+      - name: the starter, on this commit's SDK
+        run: |
+          case "${{ matrix.lang }}" in
+            typescript) (cd ../../typescript && npm ci) && npm install --no-save ../../typescript typescript@5.9.2 @types/node@22 && npx tsc -p tsconfig.json
+                        node ../../conformance/starter.js node bot.mts ;;
+            python)     pip install -e ../../python pyflakes && python -m pyflakes bot.py
+                        node ../../conformance/starter.js python bot.py ;;
+            go)         go mod edit -replace github.com/phoenixperps/sdk/go=../../go && go mod tidy && test -z "$(gofmt -l .)" && go vet .
+                        node ../../conformance/starter.js go run . ;;
+            csharp)     dotnet build -p:PhoenixPerpsSdk=../../csharp/src/PhoenixPerps.Sdk/PhoenixPerps.Sdk.csproj
+                        node ../../conformance/starter.js dotnet run --no-build -p:PhoenixPerpsSdk=../../csharp/src/PhoenixPerps.Sdk/PhoenixPerps.Sdk.csproj ;;
+            java)       gradle -q build --include-build ../../java -Porg.gradle.java.installations.auto-download=false
+                        node ../../conformance/starter.js gradle -q run --include-build ../../java -Porg.gradle.java.installations.auto-download=false ;;
+            rust)       cargo clippy --config 'patch."https://github.com/phoenixperps/sdk".phoenixperps.path="../../rust"' -- -D warnings
+                        node ../../conformance/starter.js cargo run -q --config 'patch."https://github.com/phoenixperps/sdk".phoenixperps.path="../../rust"' ;;
+            php)        composer config repositories.phoenixperps '{"type":"path","url":"../../php","options":{"symlink":false,"versions":{"phoenixperps/sdk":"1.0.0"}}}' && composer install --no-interaction --no-progress && php -l bot.php
+                        node ../../conformance/starter.js php bot.php ;;
+          esac

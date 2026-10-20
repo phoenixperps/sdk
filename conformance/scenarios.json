@@ -1,0 +1,2266 @@
+{
+  "key": "ppk_test_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "scenarios": [
+    {
+      "name": "a read: the key as a Bearer token, the SDK's User-Agent, the data",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "credential": {
+                  "kind": "key",
+                  "id": "AbCdEfGhIjKl"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "result": {
+          "credential": {
+            "kind": "key"
+          }
+        },
+        "checks": [
+          "bearer",
+          "user_agent"
+        ]
+      }
+    },
+    {
+      "name": "a read is tried again after 503 (Retry-After 0)",
+      "call": {
+        "resource": "markets",
+        "method": "get",
+        "path": {
+          "market": "BTC-USD"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 503,
+            "headers": {
+              "retry-after": "0"
+            },
+            "body": {
+              "error": {
+                "type": "engine",
+                "code": "engine_unavailable",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "market": "BTC-USD"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "result": {
+          "market": "BTC-USD"
+        }
+      }
+    },
+    {
+      "name": "a read is tried again after 429, waiting the Retry-After",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 429,
+            "headers": {
+              "retry-after": "1"
+            },
+            "body": {
+              "error": {
+                "type": "rate_limit",
+                "code": "rate_limited",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "ok": true
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "min_elapsed_ms": 900
+      }
+    },
+    {
+      "name": "an order is sent again after 500 with the same Idempotency-Key",
+      "call": {
+        "resource": "orders",
+        "method": "create",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        },
+        "body": {
+          "market": "BTC-USD",
+          "side": "buy",
+          "type": "limit",
+          "size": "0.01",
+          "limit_price": "62000"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 500,
+            "headers": {
+              "retry-after": "0"
+            },
+            "body": {
+              "error": {
+                "type": "server",
+                "code": "internal_error",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 201,
+            "body": {
+              "data": {
+                "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+                "status": "working"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "result": {
+          "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        },
+        "checks": [
+          "same_idempotency_key"
+        ]
+      }
+    },
+    {
+      "name": "a change without a key is never sent twice",
+      "call": {
+        "resource": "orders",
+        "method": "modify",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        },
+        "body": {
+          "limit_price": "61900"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 503,
+            "headers": {
+              "retry-after": "0"
+            },
+            "body": {
+              "error": {
+                "type": "engine",
+                "code": "engine_unavailable",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "ServerError",
+          "code": "engine_unavailable",
+          "status": 503
+        },
+        "requests": 1
+      }
+    },
+    {
+      "name": "a Retry-After over a minute is not slept: RateLimitError with it",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 429,
+            "headers": {
+              "retry-after": "120"
+            },
+            "body": {
+              "error": {
+                "type": "rate_limit",
+                "code": "rate_limited",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "RateLimitError",
+          "code": "rate_limited",
+          "status": 429,
+          "retry_after_ms": 120000
+        },
+        "requests": 1
+      }
+    },
+    {
+      "name": "a refusal: RuleRejectedError with its code and the kept order's id",
+      "call": {
+        "resource": "orders",
+        "method": "create",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        },
+        "body": {
+          "market": "BTC-USD",
+          "side": "buy",
+          "type": "market",
+          "size": "5"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 422,
+            "body": {
+              "error": {
+                "type": "rule_rejection",
+                "code": "insufficient_margin",
+                "message": "Not enough margin.",
+                "request_id": "req_9",
+                "retryable": false,
+                "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "RuleRejectedError",
+          "code": "insufficient_margin",
+          "status": 422,
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+          "request_id": "req_9"
+        },
+        "requests": 1
+      }
+    },
+    {
+      "name": "409: ConflictError",
+      "call": {
+        "resource": "orders",
+        "method": "cancel",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 409,
+            "body": {
+              "error": {
+                "type": "conflict",
+                "code": "order_not_working",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "ConflictError",
+          "code": "order_not_working",
+          "status": 409
+        },
+        "requests": 1
+      }
+    },
+    {
+      "name": "401: AuthenticationError, not tried again",
+      "call": {
+        "resource": "accounts",
+        "method": "list"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 401,
+            "body": {
+              "error": {
+                "type": "authentication",
+                "code": "revoked_api_key",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "AuthenticationError",
+          "code": "revoked_api_key",
+          "status": 401
+        },
+        "requests": 1
+      }
+    },
+    {
+      "name": "an HTML body still becomes an error: http_<status>",
+      "call": {
+        "resource": "orders",
+        "method": "modify",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        },
+        "body": {
+          "size": "0.02"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 502,
+            "body": "<html>Bad Gateway</html>"
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "ServerError",
+          "code": "http_502",
+          "status": 502
+        },
+        "requests": 1
+      }
+    },
+    {
+      "name": "a bare { error: text } body becomes an error too",
+      "call": {
+        "resource": "orders",
+        "method": "modify",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        },
+        "body": {
+          "size": "0.02"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 429,
+            "body": {
+              "error": "Too many requests"
+            }
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "RateLimitError",
+          "code": "http_429",
+          "status": 429
+        },
+        "requests": 1
+      }
+    },
+    {
+      "name": "iterating a list follows the cursors over every page",
+      "call": {
+        "resource": "orders",
+        "method": "list",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        },
+        "query": {
+          "limit": 2
+        },
+        "iterate": true
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [
+                {
+                  "id": "o1"
+                },
+                {
+                  "id": "o2"
+                }
+              ],
+              "has_more": true,
+              "next_cursor": "c1",
+              "as_of": 1
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [
+                {
+                  "id": "o3"
+                },
+                {
+                  "id": "o4"
+                }
+              ],
+              "has_more": true,
+              "next_cursor": "c2",
+              "as_of": 1
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [
+                {
+                  "id": "o5"
+                }
+              ],
+              "has_more": false,
+              "next_cursor": null,
+              "as_of": 1
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 3,
+        "items": [
+          "o1",
+          "o2",
+          "o3",
+          "o4",
+          "o5"
+        ],
+        "cursors": [
+          null,
+          "c1",
+          "c2"
+        ]
+      }
+    },
+    {
+      "name": "maxItems stops the iteration",
+      "call": {
+        "resource": "orders",
+        "method": "list",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        },
+        "query": {
+          "limit": 2
+        },
+        "iterate": true,
+        "max_items": 3
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [
+                {
+                  "id": "o1"
+                },
+                {
+                  "id": "o2"
+                }
+              ],
+              "has_more": true,
+              "next_cursor": "c1",
+              "as_of": 1
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [
+                {
+                  "id": "o3"
+                },
+                {
+                  "id": "o4"
+                }
+              ],
+              "has_more": true,
+              "next_cursor": "c2",
+              "as_of": 1
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "items": [
+          "o1",
+          "o2",
+          "o3"
+        ]
+      }
+    },
+    {
+      "name": "maxItems reached at a page's end asks no further page",
+      "call": {
+        "resource": "orders",
+        "method": "list",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        },
+        "query": {
+          "limit": 2
+        },
+        "iterate": true,
+        "max_items": 2
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [
+                {
+                  "id": "o1"
+                },
+                {
+                  "id": "o2"
+                }
+              ],
+              "has_more": true,
+              "next_cursor": "c1",
+              "as_of": 1
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "items": [
+          "o1",
+          "o2"
+        ]
+      }
+    },
+    {
+      "name": "an unknown enum value and an unknown field are kept, never fatal",
+      "call": {
+        "resource": "orders",
+        "method": "get",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+                "status": "a_status_from_the_future",
+                "a_new_field": 1
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "result": {
+          "status": "a_status_from_the_future",
+          "a_new_field": 1
+        }
+      }
+    },
+    {
+      "name": "a decimal goes out exactly as given",
+      "call": {
+        "resource": "orders",
+        "method": "create",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        },
+        "body": {
+          "market": "BTC-USD",
+          "side": "buy",
+          "type": "limit",
+          "size": "0.000000001",
+          "limit_price": "62000.1"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 201,
+            "body": {
+              "data": {
+                "id": "ord_1"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "first_body": {
+          "size": "0.000000001",
+          "limit_price": "62000.1"
+        }
+      }
+    },
+    {
+      "name": "with no request left in the window, the next call waits for its reset",
+      "calls": [
+        {
+          "resource": "me",
+          "method": "get"
+        },
+        {
+          "resource": "me",
+          "method": "get"
+        }
+      ],
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "headers": {
+              "x-ratelimit-limit": "10",
+              "x-ratelimit-remaining": "0",
+              "x-ratelimit-reset": "1"
+            },
+            "body": {
+              "data": {
+                "n": 1
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "n": 2
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "min_elapsed_ms": 800
+      }
+    },
+    {
+      "name": "409 operation_in_progress (retryable) is asked again with the same Idempotency-Key",
+      "call": {
+        "resource": "orders",
+        "method": "create",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        },
+        "body": {
+          "market": "BTC-USD",
+          "side": "buy",
+          "type": "market",
+          "size": "0.010"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 409,
+            "headers": {
+              "retry-after": "0"
+            },
+            "body": {
+              "error": {
+                "type": "x",
+                "code": "operation_in_progress",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 201,
+            "body": {
+              "data": {
+                "id": "ord_1",
+                "status": "filled"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "result": {
+          "id": "ord_1"
+        },
+        "checks": [
+          "same_idempotency_key"
+        ]
+      }
+    },
+    {
+      "name": "a 503 the API marks not retryable (sandbox_disabled) is not asked again",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 503,
+            "headers": {
+              "retry-after": "0"
+            },
+            "body": {
+              "error": {
+                "type": "x",
+                "code": "sandbox_disabled",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": false,
+        "requests": 1,
+        "error": {
+          "code": "sandbox_disabled",
+          "status": 503,
+          "retryable": false
+        }
+      }
+    },
+    {
+      "name": "a 304 Not Modified is no error: the call answers nothing",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 304,
+            "headers": {
+              "etag": "\"v1-abc\""
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "result": null
+      }
+    },
+    {
+      "name": "a 2xx whose body is not JSON is an error: http_<status>",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": "<html>proxy</html>"
+          }
+        }
+      ],
+      "expect": {
+        "ok": false,
+        "requests": 1,
+        "error": {
+          "code": "http_200"
+        }
+      }
+    },
+    {
+      "name": "a 2xx with no body at all is an error too: http_<status>, never an empty answer",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200
+          }
+        }
+      ],
+      "expect": {
+        "ok": false,
+        "requests": 1,
+        "error": {
+          "code": "http_200"
+        }
+      }
+    },
+    {
+      "name": "an error keeps retryable and doc_url",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 404,
+            "body": {
+              "error": {
+                "type": "x",
+                "code": "account_not_found",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false,
+                "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#account_not_found"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": false,
+        "requests": 1,
+        "error": {
+          "code": "account_not_found",
+          "retryable": false,
+          "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#account_not_found"
+        }
+      }
+    },
+    {
+      "name": "a page keeps the list's other fields (history_complete)",
+      "call": {
+        "resource": "orders",
+        "method": "list",
+        "path": {
+          "account_id": "SANDBOX-00042-001"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [
+                {
+                  "id": "ord_1"
+                }
+              ],
+              "has_more": false,
+              "next_cursor": null,
+              "as_of": 1,
+              "history_complete": true
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "page_fields": {
+          "history_complete": true
+        }
+      }
+    },
+    {
+      "name": "a baseUrl written as the REST address (ending in /v1) is its host",
+      "client": {
+        "base_url_suffix": "/v1"
+      },
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "ok": true
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "paths": [
+          "/v1/me"
+        ]
+      }
+    },
+    {
+      "name": "a fractional Retry-After is waited, not read as 0",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 429,
+            "headers": {
+              "retry-after": "1.5"
+            },
+            "body": {
+              "error": {
+                "type": "x",
+                "code": "rate_limited",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "ok": true
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "min_elapsed_ms": 1400
+      }
+    }
+  ],
+  "local": [
+    {
+      "name": "a live key on a sandbox client fails before any request",
+      "client": {
+        "api_key": "ppk_live_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "environment": "sandbox"
+      },
+      "expect": {
+        "error_code": "wrong_environment"
+      }
+    },
+    {
+      "name": "the key never shows when the client is printed",
+      "check": "redaction"
+    },
+    {
+      "name": "a webhook signature checks with the secret, any of a rotation's two, and not after the tolerance",
+      "check": "webhook_vectors"
+    },
+    {
+      "name": "a client without a key is made, and sends no Authorization",
+      "client": {
+        "api_key": null,
+        "environment": "sandbox"
+      },
+      "check": "keyless"
+    }
+  ],
+  "webhook_vectors": {
+    "secret": "ppwhsec_TestSecret0123456789abcdefghijklmnop",
+    "other": "ppwhsec_OldSecret0123456789abcdefghijklmnopq",
+    "timestamp": "1791460800",
+    "body": "{\"id\":\"evt_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"type\":\"order.filled\",\"account_id\":\"SANDBOX-00042-001\",\"time\":1791460800123,\"source\":\"api\",\"data\":{\"order\":{\"id\":\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"market\":\"BTC-USD\",\"side\":\"buy\",\"status\":\"filled\"}},\"api_version\":\"v1\",\"environment\":\"sandbox\"}",
+    "signature": "sha256=25e7a3485bb8d78e2450b6b8ee5899e1b055ee61abe44196d093f888eb91ebc4",
+    "now_ms": 1791460900000,
+    "rotation": "sha256=2dc627facf5ba415218dd478619b672cdb22ef6d589ba4effa37f49489599610, sha256=25e7a3485bb8d78e2450b6b8ee5899e1b055ee61abe44196d093f888eb91ebc4",
+    "want": {
+      "id": "evt_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+      "type": "order.filled",
+      "account_id": "SANDBOX-00042-001",
+      "time": 1791460800123,
+      "source": "api"
+    },
+    "extra": [
+      {
+        "name": "a forged signature with a non-ASCII character is bad_signature",
+        "signature": "sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaé",
+        "body": "{\"id\":\"evt_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"type\":\"order.filled\",\"account_id\":\"SANDBOX-00042-001\",\"time\":1791460800123,\"source\":\"api\",\"data\":{\"order\":{\"id\":\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"market\":\"BTC-USD\",\"side\":\"buy\",\"status\":\"filled\"}},\"api_version\":\"v1\",\"environment\":\"sandbox\"}",
+        "timestamp": "1791460800",
+        "error": "bad_signature"
+      },
+      {
+        "name": "the genuine signature after a forged non-ASCII one still checks",
+        "signature": "sha256=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaé, sha256=25e7a3485bb8d78e2450b6b8ee5899e1b055ee61abe44196d093f888eb91ebc4",
+        "body": "{\"id\":\"evt_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"type\":\"order.filled\",\"account_id\":\"SANDBOX-00042-001\",\"time\":1791460800123,\"source\":\"api\",\"data\":{\"order\":{\"id\":\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"market\":\"BTC-USD\",\"side\":\"buy\",\"status\":\"filled\"}},\"api_version\":\"v1\",\"environment\":\"sandbox\"}",
+        "timestamp": "1791460800",
+        "want": {
+          "id": "evt_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+          "type": "order.filled",
+          "account_id": "SANDBOX-00042-001",
+          "time": 1791460800123,
+          "source": "api"
+        }
+      },
+      {
+        "name": "a timestamp beyond any clock is stale",
+        "signature": "sha256=25e7a3485bb8d78e2450b6b8ee5899e1b055ee61abe44196d093f888eb91ebc4",
+        "body": "{\"id\":\"evt_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"type\":\"order.filled\",\"account_id\":\"SANDBOX-00042-001\",\"time\":1791460800123,\"source\":\"api\",\"data\":{\"order\":{\"id\":\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\"market\":\"BTC-USD\",\"side\":\"buy\",\"status\":\"filled\"}},\"api_version\":\"v1\",\"environment\":\"sandbox\"}",
+        "timestamp": "99999999999999999999",
+        "error": "stale"
+      },
+      {
+        "name": "a signed body that is no event is bad_body",
+        "signature": "sha256=f33b44daf971880dfcdea10b2eea02a0385955e823f42da0eff50abbbec6d9c8",
+        "body": "[1,2]",
+        "timestamp": "1791460800",
+        "error": "bad_body"
+      },
+      {
+        "name": "webhook.ping: the WebhookPayload, test and environment kept",
+        "signature": "sha256=1de93b43bf1bade3c09b075504967358df1bf348f94d965ec56f62df2cacea4a",
+        "body": "{\"id\":\"evt_01JAB7Q8XK4M2N5P7R9S3T5V7X\",\"type\":\"webhook.ping\",\"time\":1791460800123,\"source\":\"api\",\"data\":{\"message\":\"A test from your developer settings.\"},\"api_version\":\"v1\",\"environment\":\"sandbox\",\"test\":true}",
+        "timestamp": "1791460800",
+        "want": {
+          "id": "evt_01JAB7Q8XK4M2N5P7R9S3T5V7X",
+          "type": "webhook.ping",
+          "api_version": "v1",
+          "environment": "sandbox",
+          "test": true
+        }
+      }
+    ]
+  },
+  "rules_vectors": {
+    "market": {
+      "market": "BTC-USD",
+      "tick_size": "0.1",
+      "size_step": "0.001",
+      "min_size": "0.001",
+      "max_slippage_pct": {
+        "default": "1",
+        "min": "0.05",
+        "max": "5"
+      }
+    },
+    "cases": [
+      {
+        "fn": "round_price",
+        "args": [
+          "62000.06"
+        ],
+        "mode": "nearest",
+        "want": "62000.1"
+      },
+      {
+        "fn": "round_price",
+        "args": [
+          "62000.05"
+        ],
+        "mode": "nearest",
+        "want": "62000.1"
+      },
+      {
+        "fn": "round_price",
+        "args": [
+          "62000.05"
+        ],
+        "mode": "down",
+        "want": "62000.0"
+      },
+      {
+        "fn": "round_price",
+        "args": [
+          "62000.01"
+        ],
+        "mode": "up",
+        "want": "62000.1"
+      },
+      {
+        "fn": "round_size",
+        "args": [
+          "0.0109"
+        ],
+        "want": "0.010"
+      },
+      {
+        "fn": "size_for_notional",
+        "args": [
+          "1000",
+          "62000"
+        ],
+        "want": "0.016"
+      },
+      {
+        "fn": "size_for_risk",
+        "args": [
+          "50",
+          "500"
+        ],
+        "want": "0.100"
+      },
+      {
+        "fn": "size_for_risk",
+        "args": [
+          "50",
+          "-500"
+        ],
+        "want": "0.100"
+      },
+      {
+        "fn": "worst_price",
+        "args": [
+          "buy",
+          "62000"
+        ],
+        "want": "62620.0"
+      },
+      {
+        "fn": "worst_price",
+        "args": [
+          "sell",
+          "62000.05"
+        ],
+        "want": "61380.0"
+      },
+      {
+        "fn": "worst_price",
+        "args": [
+          "buy",
+          "62000",
+          "0.5"
+        ],
+        "want": "62310.0"
+      },
+      {
+        "fn": "worst_price",
+        "args": [
+          "BUY",
+          "62000"
+        ],
+        "want": "62620.0"
+      },
+      {
+        "fn": "worst_price",
+        "args": [
+          "long",
+          "62000"
+        ],
+        "error": true
+      },
+      {
+        "fn": "worst_price",
+        "args": [
+          "buy",
+          "62000",
+          "50"
+        ],
+        "error": true
+      },
+      {
+        "fn": "round_price",
+        "args": [
+          "abc"
+        ],
+        "mode": "nearest",
+        "error": true
+      },
+      {
+        "fn": "size_for_notional",
+        "args": [
+          "10",
+          "62000"
+        ],
+        "want": "0.000"
+      }
+    ]
+  },
+  "streams": [
+    {
+      "name": "account: after 1012 it resumes from the last event, and tells each event once",
+      "stream": "account",
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "snapshot",
+              "account_id": "SANDBOX-00042-001",
+              "positions": [],
+              "orders": []
+            }
+          },
+          {
+            "send": {
+              "type": "snapshot_end"
+            }
+          },
+          {
+            "send": {
+              "type": "event",
+              "event": {
+                "id": "evt_1",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "send": {
+              "type": "event",
+              "event": {
+                "id": "evt_2",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "close": 1012
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "event",
+              "event": {
+                "id": "evt_2",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "send": {
+              "type": "event",
+              "event": {
+                "id": "evt_3",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "wait_ms": 3000
+          }
+        ]
+      ],
+      "expect": {
+        "events": [
+          "evt_1",
+          "evt_2",
+          "evt_3"
+        ],
+        "connections": 2,
+        "resume": [
+          null,
+          "evt_2"
+        ],
+        "first_message": {
+          "op": "subscribe"
+        }
+      }
+    },
+    {
+      "name": "account: 4008 (too far behind) reconnects without resume",
+      "stream": "account",
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "event",
+              "event": {
+                "id": "evt_1",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "close": 4008
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "snapshot",
+              "account_id": "SANDBOX-00042-001",
+              "positions": [],
+              "orders": []
+            }
+          },
+          {
+            "send": {
+              "type": "snapshot_end"
+            }
+          },
+          {
+            "send": {
+              "type": "event",
+              "event": {
+                "id": "evt_2",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "wait_ms": 3000
+          }
+        ]
+      ],
+      "expect": {
+        "events": [
+          "evt_1",
+          "evt_2"
+        ],
+        "connections": 2,
+        "resume": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "account: 4001 (the key ended) ends the stream with AuthenticationError, never reconnecting",
+      "stream": "account",
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "event",
+              "event": {
+                "id": "evt_1",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "close": 4001
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "wait_ms": 3000
+          }
+        ]
+      ],
+      "expect": {
+        "events": [
+          "evt_1"
+        ],
+        "connections": 1,
+        "error": {
+          "class": "AuthenticationError",
+          "code": "stream_credential_ended"
+        }
+      }
+    },
+    {
+      "name": "market: every subscription is made again after a reconnect",
+      "stream": "market",
+      "subscribe": {
+        "channel": "ticker",
+        "symbols": [
+          "BTC-USD"
+        ],
+        "params": {
+          "interval_ms": 250
+        }
+      },
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "send": {
+              "type": "ticker",
+              "symbol": "BTC-USD",
+              "data": {
+                "last": "62000.1"
+              }
+            }
+          },
+          {
+            "close": 1012
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "send": {
+              "type": "ticker",
+              "symbol": "BTC-USD",
+              "data": {
+                "last": "62000.2"
+              }
+            }
+          },
+          {
+            "wait_ms": 3000
+          }
+        ]
+      ],
+      "expect": {
+        "frames": [
+          "62000.1",
+          "62000.2"
+        ],
+        "connections": 2,
+        "resubscribe": {
+          "op": "subscribe",
+          "channel": "ticker",
+          "symbols": [
+            "BTC-USD"
+          ],
+          "interval_ms": 250
+        },
+        "limits": {
+          "subscriptions": 200,
+          "symbols_per_subscribe": 50,
+          "messages_per_s": 20
+        }
+      }
+    },
+    {
+      "name": "account: an upgrade refused with 429 is tried again after its Retry-After, never thrown (no error listener)",
+      "stream": "account",
+      "connections": [
+        [
+          {
+            "refuse": 429,
+            "retry_after": 0,
+            "body": {
+              "error": {
+                "type": "x",
+                "code": "rate_limited",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true,
+                "details": {
+                  "scope": "stream_key"
+                }
+              }
+            }
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "snapshot_end",
+              "accounts": []
+            }
+          },
+          {
+            "send": {
+              "type": "event",
+              "seq": 1,
+              "event": {
+                "id": "evt_1",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "wait_ms": 2000
+          }
+        ]
+      ],
+      "expect": {
+        "events": [
+          "evt_1"
+        ],
+        "connections": 2
+      }
+    },
+    {
+      "name": "account: an upgrade refused with 401 ends the stream with the API's error, never reconnecting",
+      "stream": "account",
+      "connections": [
+        [
+          {
+            "refuse": 401,
+            "body": {
+              "error": {
+                "type": "x",
+                "code": "invalid_api_key",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false
+              }
+            }
+          }
+        ]
+      ],
+      "expect": {
+        "connections": 1,
+        "error": {
+          "code": "invalid_api_key"
+        }
+      }
+    },
+    {
+      "name": "account: an error frame ends the stream with a ValidationError naming the account",
+      "stream": "account",
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "error",
+              "code": "account_not_found",
+              "account_id": "SANDBOX-00042-009"
+            }
+          },
+          {
+            "wait_ms": 1500
+          }
+        ]
+      ],
+      "expect": {
+        "connections": 1,
+        "events": [],
+        "error": {
+          "code": "account_not_found",
+          "account_id": "SANDBOX-00042-009"
+        }
+      }
+    },
+    {
+      "name": "account: a resume the server cannot cover is told as a gap",
+      "stream": "account",
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "snapshot_end",
+              "accounts": []
+            }
+          },
+          {
+            "send": {
+              "type": "event",
+              "seq": 1,
+              "event": {
+                "id": "evt_1",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "close": 1012
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "stream_id": "str_1",
+              "environment": "sandbox",
+              "heartbeat_ms": 15000
+            }
+          },
+          {
+            "send": {
+              "type": "notice",
+              "code": "resume_gap",
+              "after": "evt_1"
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "send": {
+              "type": "snapshot_end",
+              "accounts": []
+            }
+          },
+          {
+            "send": {
+              "type": "event",
+              "seq": 1,
+              "event": {
+                "id": "evt_9",
+                "type": "order.created",
+                "account_id": "SANDBOX-00042-001",
+                "time": 1791460800000,
+                "source": "api",
+                "data": {}
+              }
+            }
+          },
+          {
+            "wait_ms": 2000
+          }
+        ]
+      ],
+      "expect": {
+        "events": [
+          "evt_1",
+          "evt_9"
+        ],
+        "connections": 2,
+        "resume": [
+          null,
+          "evt_1"
+        ],
+        "gap": "evt_1"
+      }
+    },
+    {
+      "name": "market: three heartbeats of silence reconnect and subscribe again",
+      "stream": "market",
+      "subscribe": {
+        "channel": "ticker",
+        "symbols": [
+          "BTC-USD"
+        ],
+        "params": {}
+      },
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 100,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "wait_ms": 6000
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 100,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "send": {
+              "type": "ticker",
+              "symbol": "BTC-USD",
+              "data": {
+                "last": "62000.3"
+              }
+            }
+          },
+          {
+            "wait_ms": 1000
+          }
+        ]
+      ],
+      "expect": {
+        "frames": [
+          "62000.3"
+        ],
+        "connections": 2,
+        "resubscribe": {
+          "op": "subscribe",
+          "channel": "ticker",
+          "symbols": [
+            "BTC-USD"
+          ]
+        }
+      }
+    },
+    {
+      "name": "market: an unsubscribe with no options ends that market; the others are made again after a reconnect",
+      "stream": "market",
+      "subscribe": {
+        "channel": "ticker",
+        "symbols": [
+          "BTC-USD",
+          "ETH-USD"
+        ],
+        "params": {
+          "interval_ms": 250
+        }
+      },
+      "unsubscribe": {
+        "channel": "ticker",
+        "symbols": [
+          "ETH-USD"
+        ]
+      },
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD",
+                "ETH-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "expect": "unsubscribe"
+          },
+          {
+            "reply": {
+              "type": "unsubscribed",
+              "channel": "ticker",
+              "symbols": [
+                "ETH-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "close": 1012
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "send": {
+              "type": "ticker",
+              "symbol": "BTC-USD",
+              "data": {
+                "last": "62000.4"
+              }
+            }
+          },
+          {
+            "wait_ms": 1500
+          }
+        ]
+      ],
+      "expect": {
+        "frames": [
+          "62000.4"
+        ],
+        "connections": 2,
+        "unsubscribe_sent": {
+          "op": "unsubscribe",
+          "channel": "ticker",
+          "symbols": [
+            "ETH-USD"
+          ]
+        },
+        "resubscribe": {
+          "op": "subscribe",
+          "channel": "ticker",
+          "symbols": [
+            "BTC-USD"
+          ],
+          "interval_ms": 250
+        }
+      }
+    },
+    {
+      "name": "market: a symbol the server refused is not asked again after a reconnect",
+      "stream": "market",
+      "subscribe": {
+        "channel": "ticker",
+        "symbols": [
+          "BTC-USD",
+          "NOPE-USD"
+        ],
+        "params": {
+          "interval_ms": 250
+        }
+      },
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD"
+              ],
+              "rejected": [
+                {
+                  "symbol": "NOPE-USD",
+                  "code": "market_not_found"
+                }
+              ]
+            }
+          },
+          {
+            "close": 1012
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "BTC-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "send": {
+              "type": "ticker",
+              "symbol": "BTC-USD",
+              "data": {
+                "last": "62000.5"
+              }
+            }
+          },
+          {
+            "wait_ms": 1500
+          }
+        ]
+      ],
+      "expect": {
+        "frames": [
+          "62000.5"
+        ],
+        "connections": 2,
+        "resubscribe": {
+          "op": "subscribe",
+          "channel": "ticker",
+          "symbols": [
+            "BTC-USD"
+          ],
+          "interval_ms": 250
+        }
+      }
+    }
+  ],
+  "vocabulary": {
+    "scenarios": "call { resource, method, path, body, query, iterate, max_items }; client { base_url_suffix } (the mock URL plus it as baseUrl); expect { ok, requests, result (null: the call answered nothing), error { code, status, retryable, doc_url }, items, cursors, first_body, min_elapsed_ms, checks [bearer, user_agent, same_idempotency_key], page_fields (the page keeps them, in the language's naming), paths (the request paths, in order) }",
+    "local": "check: redaction | webhook_vectors | keyless (a client with api_key null is made; a public call sends no Authorization)",
+    "webhook_vectors": "the base vector (signature, rotation, now_ms, want) and extra[]: { signature, body, timestamp, want | error } verified with secret and now_ms",
+    "rules_vectors": "cases[]: { fn, args, mode?, want | error: true (a ValidationError of the SDK's own) }",
+    "streams": "steps send | expect | reply | close | wait_ms | refuse { refuse, retry_after, body }; subscribe / unsubscribe (market: the calls the runner makes, in order); expect { events, connections, resume, first_message, error { code, account_id }, frames, resubscribe, unsubscribe_sent, limits (the stream's limits from the hello), gap (the event id the gap is told after) }"
+  }
+}

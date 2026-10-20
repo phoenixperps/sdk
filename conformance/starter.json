@@ -1,0 +1,481 @@
+{
+  "description": "The starter bots (starters/README.md): one scripted market, the same requests from all seven. node conformance/starter.js <command> runs one.",
+  "key": "ppk_test_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "env": {
+    "PP_MARKET": "BTC-USD",
+    "PP_RISK_USD": "50",
+    "PP_FAST": "3",
+    "PP_SLOW": "5",
+    "PP_ATR": "3",
+    "PP_ATR_MULT": "2",
+    "PP_MAX_TRADES_PER_DAY": "10",
+    "PP_RUN_CANDLES": "4"
+  },
+  "exchanges": [
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": "SANDBOX-00042-000",
+              "status": "failed",
+              "stage": "sandbox",
+              "environment": "sandbox"
+            },
+            {
+              "id": "SANDBOX-00042-001",
+              "status": "active",
+              "stage": "sandbox",
+              "environment": "sandbox"
+            }
+          ],
+          "has_more": false,
+          "next_cursor": null
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "data": {
+            "market": "BTC-USD",
+            "name": "Bitcoin",
+            "status": "open",
+            "tick_size": "0.5",
+            "size_step": "0.001",
+            "min_size": "0.001",
+            "max_leverage": 10,
+            "fee_rate_pct": "0.05",
+            "exposure_cap": null,
+            "max_slippage_pct": null
+          }
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "data": [],
+          "has_more": false,
+          "next_cursor": null
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "data": [],
+          "has_more": false,
+          "next_cursor": null
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "data": {
+            "result": "would_fill",
+            "reject": null,
+            "market": "BTC-USD",
+            "side": "buy",
+            "type": "market",
+            "size": "6.250",
+            "execution": {
+              "marketable": true,
+              "expected_price": "100.5",
+              "worst_price": "102.0"
+            },
+            "notional": "628.12",
+            "fee": "0.31",
+            "margin": null,
+            "position_after": null,
+            "exposure": null
+          }
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": "ord_1",
+            "client_order_id": "starter-1791461340000",
+            "account_id": "SANDBOX-00042-001",
+            "market": "BTC-USD",
+            "side": "buy",
+            "type": "market",
+            "status": "filled",
+            "size": "6.250",
+            "time_in_force": "ioc",
+            "source": "api"
+          }
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "market": "BTC-USD",
+              "side": "long",
+              "size": "6.250",
+              "entry_price": "100.0",
+              "protected": true
+            }
+          ],
+          "has_more": false,
+          "next_cursor": null
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "market": "BTC-USD",
+              "side": "long",
+              "size": "6.250",
+              "entry_price": "100.0",
+              "protected": true
+            }
+          ],
+          "has_more": false,
+          "next_cursor": null
+        }
+      }
+    },
+    {
+      "respond": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": "ord_2",
+            "account_id": "SANDBOX-00042-001",
+            "market": "BTC-USD",
+            "side": "sell",
+            "type": "market",
+            "status": "filled",
+            "size": "6.250",
+            "time_in_force": "ioc",
+            "source": "api"
+          }
+        }
+      }
+    }
+  ],
+  "market": [
+    {
+      "send": {
+        "type": "hello",
+        "session": "mds_1",
+        "heartbeat_ms": 15000,
+        "channels": [
+          "ticker",
+          "book",
+          "trades",
+          "candles",
+          "stats",
+          "status"
+        ],
+        "limits": {
+          "subscriptions": 200,
+          "symbols_per_subscribe": 50,
+          "messages_per_s": 20
+        }
+      }
+    },
+    {
+      "expect": "subscribe"
+    },
+    {
+      "reply": {
+        "type": "subscribed",
+        "channel": "candles",
+        "symbols": [
+          "BTC-USD"
+        ],
+        "rejected": [],
+        "interval": "1m"
+      }
+    },
+    {
+      "send": {
+        "type": "candles",
+        "symbol": "BTC-USD",
+        "interval": "1m",
+        "data": [
+          {
+            "time": 1791460800000,
+            "open": "100",
+            "high": "101",
+            "low": "99",
+            "close": "100",
+            "volume": "1",
+            "final": true
+          },
+          {
+            "time": 1791460860000,
+            "open": "99",
+            "high": "100",
+            "low": "98",
+            "close": "99",
+            "volume": "1",
+            "final": true
+          },
+          {
+            "time": 1791460920000,
+            "open": "98",
+            "high": "99",
+            "low": "97",
+            "close": "98",
+            "volume": "1",
+            "final": true
+          },
+          {
+            "time": 1791460980000,
+            "open": "97",
+            "high": "98",
+            "low": "96",
+            "close": "97",
+            "volume": "1",
+            "final": true
+          },
+          {
+            "time": 1791461040000,
+            "open": "96",
+            "high": "97",
+            "low": "95",
+            "close": "96",
+            "volume": "1",
+            "final": true
+          },
+          {
+            "time": 1791461100000,
+            "open": "95",
+            "high": "96",
+            "low": "94",
+            "close": "95",
+            "volume": "1",
+            "final": true
+          },
+          {
+            "time": 1791461160000,
+            "open": "94",
+            "high": "95",
+            "low": "93",
+            "close": "94",
+            "volume": "1",
+            "final": true
+          },
+          {
+            "time": 1791461220000,
+            "open": "93",
+            "high": "94",
+            "low": "92",
+            "close": "93",
+            "volume": "1",
+            "final": true
+          }
+        ]
+      }
+    },
+    {
+      "send": {
+        "type": "snapshot_end"
+      }
+    },
+    {
+      "send": {
+        "type": "candles",
+        "symbol": "BTC-USD",
+        "interval": "1m",
+        "data": [
+          {
+            "time": 1791461280000,
+            "open": "93",
+            "high": "94",
+            "low": "92",
+            "close": "93",
+            "volume": "1",
+            "final": true
+          }
+        ]
+      }
+    },
+    {
+      "send": {
+        "type": "candles",
+        "symbol": "BTC-USD",
+        "interval": "1m",
+        "data": [
+          {
+            "time": 1791461340000,
+            "open": "100",
+            "high": "101",
+            "low": "99",
+            "close": "100",
+            "volume": "1",
+            "final": true
+          }
+        ]
+      }
+    },
+    {
+      "send": {
+        "type": "candles",
+        "symbol": "BTC-USD",
+        "interval": "1m",
+        "data": [
+          {
+            "time": 1791461340000,
+            "open": "100",
+            "high": "101",
+            "low": "99",
+            "close": "100",
+            "volume": "1",
+            "final": true
+          }
+        ]
+      }
+    },
+    {
+      "send": {
+        "type": "candles",
+        "symbol": "BTC-USD",
+        "interval": "1m",
+        "data": [
+          {
+            "time": 1791461400000,
+            "open": "100.5",
+            "high": "101.5",
+            "low": "99.5",
+            "close": "100.5",
+            "volume": "1",
+            "final": false
+          }
+        ]
+      }
+    },
+    {
+      "send": {
+        "type": "candles",
+        "symbol": "BTC-USD",
+        "interval": "1m",
+        "data": [
+          {
+            "time": 1791461400000,
+            "open": "101",
+            "high": "102",
+            "low": "100",
+            "close": "101",
+            "volume": "1",
+            "final": true
+          }
+        ]
+      }
+    },
+    {
+      "send": {
+        "type": "candles",
+        "symbol": "BTC-USD",
+        "interval": "1m",
+        "data": [
+          {
+            "time": 1791461460000,
+            "open": "88",
+            "high": "89",
+            "low": "87",
+            "close": "88",
+            "volume": "1",
+            "final": true
+          }
+        ]
+      }
+    },
+    {
+      "wait_ms": 60000
+    }
+  ],
+  "expect": {
+    "requests": [
+      {
+        "method": "GET",
+        "path": "/v1/accounts"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/markets/BTC-USD"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/accounts/SANDBOX-00042-001/positions",
+        "query": {
+          "market": "BTC-USD"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/v1/accounts/SANDBOX-00042-001/positions",
+        "query": {
+          "market": "BTC-USD"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/v1/accounts/SANDBOX-00042-001/orders/test",
+        "body": {
+          "market": "BTC-USD",
+          "side": "buy",
+          "type": "market",
+          "size": "6.250"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/v1/accounts/SANDBOX-00042-001/orders",
+        "body": {
+          "market": "BTC-USD",
+          "side": "buy",
+          "type": "market",
+          "size": "6.250",
+          "client_order_id": "starter-1791461340000",
+          "exits": {
+            "stop_loss": {
+              "distance": "8.0"
+            }
+          }
+        },
+        "idempotency_key": "starter-BTC-USD-1791461340000"
+      },
+      {
+        "method": "GET",
+        "path": "/v1/accounts/SANDBOX-00042-001/positions",
+        "query": {
+          "market": "BTC-USD"
+        }
+      },
+      {
+        "method": "GET",
+        "path": "/v1/accounts/SANDBOX-00042-001/positions",
+        "query": {
+          "market": "BTC-USD"
+        }
+      },
+      {
+        "method": "POST",
+        "path": "/v1/accounts/SANDBOX-00042-001/positions/BTC-USD/close",
+        "body": {}
+      }
+    ]
+  }
+}

@@ -1,0 +1,86 @@
+[
+  {
+    "id": "python",
+    "name": "Python",
+    "package": "phoenixperps",
+    "registry": "GitHub",
+    "install": "pip install https://github.com/phoenixperps/sdk/releases/download/v1.0.0/phoenixperps-1.0.0-py3-none-any.whl",
+    "import": "from phoenixperps import PhoenixPerps",
+    "runtime": "Python 3.10+",
+    "source": "python",
+    "version": "1.0.0",
+    "spec": "1.0.0"
+  },
+  {
+    "id": "typescript",
+    "name": "TypeScript",
+    "package": "@phoenixperps/sdk",
+    "registry": "GitHub",
+    "install": "npm install https://github.com/phoenixperps/sdk/releases/download/v1.0.0/phoenixperps-sdk-1.0.0.tgz",
+    "import": "import { PhoenixPerps } from '@phoenixperps/sdk';",
+    "runtime": "Node 22+",
+    "source": "typescript",
+    "version": "1.0.0",
+    "spec": "1.0.0"
+  },
+  {
+    "id": "go",
+    "name": "Go",
+    "package": "github.com/phoenixperps/sdk/go",
+    "registry": "Go modules",
+    "install": "go get github.com/phoenixperps/sdk/go",
+    "import": "import phoenixperps \"github.com/phoenixperps/sdk/go\"",
+    "runtime": "Go 1.23+",
+    "source": "go",
+    "version": "1.0.0",
+    "spec": "1.0.0"
+  },
+  {
+    "id": "csharp",
+    "name": "C#",
+    "package": "PhoenixPerps.Sdk",
+    "registry": "GitHub",
+    "install": "dotnet nuget add source https://phoenixperps.github.io/sdk/nuget/index.json --name phoenixperps\ndotnet add package PhoenixPerps.Sdk",
+    "import": "using PhoenixPerps;",
+    "runtime": ".NET 8+",
+    "source": "csharp",
+    "version": "1.0.0",
+    "spec": "1.0.0"
+  },
+  {
+    "id": "java",
+    "name": "Java",
+    "package": "com.phoenixperpsfunding:phoenixperps-sdk",
+    "registry": "GitHub",
+    "install": "repositories { mavenCentral(); maven(\"https://phoenixperps.github.io/sdk/maven\") }\ndependencies { implementation(\"com.phoenixperpsfunding:phoenixperps-sdk:1.0.0\") }",
+    "import": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;",
+    "runtime": "Java 17+",
+    "source": "java",
+    "version": "1.0.0",
+    "spec": "1.0.0"
+  },
+  {
+    "id": "rust",
+    "name": "Rust",
+    "package": "phoenixperps",
+    "registry": "GitHub",
+    "install": "cargo add phoenixperps --git https://github.com/phoenixperps/sdk --tag v1.0.0",
+    "import": "use phoenixperps::Client;",
+    "runtime": "Rust 1.85+",
+    "source": "rust",
+    "version": "1.0.0",
+    "spec": "1.0.0"
+  },
+  {
+    "id": "php",
+    "name": "PHP",
+    "package": "phoenixperps/sdk",
+    "registry": "GitHub",
+    "install": "composer config repositories.phoenixperps composer https://phoenixperps.github.io/sdk/composer\ncomposer require phoenixperps/sdk",
+    "import": "use PhoenixPerps\\Client;",
+    "runtime": "PHP 8.2+",
+    "source": "php",
+    "version": "1.0.0",
+    "spec": "1.0.0"
+  }
+]
