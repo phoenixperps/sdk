@@ -62,6 +62,8 @@ const (
 	ErrCodeStaleQuote               = "stale_quote"
 	ErrCodeMarketClosed             = "market_closed"
 	ErrCodeMarketNotOffered         = "market_not_offered"
+	ErrCodeMarketOptionHeld         = "market_option_held"
+	ErrCodeWeekendClose             = "weekend_close"
 	ErrCodeMarketHalted             = "market_halted"
 	ErrCodePositionLiquidating      = "position_liquidating"
 	ErrCodeAccountPaused            = "account_paused"
@@ -169,6 +171,8 @@ var ErrorCodes = map[string]ErrorCodeInfo{
 	"stale_quote":                 {"engine", 503, true},
 	"market_closed":               {"rule_rejection", 422, false},
 	"market_not_offered":          {"rule_rejection", 422, false},
+	"market_option_held":          {"rule_rejection", 422, false},
+	"weekend_close":               {"rule_rejection", 422, false},
 	"market_halted":               {"rule_rejection", 422, false},
 	"position_liquidating":        {"rule_rejection", 422, false},
 	"account_paused":              {"rule_rejection", 422, false},

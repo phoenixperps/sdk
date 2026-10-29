@@ -82,6 +82,16 @@ const (
 	MarketStatusClosed MarketStatus = "closed"
 )
 
+// TradingHours: When it trades: around the clock, its underlying market's sessions (Standard Market Hours,
+// closed on weekends), or FX hours. Open: a value from a newer API version is kept as is.
+type TradingHours string
+
+const (
+	TradingHoursN24_7    TradingHours = "24/7"
+	TradingHoursStandard TradingHours = "standard"
+	TradingHoursFx       TradingHours = "fx"
+)
+
 // RuleDailyLossBasis: What the day's loss is measured from. Open: a value from a newer API version is kept as
 // is.
 type RuleDailyLossBasis string
@@ -988,6 +998,16 @@ type Market struct {
 	Name string `json:"name"`
 	// Whether the market trades now.
 	Status MarketStatus `json:"status"`
+	// The venue it trades on: its prices and fills are that venue's. Null for a currency on FX hours.
+	Venue *string `json:"venue"`
+	// When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on
+	// weekends), or FX hours.
+	TradingHours TradingHours `json:"trading_hours"`
+	// For an option (the same asset on another venue, or on Standard Market Hours): its market. Null for a market.
+	OptionOf *string `json:"option_of"`
+	// The ways this asset can be traded, the market first, then its options: an account holds one of them at a time
+	// (market_option_held). Null when there is only the market.
+	Options []MarketOption `json:"options"`
 	// Prices are multiples of this.
 	TickSize Decimal `json:"tick_size"`
 	// Sizes are multiples of this, in the base asset.
@@ -1004,6 +1024,16 @@ type Market struct {
 	ExposureCap *Decimal `json:"exposure_cap"`
 	// How far from the price a market order may fill, in percent.
 	MaxSlippagePct *MarketMaxSlippagePct `json:"max_slippage_pct"`
+}
+
+// MarketOption: see the API reference.
+type MarketOption struct {
+	// A market id: the asset and USD.
+	Market string `json:"market"`
+	// Its venue.
+	Venue *string `json:"venue"`
+	// When it trades.
+	TradingHours TradingHours `json:"trading_hours"`
 }
 
 // MarketMaxSlippagePct: How far from the price a market order may fill, in percent.
@@ -1509,8 +1539,9 @@ type MarginSetting struct {
 	Leverage int64 `json:"leverage"`
 	// Isolated: each position holds its own margin. Cross: positions share the balance.
 	MarginMode MarginMode `json:"margin_mode"`
-	// The highest the market allows.
-	MaxLeverage int64 `json:"max_leverage"`
+	// The highest this account may use on the market (its trading rule's). null: the market is not available on this
+	// account.
+	MaxLeverage *int64 `json:"max_leverage"`
 	// Where it comes from: the open position, your saved setting, or the market default.
 	Source MarginSettingSource `json:"source"`
 	// A position or a working order on the market: the mode cannot change now.

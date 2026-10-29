@@ -20,7 +20,7 @@ final class MarginSetting implements \JsonSerializable
         public readonly ?int $leverage = null,
         /** Isolated: each position holds its own margin. Cross: positions share the balance. */
         public readonly ?string $marginMode = null,
-        /** The highest the market allows. */
+        /** The highest this account may use on the market (its trading rule's). null: the market is not available on this account. */
         public readonly ?int $maxLeverage = null,
         /** Where it comes from: the open position, your saved setting, or the market default. */
         public readonly ?string $source = null,

@@ -604,6 +604,22 @@ public sealed partial class Market
     [JsonPropertyName("status")]
     public MarketStatus Status { get; set; }
 
+    /// <summary>The venue it trades on: its prices and fills are that venue's. Null for a currency on FX hours.</summary>
+    [JsonPropertyName("venue")]
+    public string? Venue { get; set; }
+
+    /// <summary>When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on weekends), or FX hours.</summary>
+    [JsonPropertyName("trading_hours")]
+    public TradingHours TradingHours { get; set; }
+
+    /// <summary>For an option (the same asset on another venue, or on Standard Market Hours): its market. Null for a market.</summary>
+    [JsonPropertyName("option_of")]
+    public string? OptionOf { get; set; }
+
+    /// <summary>The ways this asset can be traded, the market first, then its options: an account holds one of them at a time (market_option_held). Null when there is only the market.</summary>
+    [JsonPropertyName("options")]
+    public List<MarketOption>? Options { get; set; }
+
     /// <summary>Prices are multiples of this.</summary>
     [JsonPropertyName("tick_size")]
     public decimal TickSize { get; set; }
@@ -635,6 +651,26 @@ public sealed partial class Market
     /// <summary>How far from the price a market order may fill, in percent.</summary>
     [JsonPropertyName("max_slippage_pct")]
     public MarketMaxSlippagePct? MaxSlippagePct { get; set; }
+
+    /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>MarketOption</summary>
+public sealed partial class MarketOption
+{
+    /// <summary>A market id: the asset and USD.</summary>
+    [JsonPropertyName("market")]
+    public string Market { get; set; } = "";
+
+    /// <summary>Its venue.</summary>
+    [JsonPropertyName("venue")]
+    public string? Venue { get; set; }
+
+    /// <summary>When it trades.</summary>
+    [JsonPropertyName("trading_hours")]
+    public TradingHours TradingHours { get; set; }
 
     /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
     [JsonExtensionData]
@@ -1616,9 +1652,9 @@ public sealed partial class MarginSetting
     [JsonPropertyName("margin_mode")]
     public MarginMode MarginMode { get; set; }
 
-    /// <summary>The highest the market allows.</summary>
+    /// <summary>The highest this account may use on the market (its trading rule's). null: the market is not available on this account.</summary>
     [JsonPropertyName("max_leverage")]
-    public long MaxLeverage { get; set; }
+    public long? MaxLeverage { get; set; }
 
     /// <summary>Where it comes from: the open position, your saved setting, or the market default.</summary>
     [JsonPropertyName("source")]

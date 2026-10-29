@@ -4025,6 +4025,8 @@
           "no_price",
           "market_closed",
           "market_not_offered",
+          "market_option_held",
+          "weekend_close",
           "market_halted",
           "position_liquidating",
           "account_paused",
@@ -5650,6 +5652,8 @@
           "no_price",
           "market_closed",
           "market_not_offered",
+          "market_option_held",
+          "weekend_close",
           "market_halted",
           "position_liquidating",
           "account_paused",
@@ -7603,6 +7607,8 @@
           "no_price",
           "market_closed",
           "market_not_offered",
+          "market_option_held",
+          "weekend_close",
           "market_halted",
           "position_liquidating",
           "account_paused",
@@ -14063,6 +14069,73 @@
             "description": "Whether the market trades now.",
             "example": "open"
           },
+          "venue": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The venue it trades on: its prices and fills are that venue's. Null for a currency on FX hours.",
+            "example": null
+          },
+          "trading_hours": {
+            "type": "string",
+            "enum": [
+              "24/7",
+              "standard",
+              "fx"
+            ],
+            "description": "When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on weekends), or FX hours.",
+            "example": "24/7"
+          },
+          "option_of": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "For an option (the same asset on another venue, or on Standard Market Hours): its market. Null for a market.",
+            "example": null
+          },
+          "options": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "market": {
+                  "type": "string",
+                  "description": "A market id: the asset and USD.",
+                  "example": "BTC-USD"
+                },
+                "venue": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Its venue.",
+                  "example": null
+                },
+                "trading_hours": {
+                  "type": "string",
+                  "enum": [
+                    "24/7",
+                    "standard",
+                    "fx"
+                  ],
+                  "description": "When it trades.",
+                  "example": "24/7"
+                }
+              },
+              "required": [
+                "market",
+                "venue",
+                "trading_hours"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The ways this asset can be traded, the market first, then its options: an account holds one of them at a time (market_option_held). Null when there is only the market."
+          },
           "tick_size": {
             "type": "string",
             "format": "decimal",
@@ -14157,6 +14230,10 @@
           "market",
           "name",
           "status",
+          "venue",
+          "trading_hours",
+          "option_of",
+          "options",
           "tick_size",
           "size_step",
           "min_size",
@@ -15693,8 +15770,11 @@
             "example": "isolated"
           },
           "max_leverage": {
-            "type": "integer",
-            "description": "The highest the market allows.",
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The highest this account may use on the market (its trading rule's). null: the market is not available on this account.",
             "example": 50
           },
           "source": {
@@ -20344,6 +20424,22 @@
         "retryable": false,
         "meaning": "The market is not offered for new positions.",
         "action": "Choose another market."
+      },
+      {
+        "code": "market_option_held",
+        "status": 422,
+        "type": "rule_rejection",
+        "retryable": false,
+        "meaning": "An account trades an asset on one of its markets (venue or trading hours) at a time; it holds a position or working orders on another (details.held_market).",
+        "action": "Close that position and its orders first, or trade details.held_market."
+      },
+      {
+        "code": "weekend_close",
+        "status": 422,
+        "type": "rule_rejection",
+        "retryable": false,
+        "meaning": "A market on Standard Market Hours or FX hours closes its positions 15 minutes before its weekend close and opens none until it reopens.",
+        "action": "Reduce or close only, or trade its 24/7 market."
       },
       {
         "code": "market_halted",

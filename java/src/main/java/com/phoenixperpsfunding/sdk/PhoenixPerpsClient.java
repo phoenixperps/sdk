@@ -56,7 +56,7 @@ import java.util.regex.Pattern;
  */
 public final class PhoenixPerpsClient implements Resources.Access {
     /** This SDK's version (lockstep with every other Phoenix Perpetuals SDK). */
-    public static final String SDK_VERSION = "1.0.0";
+    public static final String SDK_VERSION = "1.1.0";
 
     private static final Pattern PREFIX = Pattern.compile("^(ppk|ppo)_(live|test)_");
     static final Set<Integer> RETRY_STATUS = Set.of(429, 500, 502, 503, 504);

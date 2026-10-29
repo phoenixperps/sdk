@@ -6,7 +6,7 @@ Docs: https://docs.phoenixperpsfunding.com
 
 ```toml
 [dependencies]
-phoenixperps = { git = "https://github.com/phoenixperps/sdk", tag = "v1.0.0" }
+phoenixperps = { git = "https://github.com/phoenixperps/sdk", tag = "v1.1.0" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 rust_decimal = "1"
 ```

@@ -139,6 +139,12 @@ final class ErrorCodes
     public const MARKET_NOT_OFFERED = 'market_not_offered';
 
     /** 422 rule_rejection. */
+    public const MARKET_OPTION_HELD = 'market_option_held';
+
+    /** 422 rule_rejection. */
+    public const WEEKEND_CLOSE = 'weekend_close';
+
+    /** 422 rule_rejection. */
     public const MARKET_HALTED = 'market_halted';
 
     /** 422 rule_rejection. */

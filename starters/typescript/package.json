@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@phoenixperps/sdk": "https://github.com/phoenixperps/sdk/releases/download/v1.0.0/phoenixperps-sdk-1.0.0.tgz"
+    "@phoenixperps/sdk": "https://github.com/phoenixperps/sdk/releases/download/v1.1.0/phoenixperps-sdk-1.1.0.tgz"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",

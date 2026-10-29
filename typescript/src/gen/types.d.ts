@@ -135,6 +135,14 @@ export interface Market {
   /** A market id: the asset and USD. */ market: string;
   /** The market's name; for a currency, the pair its price is quoted in (JPY-USD: USD/JPY, yen per dollar). */ name: string;
   /** Whether the market trades now. */ status: "open" | "halted" | "closed" | (string & {});
+  /** The venue it trades on: its prices and fills are that venue's. Null for a currency on FX hours. */ venue: string | null;
+  /** When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on weekends), or FX hours. */ trading_hours: "24/7" | "standard" | "fx" | (string & {});
+  /** For an option (the same asset on another venue, or on Standard Market Hours): its market. Null for a market. */ option_of: string | null;
+  /** The ways this asset can be traded, the market first, then its options: an account holds one of them at a time (market_option_held). Null when there is only the market. */ options: Array<{
+    /** A market id: the asset and USD. */ market: string;
+    /** Its venue. */ venue: string | null;
+    /** When it trades. */ trading_hours: "24/7" | "standard" | "fx" | (string & {});
+  }> | null;
   /** Prices are multiples of this. */ tick_size: string;
   /** Sizes are multiples of this, in the base asset. */ size_step: string;
   /** The smallest order size (the size step). An order must also be worth at least min_notional. */ min_size: string;
@@ -375,7 +383,7 @@ export interface MarginSetting {
   /** A market id: the asset and USD. */ market: string;
   /** The leverage new positions on this market get. */ leverage: number;
   /** Isolated: each position holds its own margin. Cross: positions share the balance. */ margin_mode: "isolated" | "cross" | (string & {});
-  /** The highest the market allows. */ max_leverage: number;
+  /** The highest this account may use on the market (its trading rule's). null: the market is not available on this account. */ max_leverage: number | null;
   /** Where it comes from: the open position, your saved setting, or the market default. */ source: "position" | "saved" | "default" | (string & {});
   /** A position or a working order on the market: the mode cannot change now. */ locked: boolean;
 }

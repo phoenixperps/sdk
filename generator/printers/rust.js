@@ -14,7 +14,8 @@ const { model, typeName } = require('../typed');
  */
 const HEAD = '// Generated from the API spec by generator/printers/rust.js. Do not edit: run `node generator`.\n';
 const KEYWORDS = new Set(['as', 'break', 'const', 'continue', 'crate', 'else', 'enum', 'extern', 'false', 'fn', 'for', 'if', 'impl', 'in', 'let', 'loop', 'match', 'mod', 'move', 'mut', 'pub', 'ref', 'return', 'self', 'Self', 'static', 'struct', 'super', 'trait', 'true', 'type', 'unsafe', 'use', 'where', 'while', 'async', 'await', 'dyn', 'abstract', 'become', 'box', 'do', 'final', 'macro', 'override', 'priv', 'typeof', 'unsized', 'virtual', 'yield', 'try', 'gen']);
-const words = (s) => String(s).replace(/([a-z0-9])([A-Z])/g, '$1_$2').split(/[_\s.-]+/).filter(Boolean);
+// (any other character, as in the value 24/7, becomes _ inside its word: V24_7, which the camel-case lint allows)
+const words = (s) => String(s).replace(/([a-z0-9])([A-Z])/g, '$1_$2').split(/[_\s.-]+/).filter(Boolean).map((w) => w.replace(/[^A-Za-z0-9]+/g, '_'));
 const snake = (s) => words(s).map((w) => w.toLowerCase()).join('_');
 const field = (s) => {
   const n = snake(s).replace(/^(\d)/, 'n$1');

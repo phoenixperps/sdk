@@ -23,6 +23,18 @@ public final class Market {
     @JsonProperty("status")
     private MarketStatus status;
 
+    @JsonProperty("venue")
+    private String venue;
+
+    @JsonProperty("trading_hours")
+    private TradingHours tradingHours;
+
+    @JsonProperty("option_of")
+    private String optionOf;
+
+    @JsonProperty("options")
+    private List<MarketOption> options;
+
     @JsonProperty("tick_size")
     private BigDecimal tickSize;
 
@@ -77,6 +89,50 @@ public final class Market {
     /** Sets status. */
     public Market status(MarketStatus value) {
         this.status = value;
+        return this;
+    }
+
+    /** The venue it trades on: its prices and fills are that venue's. Null for a currency on FX hours. */
+    public String venue() {
+        return venue;
+    }
+
+    /** Sets venue. */
+    public Market venue(String value) {
+        this.venue = value;
+        return this;
+    }
+
+    /** When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on weekends), or FX hours. */
+    public TradingHours tradingHours() {
+        return tradingHours;
+    }
+
+    /** Sets trading_hours. */
+    public Market tradingHours(TradingHours value) {
+        this.tradingHours = value;
+        return this;
+    }
+
+    /** For an option (the same asset on another venue, or on Standard Market Hours): its market. Null for a market. */
+    public String optionOf() {
+        return optionOf;
+    }
+
+    /** Sets option_of. */
+    public Market optionOf(String value) {
+        this.optionOf = value;
+        return this;
+    }
+
+    /** The ways this asset can be traded, the market first, then its options: an account holds one of them at a time (market_option_held). Null when there is only the market. */
+    public List<MarketOption> options() {
+        return options;
+    }
+
+    /** Sets options. */
+    public Market options(List<MarketOption> value) {
+        this.options = value;
         return this;
     }
 
@@ -191,6 +247,10 @@ public final class Market {
         return Objects.equals(market, o.market)
             && Objects.equals(name, o.name)
             && Objects.equals(status, o.status)
+            && Objects.equals(venue, o.venue)
+            && Objects.equals(tradingHours, o.tradingHours)
+            && Objects.equals(optionOf, o.optionOf)
+            && Objects.equals(options, o.options)
             && Objects.equals(tickSize, o.tickSize)
             && Objects.equals(sizeStep, o.sizeStep)
             && Objects.equals(minSize, o.minSize)
@@ -203,11 +263,11 @@ public final class Market {
 
     @Override
     public int hashCode() {
-        return Objects.hash(market, name, status, tickSize, sizeStep, minSize, minNotional, maxLeverage, feeRatePct, exposureCap, maxSlippagePct);
+        return Objects.hash(market, name, status, venue, tradingHours, optionOf, options, tickSize, sizeStep, minSize, minNotional, maxLeverage, feeRatePct, exposureCap, maxSlippagePct);
     }
 
     @Override
     public String toString() {
-        return "Market{" + "market=" + market + ", name=" + name + ", status=" + status + ", tick_size=" + tickSize + ", size_step=" + sizeStep + ", min_size=" + minSize + ", min_notional=" + minNotional + ", max_leverage=" + maxLeverage + ", fee_rate_pct=" + feeRatePct + ", exposure_cap=" + exposureCap + ", max_slippage_pct=" + maxSlippagePct + "}";
+        return "Market{" + "market=" + market + ", name=" + name + ", status=" + status + ", venue=" + venue + ", trading_hours=" + tradingHours + ", option_of=" + optionOf + ", options=" + options + ", tick_size=" + tickSize + ", size_step=" + sizeStep + ", min_size=" + minSize + ", min_notional=" + minNotional + ", max_leverage=" + maxLeverage + ", fee_rate_pct=" + feeRatePct + ", exposure_cap=" + exposureCap + ", max_slippage_pct=" + maxSlippagePct + "}";
     }
 }

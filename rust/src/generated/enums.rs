@@ -438,6 +438,66 @@ impl<'de> Deserialize<'de> for MarketStatus {
     }
 }
 
+/// When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on weekends), or FX hours. Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum TradingHours {
+    /// `24/7`
+    V24_7,
+    /// `standard`
+    Standard,
+    /// `fx`
+    Fx,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl TradingHours {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::V24_7 => "24/7",
+            Self::Standard => "standard",
+            Self::Fx => "fx",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for TradingHours {
+    fn from(s: &str) -> Self {
+        match s {
+            "24/7" => Self::V24_7,
+            "standard" => Self::Standard,
+            "fx" => Self::Fx,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for TradingHours {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for TradingHours {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for TradingHours {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for TradingHours {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
 /// What the day's loss is measured from. Open: a value from a newer API version is kept in `Other`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RuleDailyLossBasis {

@@ -46,6 +46,10 @@ class Market(TypedDict, total=False):
     market: str
     name: str
     status: str
+    venue: Optional[str]
+    trading_hours: str
+    option_of: Optional[str]
+    options: Optional[List[Dict[str, Any]]]
     tick_size: str
     size_step: str
     min_size: str
@@ -182,7 +186,7 @@ class MarginSetting(TypedDict, total=False):
     market: str
     leverage: int
     margin_mode: str
-    max_leverage: int
+    max_leverage: Optional[int]
     source: str
     locked: bool
 

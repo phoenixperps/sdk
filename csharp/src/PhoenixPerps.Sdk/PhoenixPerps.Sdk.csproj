@@ -5,7 +5,7 @@
     <RootNamespace>PhoenixPerps</RootNamespace>
     <AssemblyName>PhoenixPerps.Sdk</AssemblyName>
     <PackageId>PhoenixPerps.Sdk</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Description>The Phoenix Perpetuals API: REST, the account stream and market data, with retries, idempotency keys, paging and typed errors.</Description>
     <PackageTags>phoenix perpetuals;perpetuals;trading;api;sdk</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>

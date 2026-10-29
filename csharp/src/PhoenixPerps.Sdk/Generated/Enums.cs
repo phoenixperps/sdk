@@ -161,6 +161,27 @@ public readonly record struct MarketStatus(string Value) : IOpenEnum<MarketStatu
     public static implicit operator MarketStatus(string value) => new(value);
 }
 
+/// <summary>When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on weekends), or FX hours. Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<TradingHours>))]
+public readonly record struct TradingHours(string Value) : IOpenEnum<TradingHours>
+{
+    /// <summary>24/7</summary>
+    public static readonly TradingHours V24_7 = new("24/7");
+    /// <summary>standard</summary>
+    public static readonly TradingHours Standard = new("standard");
+    /// <summary>fx</summary>
+    public static readonly TradingHours Fx = new("fx");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static TradingHours From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator TradingHours(string value) => new(value);
+}
+
 /// <summary>What the day's loss is measured from. Open: a value from a newer API version is kept as is.</summary>
 [JsonConverter(typeof(OpenEnumConverter<RuleDailyLossBasis>))]
 public readonly record struct RuleDailyLossBasis(string Value) : IOpenEnum<RuleDailyLossBasis>

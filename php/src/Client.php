@@ -25,7 +25,7 @@ use PhoenixPerps\Exception\ValidationException;
  */
 final class Client extends BaseClient
 {
-    public const SDK_VERSION = '1.0.0';
+    public const SDK_VERSION = '1.1.0';
     private const RETRY_AFTER_MAX = 60.0;
     private const PAGE = ['data' => true, 'has_more' => true, 'next_cursor' => true, 'as_of' => true]; // a list's own fields
 

@@ -120,6 +120,10 @@ public static class ErrorCodes
     /// <summary>422 rule_rejection</summary>
     public const string MarketNotOffered = "market_not_offered";
     /// <summary>422 rule_rejection</summary>
+    public const string MarketOptionHeld = "market_option_held";
+    /// <summary>422 rule_rejection</summary>
+    public const string WeekendClose = "weekend_close";
+    /// <summary>422 rule_rejection</summary>
     public const string MarketHalted = "market_halted";
     /// <summary>422 rule_rejection</summary>
     public const string PositionLiquidating = "position_liquidating";
@@ -272,6 +276,8 @@ public static class ErrorCodes
         ["stale_quote"] = new("engine", 503, true),
         ["market_closed"] = new("rule_rejection", 422, false),
         ["market_not_offered"] = new("rule_rejection", 422, false),
+        ["market_option_held"] = new("rule_rejection", 422, false),
+        ["weekend_close"] = new("rule_rejection", 422, false),
         ["market_halted"] = new("rule_rejection", 422, false),
         ["position_liquidating"] = new("rule_rejection", 422, false),
         ["account_paused"] = new("rule_rejection", 422, false),

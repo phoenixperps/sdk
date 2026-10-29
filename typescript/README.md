@@ -4,7 +4,7 @@ The Phoenix Perpetuals API for Node.js and TypeScript: every REST call, the acco
 retries, idempotency keys, paging and typed errors. Node 22 or later. Docs: https://docs.phoenixperpsfunding.com
 
 ```
-npm install https://github.com/phoenixperps/sdk/releases/download/v1.0.0/phoenixperps-sdk-1.0.0.tgz
+npm install https://github.com/phoenixperps/sdk/releases/download/v1.1.0/phoenixperps-sdk-1.1.0.tgz
 ```
 
 ```js

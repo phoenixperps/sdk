@@ -4,7 +4,7 @@ The Phoenix Perpetuals API for Python: every REST call (sync and async), the acc
 retries, idempotency keys, paging and typed errors. Python 3.10 or later. Docs: https://docs.phoenixperpsfunding.com
 
 ```
-pip install https://github.com/phoenixperps/sdk/releases/download/v1.0.0/phoenixperps-1.0.0-py3-none-any.whl
+pip install https://github.com/phoenixperps/sdk/releases/download/v1.1.0/phoenixperps-1.1.0-py3-none-any.whl
 ```
 
 ```python

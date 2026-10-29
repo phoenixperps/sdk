@@ -65,7 +65,7 @@ public final class MarginSetting {
         return this;
     }
 
-    /** The highest the market allows. */
+    /** The highest this account may use on the market (its trading rule's). null: the market is not available on this account. */
     public Long maxLeverage() {
         return maxLeverage;
     }

@@ -136,6 +136,12 @@ public final class ErrorCodes {
     public static final String MARKET_NOT_OFFERED = "market_not_offered";
 
     /** 422 rule_rejection. */
+    public static final String MARKET_OPTION_HELD = "market_option_held";
+
+    /** 422 rule_rejection. */
+    public static final String WEEKEND_CLOSE = "weekend_close";
+
+    /** 422 rule_rejection. */
     public static final String MARKET_HALTED = "market_halted";
 
     /** 422 rule_rejection. */

@@ -14,7 +14,8 @@ const { model, typeName } = require('../typed');
 const HEAD = '// Code generated from the API spec by generator/printers/go.js. DO NOT EDIT: run `node generator`.\n\n';
 const INITIALISMS = { id: 'ID', ids: 'IDs', url: 'URL', api: 'API', usd: 'USD', ip: 'IP', ips: 'IPs', http: 'HTTP', json: 'JSON', tv: 'TV', pnl: 'PnL', twap: 'TWAP', vwap: 'VWAP', oco: 'OCO' };
 const word = (w) => INITIALISMS[w] || w.charAt(0).toUpperCase() + w.slice(1);
-const goName = (s) => String(s).split(/[_\s.-]+/).filter(Boolean).map(word).join('').replace(/^(\d)/, 'N$1');
+// (any other character, as in the value 24/7, becomes _ inside its word: N24_7)
+const goName = (s) => String(s).split(/[_\s.-]+/).filter(Boolean).map((w) => word(w.replace(/[^A-Za-z0-9]+/g, '_'))).join('').replace(/^(\d)/, 'N$1');
 const lowerFirst = (s) => s.charAt(0).toLowerCase() + s.slice(1);
 const argName = (s) => {
   const n = lowerFirst(goName(s));

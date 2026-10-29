@@ -39,7 +39,7 @@ import httpx
 from . import _errors as E
 from ._gen import OPS, RESOURCES, SERVERS, SPEC_VERSION, STREAMS, AsyncResources, Resources
 
-SDK_VERSION = "1.0.0"
+SDK_VERSION = "1.1.0"
 PREFIX = re.compile(r"^(ppk|ppo)_(live|test)_")
 RETRY_AFTER_MAX_S = 60.0
 # each client's key, outside the client's own attributes: vars(), repr and pickling never carry it

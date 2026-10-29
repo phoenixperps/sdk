@@ -110,6 +110,10 @@ pub mod codes {
     /// 422 rule_rejection.
     pub const MARKET_NOT_OFFERED: &str = "market_not_offered";
     /// 422 rule_rejection.
+    pub const MARKET_OPTION_HELD: &str = "market_option_held";
+    /// 422 rule_rejection.
+    pub const WEEKEND_CLOSE: &str = "weekend_close";
+    /// 422 rule_rejection.
     pub const MARKET_HALTED: &str = "market_halted";
     /// 422 rule_rejection.
     pub const POSITION_LIQUIDATING: &str = "position_liquidating";

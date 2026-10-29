@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.phoenixperpsfunding:phoenixperps-sdk:1.0.0")
+    implementation("com.phoenixperpsfunding:phoenixperps-sdk:1.1.0")
 }
 
 application {

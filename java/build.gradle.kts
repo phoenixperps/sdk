@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.phoenixperpsfunding"
-version = "1.0.0"
+version = "1.1.0"
 description = "The Phoenix Perpetuals API: REST, the account stream and market data, with retries, idempotency keys, paging and typed errors."
 
 java {
