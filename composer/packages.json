@@ -45,6 +45,51 @@
           "url": "https://github.com/phoenixperps/sdk/releases/download/v1.0.0/phoenixperps-sdk-php-1.0.0.zip",
           "shasum": "f9a2e3307ed0834c77d2916a664cac0bda852076"
         }
+      },
+      "1.1.0": {
+        "name": "phoenixperps/sdk",
+        "description": "The Phoenix Perpetuals API: REST, the account stream and market data, with retries, idempotency keys, paging and typed errors.",
+        "type": "library",
+        "license": "MIT",
+        "keywords": [
+          "phoenix perpetuals",
+          "perpetuals",
+          "trading",
+          "api",
+          "sdk"
+        ],
+        "homepage": "https://docs.phoenixperpsfunding.com",
+        "require": {
+          "php": ">=8.2",
+          "ext-json": "*",
+          "guzzlehttp/guzzle": "^7.9",
+          "phrity/websocket": "^3.0"
+        },
+        "require-dev": {
+          "phpunit/phpunit": "^11.5"
+        },
+        "suggest": {
+          "ext-bcmath": "MarketRules rounds in exact decimals with it"
+        },
+        "autoload": {
+          "psr-4": {
+            "PhoenixPerps\\": "src/"
+          }
+        },
+        "autoload-dev": {
+          "psr-4": {
+            "PhoenixPerps\\Tests\\": "tests/"
+          }
+        },
+        "config": {
+          "sort-packages": true
+        },
+        "version": "1.1.0",
+        "dist": {
+          "type": "zip",
+          "url": "https://github.com/phoenixperps/sdk/releases/download/v1.1.0/phoenixperps-sdk-php-1.1.0.zip",
+          "shasum": "efd46a652810190458f5dbb16113be792dcc7e2d"
+        }
       }
     }
   }
