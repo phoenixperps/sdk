@@ -45,6 +45,17 @@ func snippetGetLimits(ctx context.Context, client *Client) error {
 	return nil
 }
 
+func snippetListRestrictedCountries(ctx context.Context, client *Client) error {
+	page, err := client.Platform.RestrictedCountries(ctx)
+	if err != nil {
+		return err
+	}
+	for _, restrictedCountry := range page.Data {
+		fmt.Println(restrictedCountry.Name)
+	}
+	return nil
+}
+
 func snippetGetMe(ctx context.Context, client *Client) error {
 	me, err := client.Me.Get(ctx)
 	if err != nil {
@@ -367,7 +378,7 @@ func snippetSetExits(ctx context.Context, client *Client) error {
 			{
 				Op:    ExitsBatchOperationOpPlace,
 				Group: Ptr(ExitsLegGroupTakeProfit),
-				Type:  Ptr(CreateStrategyOrderTypeLimit),
+				Type:  Ptr(CreateStrategyOrderType2Limit),
 				Price: Dec("63000"),
 				Size:  Dec("0.01"),
 			},
@@ -446,6 +457,67 @@ func snippetCancelStrategy(ctx context.Context, client *Client) error {
 		return err
 	}
 	fmt.Printf("%+v\n", strategy)
+	return nil
+}
+
+func snippetCreateAlert(ctx context.Context, client *Client) error {
+	priceAlert, err := client.Alerts.Create(ctx, "SANDBOX-00042-001", CreatePriceAlert{
+		Market: "BTC-USD",
+		Price:  "120000",
+		Note:   Ptr("breakout"),
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%+v\n", priceAlert)
+	return nil
+}
+
+func snippetListAlerts(ctx context.Context, client *Client) error {
+	for priceAlert, err := range client.Alerts.ListAutoPaging(ctx, "SANDBOX-00042-001", nil) {
+		if err != nil {
+			return err
+		}
+		fmt.Println(priceAlert.ID)
+	}
+	return nil
+}
+
+func snippetGetAlert(ctx context.Context, client *Client) error {
+	priceAlert, err := client.Alerts.Get(ctx, "SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%+v\n", priceAlert)
+	return nil
+}
+
+func snippetChangeAlert(ctx context.Context, client *Client) error {
+	priceAlert, err := client.Alerts.Modify(ctx, "SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W", ChangePriceAlert{
+		Price: Dec("121000"),
+	})
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%+v\n", priceAlert)
+	return nil
+}
+
+func snippetDeleteAlert(ctx context.Context, client *Client) error {
+	deletedAlert, err := client.Alerts.Delete(ctx, "SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%+v\n", deletedAlert)
+	return nil
+}
+
+func snippetRearmAlert(ctx context.Context, client *Client) error {
+	priceAlert, err := client.Alerts.Rearm(ctx, "SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W")
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%+v\n", priceAlert)
 	return nil
 }
 

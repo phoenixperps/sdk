@@ -35,6 +35,13 @@ final class Snippets
         print_r($limits->toArray());
     }
 
+    public static function listRestrictedCountries(Client $client): void
+    {
+        foreach ($client->platform->restrictedCountries()->data as $restrictedCountry) {
+            echo $restrictedCountry->name, "\n";
+        }
+    }
+
     public static function getMe(Client $client): void
     {
         $me = $client->me->get();
@@ -329,6 +336,49 @@ final class Snippets
     {
         $strategy = $client->strategies->cancel('SANDBOX-00042-001', 'stg_01JAB7Q8XK4M2N5P7R9S3T5V7W');
         print_r($strategy->toArray());
+    }
+
+    public static function createAlert(Client $client): void
+    {
+        $priceAlert = $client->alerts->create('SANDBOX-00042-001', [
+            'market' => 'BTC-USD',
+            'price' => '120000',
+            'note' => 'breakout',
+        ]);
+        print_r($priceAlert->toArray());
+    }
+
+    public static function listAlerts(Client $client): void
+    {
+        foreach ($client->alerts->listAutoPaging('SANDBOX-00042-001') as $priceAlert) {
+            echo $priceAlert->id, "\n";
+        }
+    }
+
+    public static function getAlert(Client $client): void
+    {
+        $priceAlert = $client->alerts->get('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');
+        print_r($priceAlert->toArray());
+    }
+
+    public static function changeAlert(Client $client): void
+    {
+        $priceAlert = $client->alerts->modify('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W', [
+            'price' => '121000',
+        ]);
+        print_r($priceAlert->toArray());
+    }
+
+    public static function deleteAlert(Client $client): void
+    {
+        $deletedAlert = $client->alerts->delete('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');
+        print_r($deletedAlert->toArray());
+    }
+
+    public static function rearmAlert(Client $client): void
+    {
+        $priceAlert = $client->alerts->rearm('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');
+        print_r($priceAlert->toArray());
     }
 
     public static function listWebhookEndpoints(Client $client): void

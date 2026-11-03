@@ -21,7 +21,7 @@ public final class ExitsLeg {
     private ExitsLegGroup group;
 
     @JsonProperty("type")
-    private CreateStrategyOrderType type;
+    private CreateStrategyOrderType2 type;
 
     @JsonProperty("status")
     private ExitsLegStatus status;
@@ -64,12 +64,12 @@ public final class ExitsLeg {
     }
 
     /** take_profit legs are limits; stop_loss legs are stop_market or stop_limit. */
-    public CreateStrategyOrderType type() {
+    public CreateStrategyOrderType2 type() {
         return type;
     }
 
     /** Sets type. */
-    public ExitsLeg type(CreateStrategyOrderType value) {
+    public ExitsLeg type(CreateStrategyOrderType2 value) {
         this.type = value;
         return this;
     }

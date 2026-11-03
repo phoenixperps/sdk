@@ -1,1 +1,1 @@
-phoenixperps @ https://github.com/phoenixperps/sdk/releases/download/v1.1.0/phoenixperps-1.1.0-py3-none-any.whl
+phoenixperps @ https://github.com/phoenixperps/sdk/releases/download/v1.2.0/phoenixperps-1.2.0-py3-none-any.whl

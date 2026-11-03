@@ -61,6 +61,9 @@ public final class EventType {
     /** strategy.slice */
     public static final EventType STRATEGY_SLICE = new EventType("strategy.slice");
 
+    /** strategy.triggered */
+    public static final EventType STRATEGY_TRIGGERED = new EventType("strategy.triggered");
+
     /** strategy.ended */
     public static final EventType STRATEGY_ENDED = new EventType("strategy.ended");
 
@@ -102,6 +105,9 @@ public final class EventType {
 
     /** risk.cleared */
     public static final EventType RISK_CLEARED = new EventType("risk.cleared");
+
+    /** alert.triggered */
+    public static final EventType ALERT_TRIGGERED = new EventType("alert.triggered");
 
     private final String value;
 
@@ -149,6 +155,8 @@ public final class EventType {
                 return STRATEGY_ORPHAN_REPAIRED;
             case "strategy.slice":
                 return STRATEGY_SLICE;
+            case "strategy.triggered":
+                return STRATEGY_TRIGGERED;
             case "strategy.ended":
                 return STRATEGY_ENDED;
             case "tradingview.alert_executed":
@@ -177,6 +185,8 @@ public final class EventType {
                 return RISK_WARNING;
             case "risk.cleared":
                 return RISK_CLEARED;
+            case "alert.triggered":
+                return ALERT_TRIGGERED;
             default:
                 return new EventType(value);
         }

@@ -179,6 +179,16 @@ public static class ErrorCodes
     public const string EventNotFound = "event_not_found";
     /// <summary>422 rule_rejection</summary>
     public const string RungWouldFill = "rung_would_fill";
+    /// <summary>422 rule_rejection</summary>
+    public const string TriggerAlreadyMet = "trigger_already_met";
+    /// <summary>404 not_found</summary>
+    public const string AlertNotFound = "alert_not_found";
+    /// <summary>422 rule_rejection</summary>
+    public const string AlertLimit = "alert_limit";
+    /// <summary>422 rule_rejection</summary>
+    public const string AlertAtPrice = "alert_at_price";
+    /// <summary>409 conflict</summary>
+    public const string AlertNotArmed = "alert_not_armed";
     /// <summary>403 permission</summary>
     public const string StrategyTypeDisabled = "strategy_type_disabled";
     /// <summary>404 not_found</summary>
@@ -306,6 +316,11 @@ public static class ErrorCodes
         ["delivery_not_found"] = new("not_found", 404, false),
         ["event_not_found"] = new("not_found", 404, false),
         ["rung_would_fill"] = new("rule_rejection", 422, false),
+        ["trigger_already_met"] = new("rule_rejection", 422, false),
+        ["alert_not_found"] = new("not_found", 404, false),
+        ["alert_limit"] = new("rule_rejection", 422, false),
+        ["alert_at_price"] = new("rule_rejection", 422, false),
+        ["alert_not_armed"] = new("conflict", 409, false),
         ["strategy_type_disabled"] = new("permission", 403, false),
         ["account_not_found"] = new("not_found", 404, false),
         ["market_not_found"] = new("not_found", 404, false),

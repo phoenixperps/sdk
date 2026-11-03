@@ -32,6 +32,9 @@ public final class Limits {
     @JsonProperty("strategies")
     private LimitsStrategies strategies;
 
+    @JsonProperty("alerts")
+    private LimitsAlerts alerts;
+
     @JsonProperty("body_max_bytes")
     private Long bodyMaxBytes;
 
@@ -104,6 +107,17 @@ public final class Limits {
         return this;
     }
 
+    /** The alerts. */
+    public LimitsAlerts alerts() {
+        return alerts;
+    }
+
+    /** Sets alerts. */
+    public Limits alerts(LimitsAlerts value) {
+        this.alerts = value;
+        return this;
+    }
+
     /** The largest request body. */
     public Long bodyMaxBytes() {
         return bodyMaxBytes;
@@ -152,17 +166,18 @@ public final class Limits {
             && Objects.equals(orders, o.orders)
             && Objects.equals(sandbox, o.sandbox)
             && Objects.equals(strategies, o.strategies)
+            && Objects.equals(alerts, o.alerts)
             && Objects.equals(bodyMaxBytes, o.bodyMaxBytes)
             && Objects.equals(pageLimit, o.pageLimit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(environment, rate, keys, orders, sandbox, strategies, bodyMaxBytes, pageLimit);
+        return Objects.hash(environment, rate, keys, orders, sandbox, strategies, alerts, bodyMaxBytes, pageLimit);
     }
 
     @Override
     public String toString() {
-        return "Limits{" + "environment=" + environment + ", rate=" + rate + ", keys=" + keys + ", orders=" + orders + ", sandbox=" + sandbox + ", strategies=" + strategies + ", body_max_bytes=" + bodyMaxBytes + ", page_limit=" + pageLimit + "}";
+        return "Limits{" + "environment=" + environment + ", rate=" + rate + ", keys=" + keys + ", orders=" + orders + ", sandbox=" + sandbox + ", strategies=" + strategies + ", alerts=" + alerts + ", body_max_bytes=" + bodyMaxBytes + ", page_limit=" + pageLimit + "}";
     }
 }

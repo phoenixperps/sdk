@@ -59,7 +59,7 @@ public final class Market {
     @JsonProperty("max_slippage_pct")
     private MarketMaxSlippagePct maxSlippagePct;
 
-    /** A market id: the asset and USD. */
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
     public String market() {
         return market;
     }

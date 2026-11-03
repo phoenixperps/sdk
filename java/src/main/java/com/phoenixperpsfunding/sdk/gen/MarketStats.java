@@ -44,7 +44,7 @@ public final class MarketStats {
     @JsonProperty("notional_open_interest")
     private BigDecimal notionalOpenInterest;
 
-    /** A market id: the asset and USD. */
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
     public String market() {
         return market;
     }

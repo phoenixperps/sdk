@@ -50,6 +50,21 @@ public final class CreateStrategy {
     @JsonProperty("trigger_price")
     private BigDecimal triggerPrice;
 
+    @JsonProperty("trigger_market")
+    private String triggerMarket;
+
+    @JsonProperty("trigger_direction")
+    private CreateStrategyTriggerDirection triggerDirection;
+
+    @JsonProperty("order_type")
+    private CreateStrategyOrderType orderType;
+
+    @JsonProperty("limit_price")
+    private BigDecimal limitPrice;
+
+    @JsonProperty("expires_at")
+    private Long expiresAt;
+
     @JsonProperty("offset_ticks")
     private Long offsetTicks;
 
@@ -113,7 +128,7 @@ public final class CreateStrategy {
     @JsonProperty("client_strategy_id")
     private String clientStrategyId;
 
-    /** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. */
+    /** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market). */
     public CreateStrategyType type() {
         return type;
     }
@@ -124,7 +139,7 @@ public final class CreateStrategy {
         return this;
     }
 
-    /** A market id: the asset and USD. */
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
     public String market() {
         return market;
     }
@@ -146,7 +161,7 @@ public final class CreateStrategy {
         return this;
     }
 
-    /** trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase: the whole size. */
+    /** trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase, conditional: the whole size. */
     public BigDecimal size() {
         return size;
     }
@@ -234,7 +249,7 @@ public final class CreateStrategy {
         return this;
     }
 
-    /** break_even: or once the price reaches this. */
+    /** break_even: or once the price reaches this. conditional: the level that sends the order (the trigger market's price; its tick). */
     public BigDecimal triggerPrice() {
         return triggerPrice;
     }
@@ -242,6 +257,61 @@ public final class CreateStrategy {
     /** Sets trigger_price. */
     public CreateStrategy triggerPrice(BigDecimal value) {
         this.triggerPrice = value;
+        return this;
+    }
+
+    /** conditional: the market whose price is watched (absent: this market). Any market we list. */
+    public String triggerMarket() {
+        return triggerMarket;
+    }
+
+    /** Sets trigger_market. */
+    public CreateStrategy triggerMarket(String value) {
+        this.triggerMarket = value;
+        return this;
+    }
+
+    /** conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or below it. On this market it is set by the side and not given. */
+    public CreateStrategyTriggerDirection triggerDirection() {
+        return triggerDirection;
+    }
+
+    /** Sets trigger_direction. */
+    public CreateStrategy triggerDirection(CreateStrategyTriggerDirection value) {
+        this.triggerDirection = value;
+        return this;
+    }
+
+    /** conditional: the order it sends (default market). */
+    public CreateStrategyOrderType orderType() {
+        return orderType;
+    }
+
+    /** Sets order_type. */
+    public CreateStrategy orderType(CreateStrategyOrderType value) {
+        this.orderType = value;
+        return this;
+    }
+
+    /** conditional: the limit of its order, with order_type limit. */
+    public BigDecimal limitPrice() {
+        return limitPrice;
+    }
+
+    /** Sets limit_price. */
+    public CreateStrategy limitPrice(BigDecimal value) {
+        this.limitPrice = value;
+        return this;
+    }
+
+    /** conditional: until when it waits for its price (default and longest: the gtd maximum, see GET /v1/limits). Its order, once sent, stands on its own. */
+    public Long expiresAt() {
+        return expiresAt;
+    }
+
+    /** Sets expires_at. */
+    public CreateStrategy expiresAt(Long value) {
+        this.expiresAt = value;
         return this;
     }
 
@@ -311,7 +381,7 @@ public final class CreateStrategy {
         return this;
     }
 
-    /** twap, vwap, scaled, chase: only reduce your position (a twap ends when the position is closed). */
+    /** twap, vwap, scaled, chase, conditional: only reduce your position (a twap ends when the position is closed). */
     public Boolean reduceOnly() {
         return reduceOnly;
     }
@@ -344,7 +414,7 @@ public final class CreateStrategy {
         return this;
     }
 
-    /** twap, vwap: each slice's slippage budget, in percent. */
+    /** twap, vwap: each slice's slippage budget, in percent. conditional: its market order's. */
     public BigDecimal maxSlippagePct() {
         return maxSlippagePct;
     }
@@ -465,7 +535,7 @@ public final class CreateStrategy {
         return this;
     }
 
-    /** Your own id for the strategy (oco, twap, vwap, scaled, chase): unique in this environment. */
+    /** Your own id for the strategy (oco, twap, vwap, scaled, chase, conditional): unique in this environment. */
     public String clientStrategyId() {
         return clientStrategyId;
     }
@@ -508,6 +578,11 @@ public final class CreateStrategy {
             && Objects.equals(triggerDistance, o.triggerDistance)
             && Objects.equals(triggerPercent, o.triggerPercent)
             && Objects.equals(triggerPrice, o.triggerPrice)
+            && Objects.equals(triggerMarket, o.triggerMarket)
+            && Objects.equals(triggerDirection, o.triggerDirection)
+            && Objects.equals(orderType, o.orderType)
+            && Objects.equals(limitPrice, o.limitPrice)
+            && Objects.equals(expiresAt, o.expiresAt)
             && Objects.equals(offsetTicks, o.offsetTicks)
             && Objects.equals(orders, o.orders)
             && Objects.equals(exits, o.exits)
@@ -533,11 +608,11 @@ public final class CreateStrategy {
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, market, side, size, distance, percent, activationPrice, initialStopPrice, replaceStops, triggerDistance, triggerPercent, triggerPrice, offsetTicks, orders, exits, durationMinutes, intervalSeconds, randomize, reduceOnly, maxPrice, minPrice, maxSlippagePct, startPrice, endPrice, rungs, distribution, postOnly, allOrNone, allowMarketable, maxMinutes, onExpiry, allowCross, clientStrategyId);
+        return Objects.hash(type, market, side, size, distance, percent, activationPrice, initialStopPrice, replaceStops, triggerDistance, triggerPercent, triggerPrice, triggerMarket, triggerDirection, orderType, limitPrice, expiresAt, offsetTicks, orders, exits, durationMinutes, intervalSeconds, randomize, reduceOnly, maxPrice, minPrice, maxSlippagePct, startPrice, endPrice, rungs, distribution, postOnly, allOrNone, allowMarketable, maxMinutes, onExpiry, allowCross, clientStrategyId);
     }
 
     @Override
     public String toString() {
-        return "CreateStrategy{" + "type=" + type + ", market=" + market + ", side=" + side + ", size=" + size + ", distance=" + distance + ", percent=" + percent + ", activation_price=" + activationPrice + ", initial_stop_price=" + initialStopPrice + ", replace_stops=" + replaceStops + ", trigger_distance=" + triggerDistance + ", trigger_percent=" + triggerPercent + ", trigger_price=" + triggerPrice + ", offset_ticks=" + offsetTicks + ", orders=" + orders + ", exits=" + exits + ", duration_minutes=" + durationMinutes + ", interval_seconds=" + intervalSeconds + ", randomize=" + randomize + ", reduce_only=" + reduceOnly + ", max_price=" + maxPrice + ", min_price=" + minPrice + ", max_slippage_pct=" + maxSlippagePct + ", start_price=" + startPrice + ", end_price=" + endPrice + ", rungs=" + rungs + ", distribution=" + distribution + ", post_only=" + postOnly + ", all_or_none=" + allOrNone + ", allow_marketable=" + allowMarketable + ", max_minutes=" + maxMinutes + ", on_expiry=" + onExpiry + ", allow_cross=" + allowCross + ", client_strategy_id=" + clientStrategyId + "}";
+        return "CreateStrategy{" + "type=" + type + ", market=" + market + ", side=" + side + ", size=" + size + ", distance=" + distance + ", percent=" + percent + ", activation_price=" + activationPrice + ", initial_stop_price=" + initialStopPrice + ", replace_stops=" + replaceStops + ", trigger_distance=" + triggerDistance + ", trigger_percent=" + triggerPercent + ", trigger_price=" + triggerPrice + ", trigger_market=" + triggerMarket + ", trigger_direction=" + triggerDirection + ", order_type=" + orderType + ", limit_price=" + limitPrice + ", expires_at=" + expiresAt + ", offset_ticks=" + offsetTicks + ", orders=" + orders + ", exits=" + exits + ", duration_minutes=" + durationMinutes + ", interval_seconds=" + intervalSeconds + ", randomize=" + randomize + ", reduce_only=" + reduceOnly + ", max_price=" + maxPrice + ", min_price=" + minPrice + ", max_slippage_pct=" + maxSlippagePct + ", start_price=" + startPrice + ", end_price=" + endPrice + ", rungs=" + rungs + ", distribution=" + distribution + ", post_only=" + postOnly + ", all_or_none=" + allOrNone + ", allow_marketable=" + allowMarketable + ", max_minutes=" + maxMinutes + ", on_expiry=" + onExpiry + ", allow_cross=" + allowCross + ", client_strategy_id=" + clientStrategyId + "}";
     }
 }

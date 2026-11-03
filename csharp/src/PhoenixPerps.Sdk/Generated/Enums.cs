@@ -730,7 +730,7 @@ public readonly record struct OrderExitsStopLossType(string Value) : IOpenEnum<O
     public static implicit operator OrderExitsStopLossType(string value) => new(value);
 }
 
-/// <summary>trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. Open: a value from a newer API version is kept as is.</summary>
+/// <summary>trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market). Open: a value from a newer API version is kept as is.</summary>
 [JsonConverter(typeof(OpenEnumConverter<CreateStrategyType>))]
 public readonly record struct CreateStrategyType(string Value) : IOpenEnum<CreateStrategyType>
 {
@@ -748,6 +748,8 @@ public readonly record struct CreateStrategyType(string Value) : IOpenEnum<Creat
     public static readonly CreateStrategyType Scaled = new("scaled");
     /// <summary>chase</summary>
     public static readonly CreateStrategyType Chase = new("chase");
+    /// <summary>conditional</summary>
+    public static readonly CreateStrategyType Conditional = new("conditional");
 
     /// <summary>The value as the API writes it.</summary>
     public override string ToString() => Value;
@@ -759,16 +761,33 @@ public readonly record struct CreateStrategyType(string Value) : IOpenEnum<Creat
     public static implicit operator CreateStrategyType(string value) => new(value);
 }
 
-/// <summary>Two orders that rest. Open: a value from a newer API version is kept as is.</summary>
+/// <summary>conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or below it. On this market it is set by the side and not given. Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<CreateStrategyTriggerDirection>))]
+public readonly record struct CreateStrategyTriggerDirection(string Value) : IOpenEnum<CreateStrategyTriggerDirection>
+{
+    /// <summary>above</summary>
+    public static readonly CreateStrategyTriggerDirection Above = new("above");
+    /// <summary>below</summary>
+    public static readonly CreateStrategyTriggerDirection Below = new("below");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static CreateStrategyTriggerDirection From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator CreateStrategyTriggerDirection(string value) => new(value);
+}
+
+/// <summary>conditional: the order it sends (default market). Open: a value from a newer API version is kept as is.</summary>
 [JsonConverter(typeof(OpenEnumConverter<CreateStrategyOrderType>))]
 public readonly record struct CreateStrategyOrderType(string Value) : IOpenEnum<CreateStrategyOrderType>
 {
+    /// <summary>market</summary>
+    public static readonly CreateStrategyOrderType Market = new("market");
     /// <summary>limit</summary>
     public static readonly CreateStrategyOrderType Limit = new("limit");
-    /// <summary>stop_market</summary>
-    public static readonly CreateStrategyOrderType StopMarket = new("stop_market");
-    /// <summary>stop_limit</summary>
-    public static readonly CreateStrategyOrderType StopLimit = new("stop_limit");
 
     /// <summary>The value as the API writes it.</summary>
     public override string ToString() => Value;
@@ -778,6 +797,27 @@ public readonly record struct CreateStrategyOrderType(string Value) : IOpenEnum<
 
     /// <summary>A value from its wire form.</summary>
     public static implicit operator CreateStrategyOrderType(string value) => new(value);
+}
+
+/// <summary>Two orders that rest. Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<CreateStrategyOrderType2>))]
+public readonly record struct CreateStrategyOrderType2(string Value) : IOpenEnum<CreateStrategyOrderType2>
+{
+    /// <summary>limit</summary>
+    public static readonly CreateStrategyOrderType2 Limit = new("limit");
+    /// <summary>stop_market</summary>
+    public static readonly CreateStrategyOrderType2 StopMarket = new("stop_market");
+    /// <summary>stop_limit</summary>
+    public static readonly CreateStrategyOrderType2 StopLimit = new("stop_limit");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static CreateStrategyOrderType2 From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator CreateStrategyOrderType2(string value) => new(value);
 }
 
 /// <summary>scaled: equal sizes, growing toward end_price, or shrinking. Open: a value from a newer API version is kept as is.</summary>
@@ -900,6 +940,8 @@ public readonly record struct EventType(string Value) : IOpenEnum<EventType>
     public static readonly EventType StrategyOrphanRepaired = new("strategy.orphan_repaired");
     /// <summary>strategy.slice</summary>
     public static readonly EventType StrategySlice = new("strategy.slice");
+    /// <summary>strategy.triggered</summary>
+    public static readonly EventType StrategyTriggered = new("strategy.triggered");
     /// <summary>strategy.ended</summary>
     public static readonly EventType StrategyEnded = new("strategy.ended");
     /// <summary>tradingview.alert_executed</summary>
@@ -928,6 +970,8 @@ public readonly record struct EventType(string Value) : IOpenEnum<EventType>
     public static readonly EventType RiskWarning = new("risk.warning");
     /// <summary>risk.cleared</summary>
     public static readonly EventType RiskCleared = new("risk.cleared");
+    /// <summary>alert.triggered</summary>
+    public static readonly EventType AlertTriggered = new("alert.triggered");
 
     /// <summary>The value as the API writes it.</summary>
     public override string ToString() => Value;
@@ -1006,6 +1050,8 @@ public readonly record struct WebhookPayloadType(string Value) : IOpenEnum<Webho
     public static readonly WebhookPayloadType StrategyOrphanRepaired = new("strategy.orphan_repaired");
     /// <summary>strategy.slice</summary>
     public static readonly WebhookPayloadType StrategySlice = new("strategy.slice");
+    /// <summary>strategy.triggered</summary>
+    public static readonly WebhookPayloadType StrategyTriggered = new("strategy.triggered");
     /// <summary>strategy.ended</summary>
     public static readonly WebhookPayloadType StrategyEnded = new("strategy.ended");
     /// <summary>tradingview.alert_executed</summary>
@@ -1034,6 +1080,8 @@ public readonly record struct WebhookPayloadType(string Value) : IOpenEnum<Webho
     public static readonly WebhookPayloadType RiskWarning = new("risk.warning");
     /// <summary>risk.cleared</summary>
     public static readonly WebhookPayloadType RiskCleared = new("risk.cleared");
+    /// <summary>alert.triggered</summary>
+    public static readonly WebhookPayloadType AlertTriggered = new("alert.triggered");
     /// <summary>webhook.ping</summary>
     public static readonly WebhookPayloadType WebhookPing = new("webhook.ping");
 
@@ -1137,7 +1185,7 @@ public readonly record struct ExitsBatchOperationClear(string Value) : IOpenEnum
     public static implicit operator ExitsBatchOperationClear(string value) => new(value);
 }
 
-/// <summary>exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. Open: a value from a newer API version is kept as is.</summary>
+/// <summary>exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached. Open: a value from a newer API version is kept as is.</summary>
 [JsonConverter(typeof(OpenEnumConverter<StrategyType>))]
 public readonly record struct StrategyType(string Value) : IOpenEnum<StrategyType>
 {
@@ -1155,6 +1203,8 @@ public readonly record struct StrategyType(string Value) : IOpenEnum<StrategyTyp
     public static readonly StrategyType Scaled = new("scaled");
     /// <summary>chase</summary>
     public static readonly StrategyType Chase = new("chase");
+    /// <summary>conditional</summary>
+    public static readonly StrategyType Conditional = new("conditional");
 
     /// <summary>The value as the API writes it.</summary>
     public override string ToString() => Value;
@@ -1267,6 +1317,8 @@ public readonly record struct WebhookEndpointEvent(string Value) : IOpenEnum<Web
     public static readonly WebhookEndpointEvent Account = new("account");
     /// <summary>risk</summary>
     public static readonly WebhookEndpointEvent Risk = new("risk");
+    /// <summary>alerts</summary>
+    public static readonly WebhookEndpointEvent Alerts = new("alerts");
 
     /// <summary>The value as the API writes it.</summary>
     public override string ToString() => Value;
@@ -1336,6 +1388,8 @@ public readonly record struct WebhookEventTypeGroup(string Value) : IOpenEnum<We
     public static readonly WebhookEventTypeGroup Account = new("account");
     /// <summary>risk</summary>
     public static readonly WebhookEventTypeGroup Risk = new("risk");
+    /// <summary>alerts</summary>
+    public static readonly WebhookEventTypeGroup Alerts = new("alerts");
 
     /// <summary>The value as the API writes it.</summary>
     public override string ToString() => Value;
@@ -1443,6 +1497,82 @@ public readonly record struct TradingViewAlertStatus(string Value) : IOpenEnum<T
     public static implicit operator TradingViewAlertStatus(string value) => new(value);
 }
 
+/// <summary>above: it fires once the price reaches the level from below; below: from above. Set from the price when the level was set. Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<PriceAlertCondition>))]
+public readonly record struct PriceAlertCondition(string Value) : IOpenEnum<PriceAlertCondition>
+{
+    /// <summary>above</summary>
+    public static readonly PriceAlertCondition Above = new("above");
+    /// <summary>below</summary>
+    public static readonly PriceAlertCondition Below = new("below");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static PriceAlertCondition From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator PriceAlertCondition(string value) => new(value);
+}
+
+/// <summary>armed: it waits for its level. triggered: it fired (rearm arms it again). disabled: its account or market went away before it fired. Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<PriceAlertStatus>))]
+public readonly record struct PriceAlertStatus(string Value) : IOpenEnum<PriceAlertStatus>
+{
+    /// <summary>armed</summary>
+    public static readonly PriceAlertStatus Armed = new("armed");
+    /// <summary>triggered</summary>
+    public static readonly PriceAlertStatus Triggered = new("triggered");
+    /// <summary>disabled</summary>
+    public static readonly PriceAlertStatus Disabled = new("disabled");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static PriceAlertStatus From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator PriceAlertStatus(string value) => new(value);
+}
+
+/// <summary>The price it watches: the market's last trade (the middle of the book until there is one), the price trailing stops follow. Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<PriceAlertPriceSource>))]
+public readonly record struct PriceAlertPriceSource(string Value) : IOpenEnum<PriceAlertPriceSource>
+{
+    /// <summary>last</summary>
+    public static readonly PriceAlertPriceSource Last = new("last");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static PriceAlertPriceSource From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator PriceAlertPriceSource(string value) => new(value);
+}
+
+/// <summary>Why it was disabled. Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<PriceAlertDisabledReason>))]
+public readonly record struct PriceAlertDisabledReason(string Value) : IOpenEnum<PriceAlertDisabledReason>
+{
+    /// <summary>account_removed</summary>
+    public static readonly PriceAlertDisabledReason AccountRemoved = new("account_removed");
+    /// <summary>market_removed</summary>
+    public static readonly PriceAlertDisabledReason MarketRemoved = new("market_removed");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static PriceAlertDisabledReason From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator PriceAlertDisabledReason(string value) => new(value);
+}
+
 /// <summary>Where it stands. Open: a value from a newer API version is kept as is.</summary>
 [JsonConverter(typeof(OpenEnumConverter<LimitStandingStatus>))]
 public readonly record struct LimitStandingStatus(string Value) : IOpenEnum<LimitStandingStatus>
@@ -1506,4 +1636,27 @@ public readonly record struct StrategiesListParamsStatus(string Value) : IOpenEn
 
     /// <summary>A value from its wire form.</summary>
     public static implicit operator StrategiesListParamsStatus(string value) => new(value);
+}
+
+/// <summary>AlertsListParamsStatus Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<AlertsListParamsStatus>))]
+public readonly record struct AlertsListParamsStatus(string Value) : IOpenEnum<AlertsListParamsStatus>
+{
+    /// <summary>all</summary>
+    public static readonly AlertsListParamsStatus All = new("all");
+    /// <summary>armed</summary>
+    public static readonly AlertsListParamsStatus Armed = new("armed");
+    /// <summary>triggered</summary>
+    public static readonly AlertsListParamsStatus Triggered = new("triggered");
+    /// <summary>disabled</summary>
+    public static readonly AlertsListParamsStatus Disabled = new("disabled");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static AlertsListParamsStatus From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator AlertsListParamsStatus(string value) => new(value);
 }

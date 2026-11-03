@@ -181,6 +181,8 @@ pub struct Limits {
     pub sandbox: Option<LimitsSandbox>,
     /// The strategies.
     pub strategies: LimitsStrategies,
+    /// The alerts.
+    pub alerts: LimitsAlerts,
     /// The largest request body.
     pub body_max_bytes: i64,
     /// The page limit.
@@ -382,7 +384,7 @@ pub struct LimitsSandbox {
 pub struct LimitsStrategies {
     /// Running strategies an account may hold.
     pub per_account: i64,
-    /// Of those, programs (oco, twap, vwap, scaled, chase).
+    /// Of those, programs (oco, twap, vwap, scaled, chase, conditional).
     pub programs_per_account: i64,
     /// Working orders of strategies on one account.
     pub legs_per_account: i64,
@@ -409,6 +411,21 @@ pub struct LimitsStrategies {
     pub extra: Map<String, Value>,
 }
 
+/// LimitsAlerts
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct LimitsAlerts {
+    /// Price alerts armed at once on one account.
+    pub armed_per_account: i64,
+    /// Price alerts armed at once across your accounts.
+    pub armed_per_customer: i64,
+    /// How long an alert that fired (or was disabled) stays listed, in days.
+    pub kept_days: i64,
+    /// Fields this SDK version does not know yet (a newer API's), kept as they came.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
 /// LimitsPageLimit
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -426,7 +443,7 @@ pub struct LimitsPageLimit {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Market {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The market's name; for a currency, the pair its price is quoted in (JPY-USD: USD/JPY, yen per dollar).
     pub name: String,
@@ -471,7 +488,7 @@ pub struct Market {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MarketOption {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// Its venue.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -505,7 +522,7 @@ pub struct MarketMaxSlippagePct {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MarketStats {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The last trade.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -834,7 +851,7 @@ pub struct AccountRiskExposure {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AccountRiskExposureMarket {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The value held on it.
     pub notional: Decimal,
@@ -889,7 +906,7 @@ pub struct AccountRiskTradingDays {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AccountRiskNearestLiquidation {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// Its liquidation price.
     pub price: Decimal,
@@ -1222,7 +1239,7 @@ pub struct DailyResult {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MarginSetting {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The leverage new positions on this market get.
     pub leverage: i64,
@@ -1265,7 +1282,7 @@ pub struct ExitLeg {
 pub struct Position {
     /// This position, while it stays open on the same side.
     pub id: String,
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// Long or short.
     pub side: PositionSide,
@@ -1362,7 +1379,7 @@ pub struct PositionExits {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ClosedPosition {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// Long or short.
     pub side: PositionSide,
@@ -1428,7 +1445,7 @@ pub struct Order {
     pub client_order_id: Option<String>,
     /// The account number.
     pub account_id: String,
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The order's side; null for an order placed elsewhere before the API saw it.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1520,7 +1537,7 @@ pub struct Fill {
     pub id: String,
     /// Its order.
     pub order_id: String,
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The side; null for an order placed elsewhere before the API saw it.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1657,7 +1674,7 @@ pub struct MeAssistantBudget {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CreateOrder {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The order's side.
     pub side: OrderSide,
@@ -1813,14 +1830,14 @@ pub struct OrderExitsStopLossBreakEven {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CreateStrategy {
-    /// trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask.
+    /// trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market).
     pub r#type: CreateStrategyType,
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The order's side.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub side: Option<OrderSide>,
-    /// trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase: the whole size.
+    /// trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase, conditional: the whole size.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size: Option<Decimal>,
     /// trailing_stop: how far behind the best price (or percent).
@@ -1844,9 +1861,24 @@ pub struct CreateStrategy {
     /// break_even: the same, in percent of the entry.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger_percent: Option<Decimal>,
-    /// break_even: or once the price reaches this.
+    /// break_even: or once the price reaches this. conditional: the level that sends the order (the trigger market's price; its tick).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub trigger_price: Option<Decimal>,
+    /// conditional: the market whose price is watched (absent: this market). Any market we list.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trigger_market: Option<String>,
+    /// conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or below it. On this market it is set by the side and not given.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trigger_direction: Option<CreateStrategyTriggerDirection>,
+    /// conditional: the order it sends (default market).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub order_type: Option<CreateStrategyOrderType>,
+    /// conditional: the limit of its order, with order_type limit.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit_price: Option<Decimal>,
+    /// conditional: until when it waits for its price (default and longest: the gtd maximum, see GET /v1/limits). Its order, once sent, stands on its own.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<i64>,
     /// break_even: ticks beyond the entry, on the profit side. chase: ticks behind the bid (buy) or ask (sell).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offset_ticks: Option<i64>,
@@ -1865,7 +1897,7 @@ pub struct CreateStrategy {
     /// twap, vwap: vary each slice's time and size a little (the sizes still add up to size).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub randomize: Option<bool>,
-    /// twap, vwap, scaled, chase: only reduce your position (a twap ends when the position is closed).
+    /// twap, vwap, scaled, chase, conditional: only reduce your position (a twap ends when the position is closed).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reduce_only: Option<bool>,
     /// twap, vwap (buy): slices wait while the price is above this. chase (buy): its cap.
@@ -1874,7 +1906,7 @@ pub struct CreateStrategy {
     /// twap, vwap (sell): slices wait while the price is below this. chase (sell): its floor.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub min_price: Option<Decimal>,
-    /// twap, vwap: each slice's slippage budget, in percent.
+    /// twap, vwap: each slice's slippage budget, in percent. conditional: its market order's.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_slippage_pct: Option<Decimal>,
     /// scaled: the first rung.
@@ -1907,7 +1939,7 @@ pub struct CreateStrategy {
     /// chase: it may rest through the last price (it would then fill at once).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub allow_cross: Option<bool>,
-    /// Your own id for the strategy (oco, twap, vwap, scaled, chase): unique in this environment.
+    /// Your own id for the strategy (oco, twap, vwap, scaled, chase, conditional): unique in this environment.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_strategy_id: Option<String>,
     /// Fields this SDK version does not know yet (a newer API's), kept as they came.
@@ -1922,7 +1954,7 @@ pub struct CreateStrategyOrder {
     /// The order's side.
     pub side: OrderSide,
     /// Two orders that rest.
-    pub r#type: CreateStrategyOrderType,
+    pub r#type: CreateStrategyOrderType2,
     /// Its size.
     pub size: Decimal,
     /// Its limit price.
@@ -1979,7 +2011,7 @@ pub struct ClosePosition {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CancelAll {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub market: Option<String>,
     /// Fields this SDK version does not know yet (a newer API's), kept as they came.
@@ -2004,7 +2036,7 @@ pub struct MarginSettingInput {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MarginSettingResult {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The margin mode.
     pub margin_mode: MarginMode,
@@ -2024,7 +2056,7 @@ pub struct WhatIf {
     /// The reject.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub reject: Option<WhatIfReject>,
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The order's side.
     pub side: OrderSide,
@@ -2201,7 +2233,7 @@ pub struct ExitsLeg {
     /// take_profit: a limit on the profit side. stop_loss: a stop on the loss side.
     pub group: ExitsLegGroup,
     /// take_profit legs are limits; stop_loss legs are stop_market or stop_limit.
-    pub r#type: CreateStrategyOrderType,
+    pub r#type: CreateStrategyOrderType2,
     /// The order's status; waiting: a stop-loss not placed yet (it waits for its activation price or its break-even).
     pub status: ExitsLegStatus,
     /// Its size.
@@ -2274,7 +2306,7 @@ pub struct ExitsLegBreakEven {
 pub struct Exits {
     /// The account number.
     pub account_id: String,
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The strategy that keeps these exits (type exits); null when there are none.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2368,7 +2400,7 @@ pub struct ExitsBatchOperation {
     pub group: Option<ExitsLegGroup>,
     /// place: limit for a take-profit (the default); stop_market (the default) or stop_limit for a stop-loss.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub r#type: Option<CreateStrategyOrderType>,
+    pub r#type: Option<CreateStrategyOrderType2>,
     /// The take-profit price, or the stop price.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub price: Option<Decimal>,
@@ -2442,9 +2474,9 @@ pub struct Strategy {
     pub client_strategy_id: Option<String>,
     /// The account number.
     pub account_id: String,
-    /// exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price.
+    /// exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached.
     pub r#type: StrategyType,
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The side of its orders (exits: the closing side).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -2749,6 +2781,102 @@ pub struct DeletedHook {
     pub extra: Map<String, Value>,
 }
 
+/// A level on a market, told once when the price reaches it (alert.triggered: the account stream, webhooks, GET /v1/events). It never places or changes an order.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct PriceAlert {
+    /// The alert.
+    pub id: String,
+    /// The account number.
+    pub account_id: String,
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
+    pub market: String,
+    /// Its level.
+    pub price: Decimal,
+    /// above: it fires once the price reaches the level from below; below: from above. Set from the price when the level was set.
+    pub condition: PriceAlertCondition,
+    /// Your note, sent with it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    /// armed: it waits for its level. triggered: it fired (rearm arms it again). disabled: its account or market went away before it fired.
+    pub status: PriceAlertStatus,
+    /// The price it watches: the market's last trade (the middle of the book until there is one), the price trailing stops follow.
+    pub price_source: PriceAlertPriceSource,
+    /// The price it fired at.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trigger_price: Option<Decimal>,
+    /// When it fired.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub triggered_at: Option<i64>,
+    /// Why it was disabled.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub disabled_reason: Option<PriceAlertDisabledReason>,
+    /// When it was set.
+    pub created_at: i64,
+    /// Its latest change.
+    pub updated_at: i64,
+    /// Fields this SDK version does not know yet (a newer API's), kept as they came.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// A new price alert. Its condition (above or below) is set from the price now.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CreatePriceAlert {
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
+    pub market: String,
+    /// The level; not the price now.
+    pub price: Decimal,
+    /// Your note (at most 280 characters).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    /// Fields this SDK version does not know yet (a newer API's), kept as they came.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// What to change on an armed alert: at least one field.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ChangePriceAlert {
+    /// A new level; its condition is set again from the price now.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price: Option<Decimal>,
+    /// A new note; null removes it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub note: Option<String>,
+    /// Fields this SDK version does not know yet (a newer API's), kept as they came.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// DeletedAlert
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DeletedAlert {
+    /// The alert.
+    pub id: String,
+    /// It was deleted.
+    pub deleted: bool,
+    /// Fields this SDK version does not know yet (a newer API's), kept as they came.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
+/// RestrictedCountry
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct RestrictedCountry {
+    /// The country, ISO 3166-1 alpha-2.
+    pub code: String,
+    /// Its name in English.
+    pub name: String,
+    /// Fields this SDK version does not know yet (a newer API's), kept as they came.
+    #[serde(flatten)]
+    pub extra: Map<String, Value>,
+}
+
 /// CancelAllResult
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
@@ -2856,7 +2984,7 @@ pub struct AccountRiskOrNullExposure {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AccountRiskOrNullExposureMarket {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// The value held on it.
     pub notional: Decimal,
@@ -2911,7 +3039,7 @@ pub struct AccountRiskOrNullTradingDays {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct AccountRiskOrNullNearestLiquidation {
-    /// A market id: the asset and USD.
+    /// A market id: the asset and USD; an option adds its venue or hours after a dot.
     pub market: String,
     /// Its liquidation price.
     pub price: Decimal,
@@ -3180,6 +3308,43 @@ impl StrategiesListParams {
         }
         if let Some(v) = &self.client_strategy_id {
             q.push(("client_strategy_id".to_string(), v.to_string()));
+        }
+        if let Some(v) = &self.limit {
+            q.push(("limit".to_string(), v.to_string()));
+        }
+        if let Some(v) = &self.cursor {
+            q.push(("cursor".to_string(), v.to_string()));
+        }
+        q
+    }
+}
+
+/// The query of list price alerts.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct AlertsListParams {
+    /// Only alerts with this status (default all).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status: Option<AlertsListParamsStatus>,
+    /// Only this market.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub market: Option<String>,
+    /// Page size.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub limit: Option<i64>,
+    /// next_cursor from the previous page, with the same filters.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+}
+
+impl AlertsListParams {
+    pub(crate) fn to_query(&self) -> Vec<(String, String)> {
+        let mut q = Vec::new();
+        if let Some(v) = &self.status {
+            q.push(("status".to_string(), v.as_str().to_string()));
+        }
+        if let Some(v) = &self.market {
+            q.push(("market".to_string(), v.to_string()));
         }
         if let Some(v) = &self.limit {
             q.push(("limit".to_string(), v.to_string()));

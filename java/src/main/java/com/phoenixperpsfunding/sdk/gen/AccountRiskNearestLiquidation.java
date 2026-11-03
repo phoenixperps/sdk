@@ -23,7 +23,7 @@ public final class AccountRiskNearestLiquidation {
     @JsonProperty("distance_pct")
     private BigDecimal distancePct;
 
-    /** A market id: the asset and USD. */
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
     public String market() {
         return market;
     }

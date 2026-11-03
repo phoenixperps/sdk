@@ -22,6 +22,11 @@ export async function getLimits(client: PhoenixPerps): Promise<void> {
   console.log(limits);
 }
 
+export async function listRestrictedCountries(client: PhoenixPerps): Promise<void> {
+  const { data } = await client.platform.restrictedCountries();
+  for (const restrictedCountry of data) console.log(restrictedCountry.name);
+}
+
 export async function getMe(client: PhoenixPerps): Promise<void> {
   const me = await client.me.get();
   console.log(me);
@@ -276,6 +281,43 @@ export async function getStrategy(client: PhoenixPerps): Promise<void> {
 export async function cancelStrategy(client: PhoenixPerps): Promise<void> {
   const strategy = await client.strategies.cancel('SANDBOX-00042-001', 'stg_01JAB7Q8XK4M2N5P7R9S3T5V7W');
   console.log(strategy);
+}
+
+export async function createAlert(client: PhoenixPerps): Promise<void> {
+  const priceAlert = await client.alerts.create('SANDBOX-00042-001', {
+    market: 'BTC-USD',
+    price: '120000',
+    note: 'breakout',
+  });
+  console.log(priceAlert);
+}
+
+export async function listAlerts(client: PhoenixPerps): Promise<void> {
+  for await (const priceAlert of client.alerts.list('SANDBOX-00042-001')) {
+    console.log(priceAlert.id);
+  }
+}
+
+export async function getAlert(client: PhoenixPerps): Promise<void> {
+  const priceAlert = await client.alerts.get('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');
+  console.log(priceAlert);
+}
+
+export async function changeAlert(client: PhoenixPerps): Promise<void> {
+  const priceAlert = await client.alerts.modify('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W', {
+    price: '121000',
+  });
+  console.log(priceAlert);
+}
+
+export async function deleteAlert(client: PhoenixPerps): Promise<void> {
+  const deletedAlert = await client.alerts.delete('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');
+  console.log(deletedAlert);
+}
+
+export async function rearmAlert(client: PhoenixPerps): Promise<void> {
+  const priceAlert = await client.alerts.rearm('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');
+  console.log(priceAlert);
 }
 
 export async function listWebhookEndpoints(client: PhoenixPerps): Promise<void> {

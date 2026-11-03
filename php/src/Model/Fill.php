@@ -18,7 +18,7 @@ final class Fill implements \JsonSerializable
         public readonly ?string $id = null,
         /** Its order. */
         public readonly ?string $orderId = null,
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The side; null for an order placed elsewhere before the API saw it. */
         public readonly ?string $side = null,

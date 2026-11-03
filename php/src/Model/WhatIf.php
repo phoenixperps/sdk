@@ -18,7 +18,7 @@ final class WhatIf implements \JsonSerializable
         public readonly ?string $result = null,
         /** The reject. */
         public readonly ?WhatIfReject $reject = null,
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The order's side. */
         public readonly ?string $side = null,

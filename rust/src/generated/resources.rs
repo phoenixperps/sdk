@@ -13,6 +13,7 @@ pub(crate) mod ops {
     pub(crate) const GET_SPEC: Operation = Operation { id: "getSpec", method: "GET", path: "/v1/openapi.json", idempotent: false, retry_safe: true, cursor: None, scope: "public" };
     pub(crate) const GET_STATUS: Operation = Operation { id: "getStatus", method: "GET", path: "/v1/status", idempotent: false, retry_safe: true, cursor: None, scope: "public" };
     pub(crate) const GET_LIMITS: Operation = Operation { id: "getLimits", method: "GET", path: "/v1/limits", idempotent: false, retry_safe: true, cursor: None, scope: "public" };
+    pub(crate) const LIST_RESTRICTED_COUNTRIES: Operation = Operation { id: "listRestrictedCountries", method: "GET", path: "/v1/restricted-countries", idempotent: false, retry_safe: true, cursor: None, scope: "public" };
     pub(crate) const GET_ME: Operation = Operation { id: "getMe", method: "GET", path: "/v1/me", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
     pub(crate) const LIST_MARKETS: Operation = Operation { id: "listMarkets", method: "GET", path: "/v1/markets", idempotent: false, retry_safe: true, cursor: None, scope: "public" };
     pub(crate) const LIST_MARKET_STATS: Operation = Operation { id: "listMarketStats", method: "GET", path: "/v1/markets/stats", idempotent: false, retry_safe: true, cursor: None, scope: "public" };
@@ -47,6 +48,12 @@ pub(crate) mod ops {
     pub(crate) const LIST_STRATEGIES: Operation = Operation { id: "listStrategies", method: "GET", path: "/v1/accounts/{account_id}/strategies", idempotent: false, retry_safe: true, cursor: Some("cursor"), scope: "read" };
     pub(crate) const GET_STRATEGY: Operation = Operation { id: "getStrategy", method: "GET", path: "/v1/accounts/{account_id}/strategies/{strategy_id}", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
     pub(crate) const CANCEL_STRATEGY: Operation = Operation { id: "cancelStrategy", method: "DELETE", path: "/v1/accounts/{account_id}/strategies/{strategy_id}", idempotent: false, retry_safe: true, cursor: None, scope: "trade" };
+    pub(crate) const CREATE_ALERT: Operation = Operation { id: "createAlert", method: "POST", path: "/v1/accounts/{account_id}/alerts", idempotent: true, retry_safe: false, cursor: None, scope: "read" };
+    pub(crate) const LIST_ALERTS: Operation = Operation { id: "listAlerts", method: "GET", path: "/v1/accounts/{account_id}/alerts", idempotent: false, retry_safe: true, cursor: Some("cursor"), scope: "read" };
+    pub(crate) const GET_ALERT: Operation = Operation { id: "getAlert", method: "GET", path: "/v1/accounts/{account_id}/alerts/{alert_id}", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
+    pub(crate) const CHANGE_ALERT: Operation = Operation { id: "changeAlert", method: "PATCH", path: "/v1/accounts/{account_id}/alerts/{alert_id}", idempotent: false, retry_safe: false, cursor: None, scope: "read" };
+    pub(crate) const DELETE_ALERT: Operation = Operation { id: "deleteAlert", method: "DELETE", path: "/v1/accounts/{account_id}/alerts/{alert_id}", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
+    pub(crate) const REARM_ALERT: Operation = Operation { id: "rearmAlert", method: "POST", path: "/v1/accounts/{account_id}/alerts/{alert_id}/rearm", idempotent: false, retry_safe: false, cursor: None, scope: "read" };
     pub(crate) const LIST_WEBHOOK_ENDPOINTS: Operation = Operation { id: "listWebhookEndpoints", method: "GET", path: "/v1/webhook-endpoints", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
     pub(crate) const GET_WEBHOOK_ENDPOINT: Operation = Operation { id: "getWebhookEndpoint", method: "GET", path: "/v1/webhook-endpoints/{endpoint_id}", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
     pub(crate) const DELETE_WEBHOOK_ENDPOINT: Operation = Operation { id: "deleteWebhookEndpoint", method: "DELETE", path: "/v1/webhook-endpoints/{endpoint_id}", idempotent: false, retry_safe: true, cursor: None, scope: "trade" };
@@ -69,7 +76,7 @@ pub(crate) mod ops {
     pub(crate) const LIST_FILLS: Operation = Operation { id: "listFills", method: "GET", path: "/v1/accounts/{account_id}/fills", idempotent: false, retry_safe: true, cursor: Some("cursor"), scope: "read" };
 
     /// Every operation, for the raw request (its route's retry-safety and budget).
-    pub(crate) const ALL: &[&Operation] = &[&GET_API, &GET_SPEC, &GET_STATUS, &GET_LIMITS, &GET_ME, &LIST_MARKETS, &LIST_MARKET_STATS, &GET_MARKET, &LIST_ACCOUNTS, &CREATE_SANDBOX_ACCOUNT, &GET_ACCOUNT, &GET_RISK, &GET_TRADING_POLICY, &GET_PROGRESS, &GET_EQUITY_HISTORY, &LIST_DAILY_RESULTS, &LIST_MARGIN_SETTINGS, &LIST_POSITIONS, &GET_POSITION, &LIST_CLOSED_POSITIONS, &LIST_ORDERS, &PLACE_ORDER, &GET_ORDER, &MODIFY_ORDER, &CANCEL_ORDER, &TEST_ORDER, &CANCEL_ALL_ORDERS, &CLOSE_POSITION, &FLATTEN, &SET_MARGIN, &LIST_EVENTS, &GET_EXITS, &SET_EXITS, &SET_ORDER_EXITS, &CREATE_STRATEGY, &LIST_STRATEGIES, &GET_STRATEGY, &CANCEL_STRATEGY, &LIST_WEBHOOK_ENDPOINTS, &GET_WEBHOOK_ENDPOINT, &DELETE_WEBHOOK_ENDPOINT, &TEST_WEBHOOK_ENDPOINT, &LIST_WEBHOOK_DELIVERIES, &GET_WEBHOOK_DELIVERY, &RESEND_WEBHOOK_DELIVERY, &DISABLE_WEBHOOK_ENDPOINT, &ENABLE_WEBHOOK_ENDPOINT, &LIST_TRADING_VIEW_HOOKS, &GET_TRADING_VIEW_HOOK, &DELETE_TRADING_VIEW_HOOK, &LIST_TRADING_VIEW_ALERTS, &GET_TRADING_VIEW_ALERT, &DISABLE_TRADING_VIEW_HOOK, &ENABLE_TRADING_VIEW_HOOK, &PARSE_TRADING_VIEW_MESSAGE, &LIST_WEBHOOK_EVENT_TYPES, &GET_EVENT, &LIST_FILLS];
+    pub(crate) const ALL: &[&Operation] = &[&GET_API, &GET_SPEC, &GET_STATUS, &GET_LIMITS, &LIST_RESTRICTED_COUNTRIES, &GET_ME, &LIST_MARKETS, &LIST_MARKET_STATS, &GET_MARKET, &LIST_ACCOUNTS, &CREATE_SANDBOX_ACCOUNT, &GET_ACCOUNT, &GET_RISK, &GET_TRADING_POLICY, &GET_PROGRESS, &GET_EQUITY_HISTORY, &LIST_DAILY_RESULTS, &LIST_MARGIN_SETTINGS, &LIST_POSITIONS, &GET_POSITION, &LIST_CLOSED_POSITIONS, &LIST_ORDERS, &PLACE_ORDER, &GET_ORDER, &MODIFY_ORDER, &CANCEL_ORDER, &TEST_ORDER, &CANCEL_ALL_ORDERS, &CLOSE_POSITION, &FLATTEN, &SET_MARGIN, &LIST_EVENTS, &GET_EXITS, &SET_EXITS, &SET_ORDER_EXITS, &CREATE_STRATEGY, &LIST_STRATEGIES, &GET_STRATEGY, &CANCEL_STRATEGY, &CREATE_ALERT, &LIST_ALERTS, &GET_ALERT, &CHANGE_ALERT, &DELETE_ALERT, &REARM_ALERT, &LIST_WEBHOOK_ENDPOINTS, &GET_WEBHOOK_ENDPOINT, &DELETE_WEBHOOK_ENDPOINT, &TEST_WEBHOOK_ENDPOINT, &LIST_WEBHOOK_DELIVERIES, &GET_WEBHOOK_DELIVERY, &RESEND_WEBHOOK_DELIVERY, &DISABLE_WEBHOOK_ENDPOINT, &ENABLE_WEBHOOK_ENDPOINT, &LIST_TRADING_VIEW_HOOKS, &GET_TRADING_VIEW_HOOK, &DELETE_TRADING_VIEW_HOOK, &LIST_TRADING_VIEW_ALERTS, &GET_TRADING_VIEW_ALERT, &DISABLE_TRADING_VIEW_HOOK, &ENABLE_TRADING_VIEW_HOOK, &PARSE_TRADING_VIEW_MESSAGE, &LIST_WEBHOOK_EVENT_TYPES, &GET_EVENT, &LIST_FILLS];
 }
 
 impl Client {
@@ -126,6 +133,11 @@ impl Client {
     /// The strategies calls.
     pub fn strategies(&self) -> StrategiesResource<'_> {
         StrategiesResource { c: self }
+    }
+
+    /// The alerts calls.
+    pub fn alerts(&self) -> AlertsResource<'_> {
+        AlertsResource { c: self }
     }
 
     /// The webhookEndpoints calls.
@@ -189,6 +201,16 @@ impl<'a> PlatformResource<'a> {
     /// Get the limits, with options: None on a 304 Not Modified (the If-None-Match given in options.headers is current).
     pub async fn limits_with(self, options: &RequestOptions) -> Result<Option<Limits>> {
         self.c.one(&ops::GET_LIMITS, &[], None, None::<&()>, options).await
+    }
+
+    /// List restricted countries.
+    pub async fn restricted_countries(self) -> Result<Page<RestrictedCountry>> {
+        self.c.list(&ops::LIST_RESTRICTED_COUNTRIES, &[], None, &RequestOptions::default()).await
+    }
+
+    /// List restricted countries, with options: None on a 304 Not Modified (the If-None-Match given in options.headers is current).
+    pub async fn restricted_countries_with(self, options: &RequestOptions) -> Result<Option<Page<RestrictedCountry>>> {
+        self.c.list_or_none(&ops::LIST_RESTRICTED_COUNTRIES, &[], None, options).await
     }
 }
 
@@ -655,6 +677,83 @@ impl<'a> StrategiesResource<'a> {
     /// Cancel a strategy, with options.
     pub async fn cancel_with(self, account_id: &str, strategy_id: &str, options: &RequestOptions) -> Result<Strategy> {
         self.c.one(&ops::CANCEL_STRATEGY, &[account_id, strategy_id], None, None::<&()>, options).await
+    }
+}
+
+/// The alerts calls (`client.alerts()`).
+#[derive(Clone, Copy)]
+pub struct AlertsResource<'a> {
+    pub(crate) c: &'a Client,
+}
+
+impl<'a> AlertsResource<'a> {
+    /// Create a price alert.
+    pub async fn create(self, account_id: &str, body: &CreatePriceAlert) -> Result<PriceAlert> {
+        self.create_with(account_id, body, &RequestOptions::default()).await
+    }
+
+    /// Create a price alert, with options.
+    pub async fn create_with(self, account_id: &str, body: &CreatePriceAlert, options: &RequestOptions) -> Result<PriceAlert> {
+        self.c.one(&ops::CREATE_ALERT, &[account_id], None, Some(body), options).await
+    }
+
+    /// List price alerts.
+    pub async fn list(self, account_id: &str, params: Option<&AlertsListParams>) -> Result<Page<PriceAlert>> {
+        self.c.list(&ops::LIST_ALERTS, &[account_id], params.map(|p| p.to_query()), &RequestOptions::default()).await
+    }
+
+    /// List price alerts, with options: None on a 304 Not Modified (the If-None-Match given in options.headers is current).
+    pub async fn list_with(self, account_id: &str, params: Option<&AlertsListParams>, options: &RequestOptions) -> Result<Option<Page<PriceAlert>>> {
+        self.c.list_or_none(&ops::LIST_ALERTS, &[account_id], params.map(|p| p.to_query()), options).await
+    }
+
+    /// Every item of list, page after page (RequestOptions::max_items caps it).
+    pub fn list_auto_paging<'s>(self, account_id: &'s str, params: Option<&'s AlertsListParams>, options: &'s RequestOptions) -> impl Stream<Item = Result<PriceAlert>> + 's
+    where
+        'a: 's,
+    {
+        let c = self.c;
+        auto_paging(async move { c.list(&ops::LIST_ALERTS, &[account_id], params.map(|p| p.to_query()), options).await }, options)
+    }
+
+    /// Get a price alert.
+    pub async fn get(self, account_id: &str, alert_id: &str) -> Result<PriceAlert> {
+        self.c.one(&ops::GET_ALERT, &[account_id, alert_id], None, None::<&()>, &RequestOptions::default()).await
+    }
+
+    /// Get a price alert, with options: None on a 304 Not Modified (the If-None-Match given in options.headers is current).
+    pub async fn get_with(self, account_id: &str, alert_id: &str, options: &RequestOptions) -> Result<Option<PriceAlert>> {
+        self.c.one(&ops::GET_ALERT, &[account_id, alert_id], None, None::<&()>, options).await
+    }
+
+    /// Move a price alert.
+    pub async fn modify(self, account_id: &str, alert_id: &str, body: &ChangePriceAlert) -> Result<PriceAlert> {
+        self.modify_with(account_id, alert_id, body, &RequestOptions::default()).await
+    }
+
+    /// Move a price alert, with options.
+    pub async fn modify_with(self, account_id: &str, alert_id: &str, body: &ChangePriceAlert, options: &RequestOptions) -> Result<PriceAlert> {
+        self.c.one(&ops::CHANGE_ALERT, &[account_id, alert_id], None, Some(body), options).await
+    }
+
+    /// Delete a price alert.
+    pub async fn delete(self, account_id: &str, alert_id: &str) -> Result<DeletedAlert> {
+        self.delete_with(account_id, alert_id, &RequestOptions::default()).await
+    }
+
+    /// Delete a price alert, with options.
+    pub async fn delete_with(self, account_id: &str, alert_id: &str, options: &RequestOptions) -> Result<DeletedAlert> {
+        self.c.one(&ops::DELETE_ALERT, &[account_id, alert_id], None, None::<&()>, options).await
+    }
+
+    /// Arm a price alert again.
+    pub async fn rearm(self, account_id: &str, alert_id: &str) -> Result<PriceAlert> {
+        self.rearm_with(account_id, alert_id, &RequestOptions::default()).await
+    }
+
+    /// Arm a price alert again, with options.
+    pub async fn rearm_with(self, account_id: &str, alert_id: &str, options: &RequestOptions) -> Result<PriceAlert> {
+        self.c.one(&ops::REARM_ALERT, &[account_id, alert_id], None, None::<&()>, options).await
     }
 }
 

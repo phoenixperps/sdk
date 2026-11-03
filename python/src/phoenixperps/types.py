@@ -4,7 +4,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, TypedDict, Union
 
-__all__ = ["Error", "Platform", "Status", "Limits", "Market", "MarketStats", "Rule", "Account", "Limit", "Warning", "AccountRisk", "Progress", "TradingPolicy", "EquityHistory", "DailyResult", "MarginSetting", "ExitLeg", "Position", "ClosedPosition", "Order", "Fill", "Me", "CreateOrder", "OrderExits", "CreateStrategy", "ModifyOrder", "ClosePosition", "CancelAll", "MarginSettingInput", "MarginSettingResult", "WhatIf", "Event", "WebhookPayload", "ExitsLeg", "Exits", "ExitsBatch", "Strategy", "WebhookEndpoint", "WebhookDelivery", "WebhookEventType", "DeletedEndpoint", "TradingViewHook", "TradingViewAlert", "TradingViewParseInput", "TradingViewParse", "DeletedHook", "CancelAllResult", "FlattenResult", "AccountRiskOrNull", "AccountDetail", "LimitStanding"]
+__all__ = ["Error", "Platform", "Status", "Limits", "Market", "MarketStats", "Rule", "Account", "Limit", "Warning", "AccountRisk", "Progress", "TradingPolicy", "EquityHistory", "DailyResult", "MarginSetting", "ExitLeg", "Position", "ClosedPosition", "Order", "Fill", "Me", "CreateOrder", "OrderExits", "CreateStrategy", "ModifyOrder", "ClosePosition", "CancelAll", "MarginSettingInput", "MarginSettingResult", "WhatIf", "Event", "WebhookPayload", "ExitsLeg", "Exits", "ExitsBatch", "Strategy", "WebhookEndpoint", "WebhookDelivery", "WebhookEventType", "DeletedEndpoint", "TradingViewHook", "TradingViewAlert", "TradingViewParseInput", "TradingViewParse", "DeletedHook", "PriceAlert", "CreatePriceAlert", "ChangePriceAlert", "DeletedAlert", "RestrictedCountry", "CancelAllResult", "FlattenResult", "AccountRiskOrNull", "AccountDetail", "LimitStanding"]
 
 
 class Error(TypedDict, total=False):
@@ -38,6 +38,7 @@ class Limits(TypedDict, total=False):
     orders: Dict[str, Any]
     sandbox: Dict[str, Any]
     strategies: Dict[str, Any]
+    alerts: Dict[str, Any]
     body_max_bytes: int
     page_limit: Dict[str, Any]
 
@@ -322,6 +323,11 @@ class CreateStrategy(TypedDict, total=False):
     trigger_distance: Union[str, int, float, Decimal]
     trigger_percent: Union[str, int, float, Decimal]
     trigger_price: Union[str, int, float, Decimal]
+    trigger_market: str
+    trigger_direction: str
+    order_type: str
+    limit_price: Union[str, int, float, Decimal]
+    expires_at: int
     offset_ticks: int
     orders: List[Dict[str, Any]]
     exits: "OrderExits"
@@ -550,6 +556,46 @@ class TradingViewParse(TypedDict, total=False):
 class DeletedHook(TypedDict, total=False):
     id: str
     deleted: bool
+
+
+class PriceAlert(TypedDict, total=False):
+    """A level on a market, told once when the price reaches it (alert.triggered: the account stream, webhooks, GET /v1/events). It never places or changes an order."""
+    id: str
+    account_id: str
+    market: str
+    price: str
+    condition: str
+    note: Optional[str]
+    status: str
+    price_source: str
+    trigger_price: Optional[str]
+    triggered_at: Optional[int]
+    disabled_reason: Optional[str]
+    created_at: int
+    updated_at: int
+
+
+class CreatePriceAlert(TypedDict, total=False):
+    """A new price alert. Its condition (above or below) is set from the price now."""
+    market: str
+    price: Union[str, int, float, Decimal]
+    note: str
+
+
+class ChangePriceAlert(TypedDict, total=False):
+    """What to change on an armed alert: at least one field."""
+    price: Union[str, int, float, Decimal]
+    note: Optional[str]
+
+
+class DeletedAlert(TypedDict, total=False):
+    id: str
+    deleted: bool
+
+
+class RestrictedCountry(TypedDict, total=False):
+    code: str
+    name: str
 
 
 class CancelAllResult(TypedDict, total=False):

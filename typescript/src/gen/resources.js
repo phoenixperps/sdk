@@ -6,6 +6,7 @@ const OPS = {
   getSpec: {"id":"getSpec","http":"GET","path":"/v1/openapi.json","idempotent":false,"retrySafe":true,"scope":"public","paging":null},
   getStatus: {"id":"getStatus","http":"GET","path":"/v1/status","idempotent":false,"retrySafe":true,"scope":"public","paging":null},
   getLimits: {"id":"getLimits","http":"GET","path":"/v1/limits","idempotent":false,"retrySafe":true,"scope":"public","paging":null},
+  listRestrictedCountries: {"id":"listRestrictedCountries","http":"GET","path":"/v1/restricted-countries","idempotent":false,"retrySafe":true,"scope":"public","paging":null},
   getMe: {"id":"getMe","http":"GET","path":"/v1/me","idempotent":false,"retrySafe":true,"scope":"read","paging":null},
   listMarkets: {"id":"listMarkets","http":"GET","path":"/v1/markets","idempotent":false,"retrySafe":true,"scope":"public","paging":null},
   listMarketStats: {"id":"listMarketStats","http":"GET","path":"/v1/markets/stats","idempotent":false,"retrySafe":true,"scope":"public","paging":null},
@@ -40,6 +41,12 @@ const OPS = {
   listStrategies: {"id":"listStrategies","http":"GET","path":"/v1/accounts/{account_id}/strategies","idempotent":false,"retrySafe":true,"scope":"read","paging":{"param":"cursor","items":"data","next":"next_cursor","has_more":"has_more","limit":"limit"}},
   getStrategy: {"id":"getStrategy","http":"GET","path":"/v1/accounts/{account_id}/strategies/{strategy_id}","idempotent":false,"retrySafe":true,"scope":"read","paging":null},
   cancelStrategy: {"id":"cancelStrategy","http":"DELETE","path":"/v1/accounts/{account_id}/strategies/{strategy_id}","idempotent":false,"retrySafe":true,"scope":"trade","paging":null},
+  createAlert: {"id":"createAlert","http":"POST","path":"/v1/accounts/{account_id}/alerts","idempotent":true,"retrySafe":false,"scope":"read","paging":null},
+  listAlerts: {"id":"listAlerts","http":"GET","path":"/v1/accounts/{account_id}/alerts","idempotent":false,"retrySafe":true,"scope":"read","paging":{"param":"cursor","items":"data","next":"next_cursor","has_more":"has_more","limit":"limit"}},
+  getAlert: {"id":"getAlert","http":"GET","path":"/v1/accounts/{account_id}/alerts/{alert_id}","idempotent":false,"retrySafe":true,"scope":"read","paging":null},
+  changeAlert: {"id":"changeAlert","http":"PATCH","path":"/v1/accounts/{account_id}/alerts/{alert_id}","idempotent":false,"retrySafe":false,"scope":"read","paging":null},
+  deleteAlert: {"id":"deleteAlert","http":"DELETE","path":"/v1/accounts/{account_id}/alerts/{alert_id}","idempotent":false,"retrySafe":true,"scope":"read","paging":null},
+  rearmAlert: {"id":"rearmAlert","http":"POST","path":"/v1/accounts/{account_id}/alerts/{alert_id}/rearm","idempotent":false,"retrySafe":false,"scope":"read","paging":null},
   listWebhookEndpoints: {"id":"listWebhookEndpoints","http":"GET","path":"/v1/webhook-endpoints","idempotent":false,"retrySafe":true,"scope":"read","paging":null},
   getWebhookEndpoint: {"id":"getWebhookEndpoint","http":"GET","path":"/v1/webhook-endpoints/{endpoint_id}","idempotent":false,"retrySafe":true,"scope":"read","paging":null},
   deleteWebhookEndpoint: {"id":"deleteWebhookEndpoint","http":"DELETE","path":"/v1/webhook-endpoints/{endpoint_id}","idempotent":false,"retrySafe":true,"scope":"trade","paging":null},
@@ -74,6 +81,8 @@ function resources(c) {
       status: (opts) => c._one(OPS.getStatus, {}, opts),
       /** Get the limits */
       limits: (opts) => c._one(OPS.getLimits, {}, opts),
+      /** List restricted countries */
+      restrictedCountries: (opts) => c._page(OPS.listRestrictedCountries, {}, opts),
     },
     me: {
       /** Get your key */
@@ -164,6 +173,20 @@ function resources(c) {
       get: (accountId, strategyId, opts) => c._one(OPS.getStrategy, { path: { account_id: accountId, strategy_id: strategyId } }, opts),
       /** Cancel a strategy */
       cancel: (accountId, strategyId, opts) => c._one(OPS.cancelStrategy, { path: { account_id: accountId, strategy_id: strategyId } }, opts),
+    },
+    alerts: {
+      /** Create a price alert */
+      create: (accountId, body, opts) => c._one(OPS.createAlert, { path: { account_id: accountId }, body }, opts),
+      /** List price alerts */
+      list: (accountId, query, opts) => c._page(OPS.listAlerts, { path: { account_id: accountId }, query }, opts),
+      /** Get a price alert */
+      get: (accountId, alertId, opts) => c._one(OPS.getAlert, { path: { account_id: accountId, alert_id: alertId } }, opts),
+      /** Move a price alert */
+      modify: (accountId, alertId, body, opts) => c._one(OPS.changeAlert, { path: { account_id: accountId, alert_id: alertId }, body }, opts),
+      /** Delete a price alert */
+      delete: (accountId, alertId, opts) => c._one(OPS.deleteAlert, { path: { account_id: accountId, alert_id: alertId } }, opts),
+      /** Arm a price alert again */
+      rearm: (accountId, alertId, opts) => c._one(OPS.rearmAlert, { path: { account_id: accountId, alert_id: alertId } }, opts),
     },
     webhookEndpoints: {
       /** List webhook endpoints */

@@ -29,7 +29,7 @@ public final class AccountRiskOrNullExposureMarket {
     @JsonProperty("cap_used_pct")
     private BigDecimal capUsedPct;
 
-    /** A market id: the asset and USD. */
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
     public String market() {
         return market;
     }

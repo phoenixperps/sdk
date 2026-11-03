@@ -13,7 +13,8 @@ final class WebhookEndpointEvent
     public const POSITIONS = 'positions';
     public const ACCOUNT = 'account';
     public const RISK = 'risk';
+    public const ALERTS = 'alerts';
 
     /** Every value this SDK version knows. */
-    public const ALL_VALUES = [self::ORDERS, self::POSITIONS, self::ACCOUNT, self::RISK];
+    public const ALL_VALUES = [self::ORDERS, self::POSITIONS, self::ACCOUNT, self::RISK, self::ALERTS];
 }

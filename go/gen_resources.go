@@ -12,6 +12,7 @@ var (
 	opGetSpec                 = &operation{id: "getSpec", method: "GET", path: "/v1/openapi.json", idempotent: false, retrySafe: true, cursor: "", scope: "public"}
 	opGetStatus               = &operation{id: "getStatus", method: "GET", path: "/v1/status", idempotent: false, retrySafe: true, cursor: "", scope: "public"}
 	opGetLimits               = &operation{id: "getLimits", method: "GET", path: "/v1/limits", idempotent: false, retrySafe: true, cursor: "", scope: "public"}
+	opListRestrictedCountries = &operation{id: "listRestrictedCountries", method: "GET", path: "/v1/restricted-countries", idempotent: false, retrySafe: true, cursor: "", scope: "public"}
 	opGetMe                   = &operation{id: "getMe", method: "GET", path: "/v1/me", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
 	opListMarkets             = &operation{id: "listMarkets", method: "GET", path: "/v1/markets", idempotent: false, retrySafe: true, cursor: "", scope: "public"}
 	opListMarketStats         = &operation{id: "listMarketStats", method: "GET", path: "/v1/markets/stats", idempotent: false, retrySafe: true, cursor: "", scope: "public"}
@@ -46,6 +47,12 @@ var (
 	opListStrategies          = &operation{id: "listStrategies", method: "GET", path: "/v1/accounts/{account_id}/strategies", idempotent: false, retrySafe: true, cursor: "cursor", scope: "read"}
 	opGetStrategy             = &operation{id: "getStrategy", method: "GET", path: "/v1/accounts/{account_id}/strategies/{strategy_id}", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
 	opCancelStrategy          = &operation{id: "cancelStrategy", method: "DELETE", path: "/v1/accounts/{account_id}/strategies/{strategy_id}", idempotent: false, retrySafe: true, cursor: "", scope: "trade"}
+	opCreateAlert             = &operation{id: "createAlert", method: "POST", path: "/v1/accounts/{account_id}/alerts", idempotent: true, retrySafe: false, cursor: "", scope: "read"}
+	opListAlerts              = &operation{id: "listAlerts", method: "GET", path: "/v1/accounts/{account_id}/alerts", idempotent: false, retrySafe: true, cursor: "cursor", scope: "read"}
+	opGetAlert                = &operation{id: "getAlert", method: "GET", path: "/v1/accounts/{account_id}/alerts/{alert_id}", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
+	opChangeAlert             = &operation{id: "changeAlert", method: "PATCH", path: "/v1/accounts/{account_id}/alerts/{alert_id}", idempotent: false, retrySafe: false, cursor: "", scope: "read"}
+	opDeleteAlert             = &operation{id: "deleteAlert", method: "DELETE", path: "/v1/accounts/{account_id}/alerts/{alert_id}", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
+	opRearmAlert              = &operation{id: "rearmAlert", method: "POST", path: "/v1/accounts/{account_id}/alerts/{alert_id}/rearm", idempotent: false, retrySafe: false, cursor: "", scope: "read"}
 	opListWebhookEndpoints    = &operation{id: "listWebhookEndpoints", method: "GET", path: "/v1/webhook-endpoints", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
 	opGetWebhookEndpoint      = &operation{id: "getWebhookEndpoint", method: "GET", path: "/v1/webhook-endpoints/{endpoint_id}", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
 	opDeleteWebhookEndpoint   = &operation{id: "deleteWebhookEndpoint", method: "DELETE", path: "/v1/webhook-endpoints/{endpoint_id}", idempotent: false, retrySafe: true, cursor: "", scope: "trade"}
@@ -70,7 +77,7 @@ var (
 
 // the operations, for Client.Do (its route's retry-safety and budget)
 func init() {
-	operations = []*operation{opGetApi, opGetSpec, opGetStatus, opGetLimits, opGetMe, opListMarkets, opListMarketStats, opGetMarket, opListAccounts, opCreateSandboxAccount, opGetAccount, opGetRisk, opGetTradingPolicy, opGetProgress, opGetEquityHistory, opListDailyResults, opListMarginSettings, opListPositions, opGetPosition, opListClosedPositions, opListOrders, opPlaceOrder, opGetOrder, opModifyOrder, opCancelOrder, opTestOrder, opCancelAllOrders, opClosePosition, opFlatten, opSetMargin, opListEvents, opGetExits, opSetExits, opSetOrderExits, opCreateStrategy, opListStrategies, opGetStrategy, opCancelStrategy, opListWebhookEndpoints, opGetWebhookEndpoint, opDeleteWebhookEndpoint, opTestWebhookEndpoint, opListWebhookDeliveries, opGetWebhookDelivery, opResendWebhookDelivery, opDisableWebhookEndpoint, opEnableWebhookEndpoint, opListTradingViewHooks, opGetTradingViewHook, opDeleteTradingViewHook, opListTradingViewAlerts, opGetTradingViewAlert, opDisableTradingViewHook, opEnableTradingViewHook, opParseTradingViewMessage, opListWebhookEventTypes, opGetEvent, opListFills}
+	operations = []*operation{opGetApi, opGetSpec, opGetStatus, opGetLimits, opListRestrictedCountries, opGetMe, opListMarkets, opListMarketStats, opGetMarket, opListAccounts, opCreateSandboxAccount, opGetAccount, opGetRisk, opGetTradingPolicy, opGetProgress, opGetEquityHistory, opListDailyResults, opListMarginSettings, opListPositions, opGetPosition, opListClosedPositions, opListOrders, opPlaceOrder, opGetOrder, opModifyOrder, opCancelOrder, opTestOrder, opCancelAllOrders, opClosePosition, opFlatten, opSetMargin, opListEvents, opGetExits, opSetExits, opSetOrderExits, opCreateStrategy, opListStrategies, opGetStrategy, opCancelStrategy, opCreateAlert, opListAlerts, opGetAlert, opChangeAlert, opDeleteAlert, opRearmAlert, opListWebhookEndpoints, opGetWebhookEndpoint, opDeleteWebhookEndpoint, opTestWebhookEndpoint, opListWebhookDeliveries, opGetWebhookDelivery, opResendWebhookDelivery, opDisableWebhookEndpoint, opEnableWebhookEndpoint, opListTradingViewHooks, opGetTradingViewHook, opDeleteTradingViewHook, opListTradingViewAlerts, opGetTradingViewAlert, opDisableTradingViewHook, opEnableTradingViewHook, opParseTradingViewMessage, opListWebhookEventTypes, opGetEvent, opListFills}
 }
 
 // resources are the services of a Client, one per resource of the API.
@@ -86,6 +93,7 @@ type resources struct {
 	Events           *EventsService
 	Exits            *ExitsService
 	Strategies       *StrategiesService
+	Alerts           *AlertsService
 	WebhookEndpoints *WebhookEndpointsService
 	TradingView      *TradingViewService
 	Fills            *FillsService
@@ -103,6 +111,7 @@ func (c *Client) initResources() {
 	c.Events = &EventsService{c}
 	c.Exits = &ExitsService{c}
 	c.Strategies = &StrategiesService{c}
+	c.Alerts = &AlertsService{c}
 	c.WebhookEndpoints = &WebhookEndpointsService{c}
 	c.TradingView = &TradingViewService{c}
 	c.Fills = &FillsService{c}
@@ -133,6 +142,11 @@ func (r *PlatformService) Status(ctx context.Context, opts ...CallOption) (*Stat
 // Limits: Get the limits.
 func (r *PlatformService) Limits(ctx context.Context, opts ...CallOption) (*Limits, error) {
 	return oneOf[Limits](ctx, r.c, opGetLimits, nil, nil, nil, opts)
+}
+
+// RestrictedCountries: List restricted countries.
+func (r *PlatformService) RestrictedCountries(ctx context.Context, opts ...CallOption) (*Page[RestrictedCountry], error) {
+	return listPage[RestrictedCountry](ctx, r.c, opListRestrictedCountries, nil, nil, opts)
 }
 
 // MeService: the me calls (client.Me).
@@ -358,6 +372,44 @@ func (r *StrategiesService) Get(ctx context.Context, accountID string, strategyI
 // Cancel: Cancel a strategy.
 func (r *StrategiesService) Cancel(ctx context.Context, accountID string, strategyID string, opts ...CallOption) (*Strategy, error) {
 	return oneOf[Strategy](ctx, r.c, opCancelStrategy, []string{accountID, strategyID}, nil, nil, opts)
+}
+
+// AlertsService: the alerts calls (client.Alerts).
+type AlertsService struct{ c *Client }
+
+// Create: Create a price alert.
+func (r *AlertsService) Create(ctx context.Context, accountID string, body CreatePriceAlert, opts ...CallOption) (*PriceAlert, error) {
+	return oneOf[PriceAlert](ctx, r.c, opCreateAlert, []string{accountID}, nil, body, opts)
+}
+
+// List: List price alerts.
+func (r *AlertsService) List(ctx context.Context, accountID string, params *AlertsListParams, opts ...CallOption) (*Page[PriceAlert], error) {
+	return listPage[PriceAlert](ctx, r.c, opListAlerts, []string{accountID}, params.values(), opts)
+}
+
+// ListAutoPaging: every item of List, page after page (WithMaxItems caps it).
+func (r *AlertsService) ListAutoPaging(ctx context.Context, accountID string, params *AlertsListParams, opts ...CallOption) iter.Seq2[PriceAlert, error] {
+	return autoPaging(ctx, func() (*Page[PriceAlert], error) { return r.List(ctx, accountID, params, opts...) }, opts)
+}
+
+// Get: Get a price alert.
+func (r *AlertsService) Get(ctx context.Context, accountID string, alertID string, opts ...CallOption) (*PriceAlert, error) {
+	return oneOf[PriceAlert](ctx, r.c, opGetAlert, []string{accountID, alertID}, nil, nil, opts)
+}
+
+// Modify: Move a price alert.
+func (r *AlertsService) Modify(ctx context.Context, accountID string, alertID string, body ChangePriceAlert, opts ...CallOption) (*PriceAlert, error) {
+	return oneOf[PriceAlert](ctx, r.c, opChangeAlert, []string{accountID, alertID}, nil, body, opts)
+}
+
+// Delete: Delete a price alert.
+func (r *AlertsService) Delete(ctx context.Context, accountID string, alertID string, opts ...CallOption) (*DeletedAlert, error) {
+	return oneOf[DeletedAlert](ctx, r.c, opDeleteAlert, []string{accountID, alertID}, nil, nil, opts)
+}
+
+// Rearm: Arm a price alert again.
+func (r *AlertsService) Rearm(ctx context.Context, accountID string, alertID string, opts ...CallOption) (*PriceAlert, error) {
+	return oneOf[PriceAlert](ctx, r.c, opRearmAlert, []string{accountID, alertID}, nil, nil, opts)
 }
 
 // WebhookEndpointsService: the webhookEndpoints calls (client.WebhookEndpoints).

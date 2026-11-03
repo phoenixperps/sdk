@@ -252,6 +252,10 @@ public sealed partial class Limits
     [JsonPropertyName("strategies")]
     public LimitsStrategies Strategies { get; set; } = null!;
 
+    /// <summary>The alerts.</summary>
+    [JsonPropertyName("alerts")]
+    public LimitsAlerts Alerts { get; set; } = null!;
+
     /// <summary>The largest request body.</summary>
     [JsonPropertyName("body_max_bytes")]
     public long BodyMaxBytes { get; set; }
@@ -524,7 +528,7 @@ public sealed partial class LimitsStrategies
     [JsonPropertyName("per_account")]
     public long PerAccount { get; set; }
 
-    /// <summary>Of those, programs (oco, twap, vwap, scaled, chase).</summary>
+    /// <summary>Of those, programs (oco, twap, vwap, scaled, chase, conditional).</summary>
     [JsonPropertyName("programs_per_account")]
     public long ProgramsPerAccount { get; set; }
 
@@ -573,6 +577,26 @@ public sealed partial class LimitsStrategies
     public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
+/// <summary>LimitsAlerts</summary>
+public sealed partial class LimitsAlerts
+{
+    /// <summary>Price alerts armed at once on one account.</summary>
+    [JsonPropertyName("armed_per_account")]
+    public long ArmedPerAccount { get; set; }
+
+    /// <summary>Price alerts armed at once across your accounts.</summary>
+    [JsonPropertyName("armed_per_customer")]
+    public long ArmedPerCustomer { get; set; }
+
+    /// <summary>How long an alert that fired (or was disabled) stays listed, in days.</summary>
+    [JsonPropertyName("kept_days")]
+    public long KeptDays { get; set; }
+
+    /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
 /// <summary>LimitsPageLimit</summary>
 public sealed partial class LimitsPageLimit
 {
@@ -592,7 +616,7 @@ public sealed partial class LimitsPageLimit
 /// <summary>Market</summary>
 public sealed partial class Market
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Value { get; set; } = "";
 
@@ -660,7 +684,7 @@ public sealed partial class Market
 /// <summary>MarketOption</summary>
 public sealed partial class MarketOption
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -700,7 +724,7 @@ public sealed partial class MarketMaxSlippagePct
 /// <summary>A market's 24-hour figures and open interest. A figure not known yet is null.</summary>
 public sealed partial class MarketStats
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -1136,7 +1160,7 @@ public sealed partial class AccountRiskExposure
 /// <summary>AccountRiskExposureMarket</summary>
 public sealed partial class AccountRiskExposureMarket
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -1204,7 +1228,7 @@ public sealed partial class AccountRiskTradingDays
 /// <summary>AccountRiskNearestLiquidation</summary>
 public sealed partial class AccountRiskNearestLiquidation
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -1640,7 +1664,7 @@ public sealed partial class DailyResult
 /// <summary>MarginSetting</summary>
 public sealed partial class MarginSetting
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -1700,7 +1724,7 @@ public sealed partial class Position
     [JsonPropertyName("id")]
     public string Id { get; set; } = "";
 
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -1828,7 +1852,7 @@ public sealed partial class PositionExits
 /// <summary>ClosedPosition</summary>
 public sealed partial class ClosedPosition
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -1928,7 +1952,7 @@ public sealed partial class Order
     [JsonPropertyName("account_id")]
     public string AccountId { get; set; } = "";
 
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -2052,7 +2076,7 @@ public sealed partial class Fill
     [JsonPropertyName("order_id")]
     public string OrderId { get; set; } = "";
 
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -2240,7 +2264,7 @@ public sealed partial class MeAssistantBudget
 /// <summary>A new order.</summary>
 public sealed partial class CreateOrder
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -2428,11 +2452,11 @@ public sealed partial class OrderExitsStopLossBreakEven
 /// <summary>A new strategy. trailing_stop and break_even act on the position's exits: the answer is that exits strategy.</summary>
 public sealed partial class CreateStrategy
 {
-    /// <summary>trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask.</summary>
+    /// <summary>trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market).</summary>
     [JsonPropertyName("type")]
     public CreateStrategyType Type { get; set; }
 
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -2440,7 +2464,7 @@ public sealed partial class CreateStrategy
     [JsonPropertyName("side")]
     public OrderSide? Side { get; set; }
 
-    /// <summary>trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase: the whole size.</summary>
+    /// <summary>trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase, conditional: the whole size.</summary>
     [JsonPropertyName("size")]
     public decimal? Size { get; set; }
 
@@ -2472,9 +2496,29 @@ public sealed partial class CreateStrategy
     [JsonPropertyName("trigger_percent")]
     public decimal? TriggerPercent { get; set; }
 
-    /// <summary>break_even: or once the price reaches this.</summary>
+    /// <summary>break_even: or once the price reaches this. conditional: the level that sends the order (the trigger market's price; its tick).</summary>
     [JsonPropertyName("trigger_price")]
     public decimal? TriggerPrice { get; set; }
+
+    /// <summary>conditional: the market whose price is watched (absent: this market). Any market we list.</summary>
+    [JsonPropertyName("trigger_market")]
+    public string? TriggerMarket { get; set; }
+
+    /// <summary>conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or below it. On this market it is set by the side and not given.</summary>
+    [JsonPropertyName("trigger_direction")]
+    public CreateStrategyTriggerDirection? TriggerDirection { get; set; }
+
+    /// <summary>conditional: the order it sends (default market).</summary>
+    [JsonPropertyName("order_type")]
+    public CreateStrategyOrderType? OrderType { get; set; }
+
+    /// <summary>conditional: the limit of its order, with order_type limit.</summary>
+    [JsonPropertyName("limit_price")]
+    public decimal? LimitPrice { get; set; }
+
+    /// <summary>conditional: until when it waits for its price (default and longest: the gtd maximum, see GET /v1/limits). Its order, once sent, stands on its own.</summary>
+    [JsonPropertyName("expires_at")]
+    public long? ExpiresAt { get; set; }
 
     /// <summary>break_even: ticks beyond the entry, on the profit side. chase: ticks behind the bid (buy) or ask (sell).</summary>
     [JsonPropertyName("offset_ticks")]
@@ -2500,7 +2544,7 @@ public sealed partial class CreateStrategy
     [JsonPropertyName("randomize")]
     public bool? Randomize { get; set; }
 
-    /// <summary>twap, vwap, scaled, chase: only reduce your position (a twap ends when the position is closed).</summary>
+    /// <summary>twap, vwap, scaled, chase, conditional: only reduce your position (a twap ends when the position is closed).</summary>
     [JsonPropertyName("reduce_only")]
     public bool? ReduceOnly { get; set; }
 
@@ -2512,7 +2556,7 @@ public sealed partial class CreateStrategy
     [JsonPropertyName("min_price")]
     public decimal? MinPrice { get; set; }
 
-    /// <summary>twap, vwap: each slice's slippage budget, in percent.</summary>
+    /// <summary>twap, vwap: each slice's slippage budget, in percent. conditional: its market order's.</summary>
     [JsonPropertyName("max_slippage_pct")]
     public decimal? MaxSlippagePct { get; set; }
 
@@ -2556,7 +2600,7 @@ public sealed partial class CreateStrategy
     [JsonPropertyName("allow_cross")]
     public bool? AllowCross { get; set; }
 
-    /// <summary>Your own id for the strategy (oco, twap, vwap, scaled, chase): unique in this environment.</summary>
+    /// <summary>Your own id for the strategy (oco, twap, vwap, scaled, chase, conditional): unique in this environment.</summary>
     [JsonPropertyName("client_strategy_id")]
     public string? ClientStrategyId { get; set; }
 
@@ -2574,7 +2618,7 @@ public sealed partial class CreateStrategyOrder
 
     /// <summary>Two orders that rest.</summary>
     [JsonPropertyName("type")]
-    public CreateStrategyOrderType Type { get; set; }
+    public CreateStrategyOrderType2 Type { get; set; }
 
     /// <summary>Its size.</summary>
     [JsonPropertyName("size")]
@@ -2640,7 +2684,7 @@ public sealed partial class ClosePosition
 /// <summary>Optional: only this market.</summary>
 public sealed partial class CancelAll
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string? Market { get; set; }
 
@@ -2668,7 +2712,7 @@ public sealed partial class MarginSettingInput
 /// <summary>MarginSettingResult</summary>
 public sealed partial class MarginSettingResult
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -2696,7 +2740,7 @@ public sealed partial class WhatIf
     [JsonPropertyName("reject")]
     public WhatIfReject? Reject { get; set; }
 
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -2938,7 +2982,7 @@ public sealed partial class ExitsLeg
 
     /// <summary>take_profit legs are limits; stop_loss legs are stop_market or stop_limit.</summary>
     [JsonPropertyName("type")]
-    public CreateStrategyOrderType Type { get; set; }
+    public CreateStrategyOrderType2 Type { get; set; }
 
     /// <summary>The order's status; waiting: a stop-loss not placed yet (it waits for its activation price or its break-even).</summary>
     [JsonPropertyName("status")]
@@ -3032,7 +3076,7 @@ public sealed partial class Exits
     [JsonPropertyName("account_id")]
     public string AccountId { get; set; } = "";
 
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -3154,7 +3198,7 @@ public sealed partial class ExitsBatchOperation
 
     /// <summary>place: limit for a take-profit (the default); stop_market (the default) or stop_limit for a stop-loss.</summary>
     [JsonPropertyName("type")]
-    public CreateStrategyOrderType? Type { get; set; }
+    public CreateStrategyOrderType2? Type { get; set; }
 
     /// <summary>The take-profit price, or the stop price.</summary>
     [JsonPropertyName("price")]
@@ -3244,11 +3288,11 @@ public sealed partial class Strategy
     [JsonPropertyName("account_id")]
     public string AccountId { get; set; } = "";
 
-    /// <summary>exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price.</summary>
+    /// <summary>exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached.</summary>
     [JsonPropertyName("type")]
     public StrategyType Type { get; set; }
 
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -3673,6 +3717,134 @@ public sealed partial class DeletedHook
     public Dictionary<string, JsonElement>? Extra { get; set; }
 }
 
+/// <summary>A level on a market, told once when the price reaches it (alert.triggered: the account stream, webhooks, GET /v1/events). It never places or changes an order.</summary>
+public sealed partial class PriceAlert
+{
+    /// <summary>The alert.</summary>
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    /// <summary>The account number.</summary>
+    [JsonPropertyName("account_id")]
+    public string AccountId { get; set; } = "";
+
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
+    [JsonPropertyName("market")]
+    public string Market { get; set; } = "";
+
+    /// <summary>Its level.</summary>
+    [JsonPropertyName("price")]
+    public decimal Price { get; set; }
+
+    /// <summary>above: it fires once the price reaches the level from below; below: from above. Set from the price when the level was set.</summary>
+    [JsonPropertyName("condition")]
+    public PriceAlertCondition Condition { get; set; }
+
+    /// <summary>Your note, sent with it.</summary>
+    [JsonPropertyName("note")]
+    public string? Note { get; set; }
+
+    /// <summary>armed: it waits for its level. triggered: it fired (rearm arms it again). disabled: its account or market went away before it fired.</summary>
+    [JsonPropertyName("status")]
+    public PriceAlertStatus Status { get; set; }
+
+    /// <summary>The price it watches: the market's last trade (the middle of the book until there is one), the price trailing stops follow.</summary>
+    [JsonPropertyName("price_source")]
+    public PriceAlertPriceSource PriceSource { get; set; }
+
+    /// <summary>The price it fired at.</summary>
+    [JsonPropertyName("trigger_price")]
+    public decimal? TriggerPrice { get; set; }
+
+    /// <summary>When it fired.</summary>
+    [JsonPropertyName("triggered_at")]
+    public long? TriggeredAt { get; set; }
+
+    /// <summary>Why it was disabled.</summary>
+    [JsonPropertyName("disabled_reason")]
+    public PriceAlertDisabledReason? DisabledReason { get; set; }
+
+    /// <summary>When it was set.</summary>
+    [JsonPropertyName("created_at")]
+    public long CreatedAt { get; set; }
+
+    /// <summary>Its latest change.</summary>
+    [JsonPropertyName("updated_at")]
+    public long UpdatedAt { get; set; }
+
+    /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>A new price alert. Its condition (above or below) is set from the price now.</summary>
+public sealed partial class CreatePriceAlert
+{
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
+    [JsonPropertyName("market")]
+    public string Market { get; set; } = "";
+
+    /// <summary>The level; not the price now.</summary>
+    [JsonPropertyName("price")]
+    public decimal Price { get; set; }
+
+    /// <summary>Your note (at most 280 characters).</summary>
+    [JsonPropertyName("note")]
+    public string? Note { get; set; }
+
+    /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>What to change on an armed alert: at least one field.</summary>
+public sealed partial class ChangePriceAlert
+{
+    /// <summary>A new level; its condition is set again from the price now.</summary>
+    [JsonPropertyName("price")]
+    public decimal? Price { get; set; }
+
+    /// <summary>A new note; null removes it.</summary>
+    [JsonPropertyName("note")]
+    public string? Note { get; set; }
+
+    /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>DeletedAlert</summary>
+public sealed partial class DeletedAlert
+{
+    /// <summary>The alert.</summary>
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+
+    /// <summary>It was deleted.</summary>
+    [JsonPropertyName("deleted")]
+    public bool Deleted { get; set; }
+
+    /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
+/// <summary>RestrictedCountry</summary>
+public sealed partial class RestrictedCountry
+{
+    /// <summary>The country, ISO 3166-1 alpha-2.</summary>
+    [JsonPropertyName("code")]
+    public string Code { get; set; } = "";
+
+    /// <summary>Its name in English.</summary>
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = "";
+
+    /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? Extra { get; set; }
+}
+
 /// <summary>CancelAllResult</summary>
 public sealed partial class CancelAllResult
 {
@@ -3828,7 +4000,7 @@ public sealed partial class AccountRiskOrNullExposure
 /// <summary>AccountRiskOrNullExposureMarket</summary>
 public sealed partial class AccountRiskOrNullExposureMarket
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -3896,7 +4068,7 @@ public sealed partial class AccountRiskOrNullTradingDays
 /// <summary>AccountRiskOrNullNearestLiquidation</summary>
 public sealed partial class AccountRiskOrNullNearestLiquidation
 {
-    /// <summary>A market id: the asset and USD.</summary>
+    /// <summary>A market id: the asset and USD; an option adds its venue or hours after a dot.</summary>
     [JsonPropertyName("market")]
     public string Market { get; set; } = "";
 
@@ -4169,6 +4341,36 @@ public sealed partial class StrategiesListParams
         if (Status is not null) q.Add(new("status", Status.Value.Value));
         if (Market is not null) q.Add(new("market", Market));
         if (ClientStrategyId is not null) q.Add(new("client_strategy_id", ClientStrategyId));
+        if (Limit is not null) q.Add(new("limit", Limit.Value.ToString(CultureInfo.InvariantCulture)));
+        if (Cursor is not null) q.Add(new("cursor", Cursor));
+        return q;
+    }
+}
+
+/// <summary>The query of list price alerts.</summary>
+public sealed partial class AlertsListParams
+{
+    /// <summary>Only alerts with this status (default all).</summary>
+    [JsonPropertyName("status")]
+    public AlertsListParamsStatus? Status { get; set; }
+
+    /// <summary>Only this market.</summary>
+    [JsonPropertyName("market")]
+    public string? Market { get; set; }
+
+    /// <summary>Page size.</summary>
+    [JsonPropertyName("limit")]
+    public long? Limit { get; set; }
+
+    /// <summary>next_cursor from the previous page, with the same filters.</summary>
+    [JsonPropertyName("cursor")]
+    public string? Cursor { get; set; }
+
+    internal List<KeyValuePair<string, string>> ToQuery()
+    {
+        var q = new List<KeyValuePair<string, string>>();
+        if (Status is not null) q.Add(new("status", Status.Value.Value));
+        if (Market is not null) q.Add(new("market", Market));
         if (Limit is not null) q.Add(new("limit", Limit.Value.ToString(CultureInfo.InvariantCulture)));
         if (Cursor is not null) q.Add(new("cursor", Cursor));
         return q;

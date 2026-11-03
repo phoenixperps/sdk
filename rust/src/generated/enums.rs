@@ -2026,7 +2026,7 @@ impl<'de> Deserialize<'de> for OrderExitsStopLossType {
     }
 }
 
-/// trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. Open: a value from a newer API version is kept in `Other`.
+/// trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market). Open: a value from a newer API version is kept in `Other`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum CreateStrategyType {
     /// `trailing_stop`
@@ -2043,6 +2043,8 @@ pub enum CreateStrategyType {
     Scaled,
     /// `chase`
     Chase,
+    /// `conditional`
+    Conditional,
     /// A value this SDK version does not know yet.
     Other(String),
 }
@@ -2058,6 +2060,7 @@ impl CreateStrategyType {
             Self::Vwap => "vwap",
             Self::Scaled => "scaled",
             Self::Chase => "chase",
+            Self::Conditional => "conditional",
             Self::Other(s) => s,
         }
     }
@@ -2073,6 +2076,7 @@ impl From<&str> for CreateStrategyType {
             "vwap" => Self::Vwap,
             "scaled" => Self::Scaled,
             "chase" => Self::Chase,
+            "conditional" => Self::Conditional,
             other => Self::Other(other.to_string()),
         }
     }
@@ -2102,15 +2106,69 @@ impl<'de> Deserialize<'de> for CreateStrategyType {
     }
 }
 
-/// Two orders that rest. Open: a value from a newer API version is kept in `Other`.
+/// conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or below it. On this market it is set by the side and not given. Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum CreateStrategyTriggerDirection {
+    /// `above`
+    Above,
+    /// `below`
+    Below,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl CreateStrategyTriggerDirection {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Above => "above",
+            Self::Below => "below",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for CreateStrategyTriggerDirection {
+    fn from(s: &str) -> Self {
+        match s {
+            "above" => Self::Above,
+            "below" => Self::Below,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for CreateStrategyTriggerDirection {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for CreateStrategyTriggerDirection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for CreateStrategyTriggerDirection {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for CreateStrategyTriggerDirection {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
+/// conditional: the order it sends (default market). Open: a value from a newer API version is kept in `Other`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum CreateStrategyOrderType {
+    /// `market`
+    Market,
     /// `limit`
     Limit,
-    /// `stop_market`
-    StopMarket,
-    /// `stop_limit`
-    StopLimit,
     /// A value this SDK version does not know yet.
     Other(String),
 }
@@ -2119,9 +2177,8 @@ impl CreateStrategyOrderType {
     /// The value as the API writes it.
     pub fn as_str(&self) -> &str {
         match self {
+            Self::Market => "market",
             Self::Limit => "limit",
-            Self::StopMarket => "stop_market",
-            Self::StopLimit => "stop_limit",
             Self::Other(s) => s,
         }
     }
@@ -2130,9 +2187,8 @@ impl CreateStrategyOrderType {
 impl From<&str> for CreateStrategyOrderType {
     fn from(s: &str) -> Self {
         match s {
+            "market" => Self::Market,
             "limit" => Self::Limit,
-            "stop_market" => Self::StopMarket,
-            "stop_limit" => Self::StopLimit,
             other => Self::Other(other.to_string()),
         }
     }
@@ -2157,6 +2213,66 @@ impl Serialize for CreateStrategyOrderType {
 }
 
 impl<'de> Deserialize<'de> for CreateStrategyOrderType {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
+/// Two orders that rest. Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum CreateStrategyOrderType2 {
+    /// `limit`
+    Limit,
+    /// `stop_market`
+    StopMarket,
+    /// `stop_limit`
+    StopLimit,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl CreateStrategyOrderType2 {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Limit => "limit",
+            Self::StopMarket => "stop_market",
+            Self::StopLimit => "stop_limit",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for CreateStrategyOrderType2 {
+    fn from(s: &str) -> Self {
+        match s {
+            "limit" => Self::Limit,
+            "stop_market" => Self::StopMarket,
+            "stop_limit" => Self::StopLimit,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for CreateStrategyOrderType2 {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for CreateStrategyOrderType2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for CreateStrategyOrderType2 {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for CreateStrategyOrderType2 {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         Ok(Self::from(String::deserialize(d)?.as_str()))
     }
@@ -2433,6 +2549,8 @@ pub enum EventType {
     StrategyOrphanRepaired,
     /// `strategy.slice`
     StrategySlice,
+    /// `strategy.triggered`
+    StrategyTriggered,
     /// `strategy.ended`
     StrategyEnded,
     /// `tradingview.alert_executed`
@@ -2461,6 +2579,8 @@ pub enum EventType {
     RiskWarning,
     /// `risk.cleared`
     RiskCleared,
+    /// `alert.triggered`
+    AlertTriggered,
     /// A value this SDK version does not know yet.
     Other(String),
 }
@@ -2487,6 +2607,7 @@ impl EventType {
             Self::StrategyLegRejected => "strategy.leg_rejected",
             Self::StrategyOrphanRepaired => "strategy.orphan_repaired",
             Self::StrategySlice => "strategy.slice",
+            Self::StrategyTriggered => "strategy.triggered",
             Self::StrategyEnded => "strategy.ended",
             Self::TradingviewAlertExecuted => "tradingview.alert_executed",
             Self::TradingviewAlertRefused => "tradingview.alert_refused",
@@ -2501,6 +2622,7 @@ impl EventType {
             Self::SystemRestarted => "system.restarted",
             Self::RiskWarning => "risk.warning",
             Self::RiskCleared => "risk.cleared",
+            Self::AlertTriggered => "alert.triggered",
             Self::Other(s) => s,
         }
     }
@@ -2527,6 +2649,7 @@ impl From<&str> for EventType {
             "strategy.leg_rejected" => Self::StrategyLegRejected,
             "strategy.orphan_repaired" => Self::StrategyOrphanRepaired,
             "strategy.slice" => Self::StrategySlice,
+            "strategy.triggered" => Self::StrategyTriggered,
             "strategy.ended" => Self::StrategyEnded,
             "tradingview.alert_executed" => Self::TradingviewAlertExecuted,
             "tradingview.alert_refused" => Self::TradingviewAlertRefused,
@@ -2541,6 +2664,7 @@ impl From<&str> for EventType {
             "system.restarted" => Self::SystemRestarted,
             "risk.warning" => Self::RiskWarning,
             "risk.cleared" => Self::RiskCleared,
+            "alert.triggered" => Self::AlertTriggered,
             other => Self::Other(other.to_string()),
         }
     }
@@ -2681,6 +2805,8 @@ pub enum WebhookPayloadType {
     StrategyOrphanRepaired,
     /// `strategy.slice`
     StrategySlice,
+    /// `strategy.triggered`
+    StrategyTriggered,
     /// `strategy.ended`
     StrategyEnded,
     /// `tradingview.alert_executed`
@@ -2709,6 +2835,8 @@ pub enum WebhookPayloadType {
     RiskWarning,
     /// `risk.cleared`
     RiskCleared,
+    /// `alert.triggered`
+    AlertTriggered,
     /// `webhook.ping`
     WebhookPing,
     /// A value this SDK version does not know yet.
@@ -2737,6 +2865,7 @@ impl WebhookPayloadType {
             Self::StrategyLegRejected => "strategy.leg_rejected",
             Self::StrategyOrphanRepaired => "strategy.orphan_repaired",
             Self::StrategySlice => "strategy.slice",
+            Self::StrategyTriggered => "strategy.triggered",
             Self::StrategyEnded => "strategy.ended",
             Self::TradingviewAlertExecuted => "tradingview.alert_executed",
             Self::TradingviewAlertRefused => "tradingview.alert_refused",
@@ -2751,6 +2880,7 @@ impl WebhookPayloadType {
             Self::SystemRestarted => "system.restarted",
             Self::RiskWarning => "risk.warning",
             Self::RiskCleared => "risk.cleared",
+            Self::AlertTriggered => "alert.triggered",
             Self::WebhookPing => "webhook.ping",
             Self::Other(s) => s,
         }
@@ -2778,6 +2908,7 @@ impl From<&str> for WebhookPayloadType {
             "strategy.leg_rejected" => Self::StrategyLegRejected,
             "strategy.orphan_repaired" => Self::StrategyOrphanRepaired,
             "strategy.slice" => Self::StrategySlice,
+            "strategy.triggered" => Self::StrategyTriggered,
             "strategy.ended" => Self::StrategyEnded,
             "tradingview.alert_executed" => Self::TradingviewAlertExecuted,
             "tradingview.alert_refused" => Self::TradingviewAlertRefused,
@@ -2792,6 +2923,7 @@ impl From<&str> for WebhookPayloadType {
             "system.restarted" => Self::SystemRestarted,
             "risk.warning" => Self::RiskWarning,
             "risk.cleared" => Self::RiskCleared,
+            "alert.triggered" => Self::AlertTriggered,
             "webhook.ping" => Self::WebhookPing,
             other => Self::Other(other.to_string()),
         }
@@ -3074,7 +3206,7 @@ impl<'de> Deserialize<'de> for ExitsBatchOperationClear {
     }
 }
 
-/// exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. Open: a value from a newer API version is kept in `Other`.
+/// exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached. Open: a value from a newer API version is kept in `Other`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum StrategyType {
     /// `exits`
@@ -3091,6 +3223,8 @@ pub enum StrategyType {
     Scaled,
     /// `chase`
     Chase,
+    /// `conditional`
+    Conditional,
     /// A value this SDK version does not know yet.
     Other(String),
 }
@@ -3106,6 +3240,7 @@ impl StrategyType {
             Self::Vwap => "vwap",
             Self::Scaled => "scaled",
             Self::Chase => "chase",
+            Self::Conditional => "conditional",
             Self::Other(s) => s,
         }
     }
@@ -3121,6 +3256,7 @@ impl From<&str> for StrategyType {
             "vwap" => Self::Vwap,
             "scaled" => Self::Scaled,
             "chase" => Self::Chase,
+            "conditional" => Self::Conditional,
             other => Self::Other(other.to_string()),
         }
     }
@@ -3393,6 +3529,8 @@ pub enum WebhookEndpointEvent {
     Account,
     /// `risk`
     Risk,
+    /// `alerts`
+    Alerts,
     /// A value this SDK version does not know yet.
     Other(String),
 }
@@ -3405,6 +3543,7 @@ impl WebhookEndpointEvent {
             Self::Positions => "positions",
             Self::Account => "account",
             Self::Risk => "risk",
+            Self::Alerts => "alerts",
             Self::Other(s) => s,
         }
     }
@@ -3417,6 +3556,7 @@ impl From<&str> for WebhookEndpointEvent {
             "positions" => Self::Positions,
             "account" => Self::Account,
             "risk" => Self::Risk,
+            "alerts" => Self::Alerts,
             other => Self::Other(other.to_string()),
         }
     }
@@ -3585,6 +3725,8 @@ pub enum WebhookEventTypeGroup {
     Account,
     /// `risk`
     Risk,
+    /// `alerts`
+    Alerts,
     /// A value this SDK version does not know yet.
     Other(String),
 }
@@ -3597,6 +3739,7 @@ impl WebhookEventTypeGroup {
             Self::Positions => "positions",
             Self::Account => "account",
             Self::Risk => "risk",
+            Self::Alerts => "alerts",
             Self::Other(s) => s,
         }
     }
@@ -3609,6 +3752,7 @@ impl From<&str> for WebhookEventTypeGroup {
             "positions" => Self::Positions,
             "account" => Self::Account,
             "risk" => Self::Risk,
+            "alerts" => Self::Alerts,
             other => Self::Other(other.to_string()),
         }
     }
@@ -3902,6 +4046,230 @@ impl<'de> Deserialize<'de> for TradingViewAlertStatus {
     }
 }
 
+/// above: it fires once the price reaches the level from below; below: from above. Set from the price when the level was set. Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PriceAlertCondition {
+    /// `above`
+    Above,
+    /// `below`
+    Below,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl PriceAlertCondition {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Above => "above",
+            Self::Below => "below",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for PriceAlertCondition {
+    fn from(s: &str) -> Self {
+        match s {
+            "above" => Self::Above,
+            "below" => Self::Below,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for PriceAlertCondition {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for PriceAlertCondition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for PriceAlertCondition {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for PriceAlertCondition {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
+/// armed: it waits for its level. triggered: it fired (rearm arms it again). disabled: its account or market went away before it fired. Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PriceAlertStatus {
+    /// `armed`
+    Armed,
+    /// `triggered`
+    Triggered,
+    /// `disabled`
+    Disabled,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl PriceAlertStatus {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Armed => "armed",
+            Self::Triggered => "triggered",
+            Self::Disabled => "disabled",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for PriceAlertStatus {
+    fn from(s: &str) -> Self {
+        match s {
+            "armed" => Self::Armed,
+            "triggered" => Self::Triggered,
+            "disabled" => Self::Disabled,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for PriceAlertStatus {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for PriceAlertStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for PriceAlertStatus {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for PriceAlertStatus {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
+/// The price it watches: the market's last trade (the middle of the book until there is one), the price trailing stops follow. Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PriceAlertPriceSource {
+    /// `last`
+    Last,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl PriceAlertPriceSource {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Last => "last",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for PriceAlertPriceSource {
+    fn from(s: &str) -> Self {
+        match s {
+            "last" => Self::Last,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for PriceAlertPriceSource {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for PriceAlertPriceSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for PriceAlertPriceSource {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for PriceAlertPriceSource {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
+/// Why it was disabled. Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum PriceAlertDisabledReason {
+    /// `account_removed`
+    AccountRemoved,
+    /// `market_removed`
+    MarketRemoved,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl PriceAlertDisabledReason {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::AccountRemoved => "account_removed",
+            Self::MarketRemoved => "market_removed",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for PriceAlertDisabledReason {
+    fn from(s: &str) -> Self {
+        match s {
+            "account_removed" => Self::AccountRemoved,
+            "market_removed" => Self::MarketRemoved,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for PriceAlertDisabledReason {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for PriceAlertDisabledReason {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for PriceAlertDisabledReason {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for PriceAlertDisabledReason {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
 /// Where it stands. Open: a value from a newer API version is kept in `Other`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LimitStandingStatus {
@@ -4081,6 +4449,70 @@ impl Serialize for StrategiesListParamsStatus {
 }
 
 impl<'de> Deserialize<'de> for StrategiesListParamsStatus {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
+/// AlertsListParamsStatus Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum AlertsListParamsStatus {
+    /// `all`
+    All,
+    /// `armed`
+    Armed,
+    /// `triggered`
+    Triggered,
+    /// `disabled`
+    Disabled,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl AlertsListParamsStatus {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::All => "all",
+            Self::Armed => "armed",
+            Self::Triggered => "triggered",
+            Self::Disabled => "disabled",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for AlertsListParamsStatus {
+    fn from(s: &str) -> Self {
+        match s {
+            "all" => Self::All,
+            "armed" => Self::Armed,
+            "triggered" => Self::Triggered,
+            "disabled" => Self::Disabled,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for AlertsListParamsStatus {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for AlertsListParamsStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for AlertsListParamsStatus {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for AlertsListParamsStatus {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         Ok(Self::from(String::deserialize(d)?.as_str()))
     }

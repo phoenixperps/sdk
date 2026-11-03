@@ -169,6 +169,16 @@ pub mod codes {
     pub const EVENT_NOT_FOUND: &str = "event_not_found";
     /// 422 rule_rejection.
     pub const RUNG_WOULD_FILL: &str = "rung_would_fill";
+    /// 422 rule_rejection.
+    pub const TRIGGER_ALREADY_MET: &str = "trigger_already_met";
+    /// 404 not_found.
+    pub const ALERT_NOT_FOUND: &str = "alert_not_found";
+    /// 422 rule_rejection.
+    pub const ALERT_LIMIT: &str = "alert_limit";
+    /// 422 rule_rejection.
+    pub const ALERT_AT_PRICE: &str = "alert_at_price";
+    /// 409 conflict.
+    pub const ALERT_NOT_ARMED: &str = "alert_not_armed";
     /// 403 permission.
     pub const STRATEGY_TYPE_DISABLED: &str = "strategy_type_disabled";
     /// 404 not_found.

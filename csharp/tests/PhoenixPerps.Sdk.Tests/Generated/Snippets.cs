@@ -34,6 +34,13 @@ internal static class Snippets
         Console.WriteLine(limits);
     }
 
+    internal static async Task ListRestrictedCountries(PhoenixPerpsClient client)
+    {
+        var page = await client.Platform.RestrictedCountriesAsync();
+        foreach (var restrictedCountry in page.Data)
+            Console.WriteLine(restrictedCountry.Name);
+    }
+
     internal static async Task GetMe(PhoenixPerpsClient client)
     {
         var me = await client.Me.GetAsync();
@@ -281,7 +288,7 @@ internal static class Snippets
                 {
                     Op = ExitsBatchOperationOp.Place,
                     Group = ExitsLegGroup.TakeProfit,
-                    Type = CreateStrategyOrderType.Limit,
+                    Type = CreateStrategyOrderType2.Limit,
                     Price = 63000m,
                     Size = 0.01m,
                 },
@@ -347,6 +354,50 @@ internal static class Snippets
     {
         var strategy = await client.Strategies.CancelAsync("SANDBOX-00042-001", "stg_01JAB7Q8XK4M2N5P7R9S3T5V7W");
         Console.WriteLine(strategy.Id);
+    }
+
+    internal static async Task CreateAlert(PhoenixPerpsClient client)
+    {
+        var priceAlert = await client.Alerts.CreateAsync("SANDBOX-00042-001", new CreatePriceAlert
+        {
+            Market = "BTC-USD",
+            Price = 120000m,
+            Note = "breakout",
+        });
+        Console.WriteLine(priceAlert.Id);
+    }
+
+    internal static async Task ListAlerts(PhoenixPerpsClient client)
+    {
+        await foreach (var priceAlert in client.Alerts.ListAutoPagingAsync("SANDBOX-00042-001"))
+            Console.WriteLine(priceAlert.Id);
+    }
+
+    internal static async Task GetAlert(PhoenixPerpsClient client)
+    {
+        var priceAlert = await client.Alerts.GetAsync("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W");
+        Console.WriteLine(priceAlert.Id);
+    }
+
+    internal static async Task ChangeAlert(PhoenixPerpsClient client)
+    {
+        var priceAlert = await client.Alerts.ModifyAsync("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W", new ChangePriceAlert
+        {
+            Price = 121000m,
+        });
+        Console.WriteLine(priceAlert.Id);
+    }
+
+    internal static async Task DeleteAlert(PhoenixPerpsClient client)
+    {
+        var deletedAlert = await client.Alerts.DeleteAsync("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W");
+        Console.WriteLine(deletedAlert.Id);
+    }
+
+    internal static async Task RearmAlert(PhoenixPerpsClient client)
+    {
+        var priceAlert = await client.Alerts.RearmAsync("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W");
+        Console.WriteLine(priceAlert.Id);
     }
 
     internal static async Task ListWebhookEndpoints(PhoenixPerpsClient client)

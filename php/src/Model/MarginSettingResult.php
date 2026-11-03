@@ -14,7 +14,7 @@ final class MarginSettingResult implements \JsonSerializable
     private const WIRE = ['market' => true, 'margin_mode' => true, 'leverage' => true];
 
     public function __construct(
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The margin mode. */
         public readonly ?string $marginMode = null,

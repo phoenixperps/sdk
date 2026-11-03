@@ -35,6 +35,11 @@ internal static partial class Conformance
                 var r = await c.Platform.LimitsAsync(options);
                 return (JsonSerializer.SerializeToElement(r, Json.Default.Limits), null);
             }
+            case "platform.restrictedCountries":
+            {
+                var page = await c.Platform.RestrictedCountriesAsync(options);
+                return (JsonSerializer.SerializeToElement(page, Json.Default.PageRestrictedCountry).GetProperty("data"), null);
+            }
             case "me.get":
             {
                 var r = await c.Me.GetAsync(options);
@@ -223,6 +228,40 @@ internal static partial class Conformance
             {
                 var r = await c.Strategies.CancelAsync(call.Path("account_id"), call.Path("strategy_id"), options);
                 return (JsonSerializer.SerializeToElement(r, Json.Default.Strategy), null);
+            }
+            case "alerts.create":
+            {
+                var body = call.Body<CreatePriceAlert>(Json.Default.CreatePriceAlert);
+                var r = await c.Alerts.CreateAsync(call.Path("account_id"), body!, options);
+                return (JsonSerializer.SerializeToElement(r, Json.Default.PriceAlert), null);
+            }
+            case "alerts.list":
+            {
+                var query = call.Query(Json.Default.AlertsListParams);
+                if (call.Iterate) return (null, await Ids(c.Alerts.ListAutoPagingAsync(call.Path("account_id"), query, options with { MaxItems = call.MaxItems })));
+                var page = await c.Alerts.ListAsync(call.Path("account_id"), query, options);
+                return (JsonSerializer.SerializeToElement(page, Json.Default.PagePriceAlert).GetProperty("data"), null);
+            }
+            case "alerts.get":
+            {
+                var r = await c.Alerts.GetAsync(call.Path("account_id"), call.Path("alert_id"), options);
+                return (JsonSerializer.SerializeToElement(r, Json.Default.PriceAlert), null);
+            }
+            case "alerts.modify":
+            {
+                var body = call.Body<ChangePriceAlert>(Json.Default.ChangePriceAlert);
+                var r = await c.Alerts.ModifyAsync(call.Path("account_id"), call.Path("alert_id"), body!, options);
+                return (JsonSerializer.SerializeToElement(r, Json.Default.PriceAlert), null);
+            }
+            case "alerts.delete":
+            {
+                var r = await c.Alerts.DeleteAsync(call.Path("account_id"), call.Path("alert_id"), options);
+                return (JsonSerializer.SerializeToElement(r, Json.Default.DeletedAlert), null);
+            }
+            case "alerts.rearm":
+            {
+                var r = await c.Alerts.RearmAsync(call.Path("account_id"), call.Path("alert_id"), options);
+                return (JsonSerializer.SerializeToElement(r, Json.Default.PriceAlert), null);
             }
             case "webhookEndpoints.list":
             {

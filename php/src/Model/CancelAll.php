@@ -14,7 +14,7 @@ final class CancelAll implements \JsonSerializable
     private const WIRE = ['market' => true];
 
     public function __construct(
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** @var array<string, mixed> Fields this SDK version does not know yet (a newer API's), kept as they came. */
         public readonly array $extra = [],

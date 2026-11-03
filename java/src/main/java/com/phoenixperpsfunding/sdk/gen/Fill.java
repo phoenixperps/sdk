@@ -63,7 +63,7 @@ public final class Fill {
         return this;
     }
 
-    /** A market id: the asset and USD. */
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
     public String market() {
         return market;
     }

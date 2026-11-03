@@ -23,6 +23,11 @@ def get_limits(client: PhoenixPerps) -> None:
     print(limits)
 
 
+def list_restricted_countries(client: PhoenixPerps) -> None:
+    for restricted_country in client.platform.restricted_countries().data:
+        print(restricted_country["name"])
+
+
 def get_me(client: PhoenixPerps) -> None:
     me = client.me.get()
     print(me)
@@ -273,6 +278,42 @@ def get_strategy(client: PhoenixPerps) -> None:
 def cancel_strategy(client: PhoenixPerps) -> None:
     strategy = client.strategies.cancel("SANDBOX-00042-001", "stg_01JAB7Q8XK4M2N5P7R9S3T5V7W")
     print(strategy)
+
+
+def create_alert(client: PhoenixPerps) -> None:
+    price_alert = client.alerts.create("SANDBOX-00042-001", {
+        "market": "BTC-USD",
+        "price": "120000",
+        "note": "breakout",
+    })
+    print(price_alert)
+
+
+def list_alerts(client: PhoenixPerps) -> None:
+    for price_alert in client.alerts.list("SANDBOX-00042-001").auto_paging_iter():
+        print(price_alert["id"])
+
+
+def get_alert(client: PhoenixPerps) -> None:
+    price_alert = client.alerts.get("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W")
+    print(price_alert)
+
+
+def change_alert(client: PhoenixPerps) -> None:
+    price_alert = client.alerts.modify("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W", {
+        "price": "121000",
+    })
+    print(price_alert)
+
+
+def delete_alert(client: PhoenixPerps) -> None:
+    deleted_alert = client.alerts.delete("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W")
+    print(deleted_alert)
+
+
+def rearm_alert(client: PhoenixPerps) -> None:
+    price_alert = client.alerts.rearm("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W")
+    print(price_alert)
 
 
 def list_webhook_endpoints(client: PhoenixPerps) -> None:

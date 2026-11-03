@@ -20,9 +20,9 @@ final class Strategy implements \JsonSerializable
         public readonly ?string $clientStrategyId = null,
         /** The account number. */
         public readonly ?string $accountId = null,
-        /** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. */
+        /** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached. */
         public readonly ?string $type = null,
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The side of its orders (exits: the closing side). */
         public readonly ?string $side = null,

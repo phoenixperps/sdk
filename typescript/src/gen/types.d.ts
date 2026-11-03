@@ -112,7 +112,7 @@ export interface Limits {
   };
   strategies: {
     /** Running strategies an account may hold. */ per_account: number;
-    /** Of those, programs (oco, twap, vwap, scaled, chase). */ programs_per_account: number;
+    /** Of those, programs (oco, twap, vwap, scaled, chase, conditional). */ programs_per_account: number;
     /** Working orders of strategies on one account. */ legs_per_account: number;
     /** Running strategies across your accounts. */ per_customer: number;
     /** Take-profit legs on one position. */ take_profits_per_position: number;
@@ -124,6 +124,11 @@ export interface Limits {
     /** Whether chase strategies may start. */ chase_enabled: boolean;
     /** The longest a chase may run, in minutes. */ chase_max_minutes: number;
   };
+  alerts: {
+    /** Price alerts armed at once on one account. */ armed_per_account: number;
+    /** Price alerts armed at once across your accounts. */ armed_per_customer: number;
+    /** How long an alert that fired (or was disabled) stays listed, in days. */ kept_days: number;
+  };
   /** The largest request body. */ body_max_bytes: number;
   page_limit: {
     /** Items a page holds by default. */ default: number;
@@ -132,14 +137,14 @@ export interface Limits {
 }
 
 export interface Market {
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The market's name; for a currency, the pair its price is quoted in (JPY-USD: USD/JPY, yen per dollar). */ name: string;
   /** Whether the market trades now. */ status: "open" | "halted" | "closed" | (string & {});
   /** The venue it trades on: its prices and fills are that venue's. Null for a currency on FX hours. */ venue: string | null;
   /** When it trades: around the clock, its underlying market's sessions (Standard Market Hours, closed on weekends), or FX hours. */ trading_hours: "24/7" | "standard" | "fx" | (string & {});
   /** For an option (the same asset on another venue, or on Standard Market Hours): its market. Null for a market. */ option_of: string | null;
   /** The ways this asset can be traded, the market first, then its options: an account holds one of them at a time (market_option_held). Null when there is only the market. */ options: Array<{
-    /** A market id: the asset and USD. */ market: string;
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
     /** Its venue. */ venue: string | null;
     /** When it trades. */ trading_hours: "24/7" | "standard" | "fx" | (string & {});
   }> | null;
@@ -159,7 +164,7 @@ export interface Market {
 
 /** A market's 24-hour figures and open interest. A figure not known yet is null. */
 export interface MarketStats {
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The last trade. */ last: string | null;
   /** The change over 24 hours. */ change_24h: string | null;
   /** That change in percent. */ change_24h_pct: string | null;
@@ -257,7 +262,7 @@ export interface AccountRisk {
     /** The value of the short ones. */ short: string;
     /** Gross exposure over equity. */ effective_leverage: string | null;
     /** Per market, largest first. */ markets: Array<{
-    /** A market id: the asset and USD. */ market: string;
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
     /** The value held on it. */ notional: string;
     /** That value over equity. */ leverage: string | null;
     /** The exposure cap of the market. */ cap: string | null;
@@ -277,7 +282,7 @@ export interface AccountRisk {
     /** Days the rule needs. */ required: number | null;
   };
   nearest_liquidation: {
-    /** A market id: the asset and USD. */ market: string;
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
     /** Its liquidation price. */ price: string;
     /** How far the price is from it, in percent. */ distance_pct: string;
   } | null;
@@ -380,7 +385,7 @@ export interface DailyResult {
 }
 
 export interface MarginSetting {
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The leverage new positions on this market get. */ leverage: number;
   /** Isolated: each position holds its own margin. Cross: positions share the balance. */ margin_mode: "isolated" | "cross" | (string & {});
   /** The highest this account may use on the market (its trading rule's). null: the market is not available on this account. */ max_leverage: number | null;
@@ -397,7 +402,7 @@ export interface ExitLeg {
 
 export interface Position {
   /** This position, while it stays open on the same side. */ id: string;
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** Long or short. */ side: "long" | "short" | (string & {});
   /** The size, in the base asset. */ size: string;
   /** The average entry price. */ entry_price: string | null;
@@ -427,7 +432,7 @@ export interface Position {
 }
 
 export interface ClosedPosition {
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** Long or short. */ side: "long" | "short" | (string & {});
   /** The size closed. */ size: string;
   /** The average entry price. */ entry_price: string | null;
@@ -452,7 +457,7 @@ export interface Order {
   /** The order. */ id: string;
   /** Your own id for it, when it was placed through the API. */ client_order_id: string | null;
   /** The account number. */ account_id: string;
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The order's side; null for an order placed elsewhere before the API saw it. */ side: "buy" | "sell" | (string & {}) | null;
   /** The order's type. */ type: "market" | "limit" | "stop_market" | "stop_limit" | "take_market" | "take_limit" | (string & {}) | null;
   /** unconfirmed: the engine has not confirmed its last state yet. */ status: "pending" | "working" | "filled" | "canceled" | "rejected" | "expired" | "unconfirmed" | (string & {});
@@ -483,7 +488,7 @@ export interface Order {
 export interface Fill {
   /** The fill. */ id: string;
   /** Its order. */ order_id: string;
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The side; null for an order placed elsewhere before the API saw it. */ side: "buy" | "sell" | (string & {}) | null;
   /** The size filled. */ size: string;
   /** The fill price. */ price: string;
@@ -528,7 +533,7 @@ export interface Me {
 
 /** A new order. */
 export interface CreateOrder {
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The order's side. */ side: "buy" | "sell" | (string & {});
   /** market: now, at the best price within your worst price. limit: at your price or better. stop_market: a market order once the last price reaches the stop. stop_limit: a limit once the last price reaches the stop. */ type: "market" | "limit" | "stop_market" | "stop_limit" | (string & {});
   /** The size, in the base asset: a multiple of the market's size step. Give size or notional_usd. */ size?: string | number;
@@ -575,10 +580,10 @@ export interface OrderExits {
 
 /** A new strategy. trailing_stop and break_even act on the position's exits: the answer is that exits strategy. */
 export interface CreateStrategy {
-  /** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. */ type: "trailing_stop" | "break_even" | "oco" | "twap" | "vwap" | "scaled" | "chase" | (string & {});
-  /** A market id: the asset and USD. */ market: string;
+  /** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market). */ type: "trailing_stop" | "break_even" | "oco" | "twap" | "vwap" | "scaled" | "chase" | "conditional" | (string & {});
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The order's side. */ side?: "buy" | "sell" | (string & {});
-  /** trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase: the whole size. */ size?: string | number;
+  /** trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase, conditional: the whole size. */ size?: string | number;
   /** trailing_stop: how far behind the best price (or percent). */ distance?: string | number;
   /** trailing_stop: how far behind, in percent of the best price. */ percent?: string | number;
   /** trailing_stop: start once the price reaches this (until then, initial_stop_price rests, or nothing). */ activation_price?: string | number;
@@ -586,7 +591,12 @@ export interface CreateStrategy {
   /** trailing_stop: cancel the position's other stop-losses first. */ replace_stops?: boolean;
   /** break_even: how far from the entry the price must go. */ trigger_distance?: string | number;
   /** break_even: the same, in percent of the entry. */ trigger_percent?: string | number;
-  /** break_even: or once the price reaches this. */ trigger_price?: string | number;
+  /** break_even: or once the price reaches this. conditional: the level that sends the order (the trigger market's price; its tick). */ trigger_price?: string | number;
+  /** conditional: the market whose price is watched (absent: this market). Any market we list. */ trigger_market?: string;
+  /** conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or below it. On this market it is set by the side and not given. */ trigger_direction?: "above" | "below" | (string & {});
+  /** conditional: the order it sends (default market). */ order_type?: "market" | "limit" | (string & {});
+  /** conditional: the limit of its order, with order_type limit. */ limit_price?: string | number;
+  /** conditional: until when it waits for its price (default and longest: the gtd maximum, see GET /v1/limits). Its order, once sent, stands on its own. */ expires_at?: number;
   /** break_even: ticks beyond the entry, on the profit side. chase: ticks behind the bid (buy) or ask (sell). */ offset_ticks?: number;
   /** oco: the two orders. */ orders?: Array<{
     /** The order's side. */ side: "buy" | "sell" | (string & {});
@@ -601,10 +611,10 @@ export interface CreateStrategy {
   /** twap, vwap: how long the schedule runs (bounds in the runner settings, see GET /v1/limits). */ duration_minutes?: number;
   /** twap, vwap: time between slices; at most half the duration. Default: 60 (within those bounds). */ interval_seconds?: number;
   /** twap, vwap: vary each slice's time and size a little (the sizes still add up to size). */ randomize?: boolean;
-  /** twap, vwap, scaled, chase: only reduce your position (a twap ends when the position is closed). */ reduce_only?: boolean;
+  /** twap, vwap, scaled, chase, conditional: only reduce your position (a twap ends when the position is closed). */ reduce_only?: boolean;
   /** twap, vwap (buy): slices wait while the price is above this. chase (buy): its cap. */ max_price?: string | number;
   /** twap, vwap (sell): slices wait while the price is below this. chase (sell): its floor. */ min_price?: string | number;
-  /** twap, vwap: each slice's slippage budget, in percent. */ max_slippage_pct?: string | number;
+  /** twap, vwap: each slice's slippage budget, in percent. conditional: its market order's. */ max_slippage_pct?: string | number;
   /** scaled: the first rung. */ start_price?: string | number;
   /** scaled: the last rung. */ end_price?: string | number;
   /** scaled: how many limits (at most the runner setting). */ rungs?: number;
@@ -615,7 +625,7 @@ export interface CreateStrategy {
   /** chase: how long it follows the price. */ max_minutes?: number;
   /** chase: at max_minutes, cancel it, or send what is left at the market. */ on_expiry?: "cancel" | "market" | (string & {});
   /** chase: it may rest through the last price (it would then fill at once). */ allow_cross?: boolean;
-  /** Your own id for the strategy (oco, twap, vwap, scaled, chase): unique in this environment. */ client_strategy_id?: string;
+  /** Your own id for the strategy (oco, twap, vwap, scaled, chase, conditional): unique in this environment. */ client_strategy_id?: string;
 }
 
 /** What to change: at least one field. The order keeps its place in the engine (changed in place, never canceled and placed again). */
@@ -633,7 +643,7 @@ export interface ClosePosition {
 
 /** Optional: only this market. */
 export interface CancelAll {
-  /** A market id: the asset and USD. */ market?: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market?: string;
 }
 
 /** The market's setting. The mode cannot change while a position or a working order is open on the market. */
@@ -643,7 +653,7 @@ export interface MarginSettingInput {
 }
 
 export interface MarginSettingResult {
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The margin mode. */ margin_mode: "isolated" | "cross" | (string & {});
   /** The leverage. */ leverage: number;
 }
@@ -655,7 +665,7 @@ export interface WhatIf {
     /** What it means. */ message: string | null;
     /** More about it. */ details?: Record<string, unknown> | Array<unknown>;
   } | null;
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The order's side. */ side: "buy" | "sell" | (string & {});
   /** The order's type. */ type: "market" | "limit" | "stop_market" | "stop_limit" | (string & {});
   /** Its size (after a notional_usd is rounded to the size step). */ size: string | null;
@@ -687,7 +697,7 @@ export interface WhatIf {
 
 export interface Event {
   /** The event; pass it as after (GET /v1/events) or resume (the stream) to continue from it. */ id: string;
-  /** What happened (GET /v1/webhook-event-types says what each type means). */ type: "order.created" | "order.edited" | "order.filled" | "order.canceled" | "order.rejected" | "order.expired" | "fill.created" | "position.opened" | "position.changed" | "position.closed" | "strategy.created" | "strategy.leg_placed" | "strategy.leg_modified" | "strategy.leg_filled" | "strategy.leg_canceled" | "strategy.leg_rejected" | "strategy.orphan_repaired" | "strategy.slice" | "strategy.ended" | "tradingview.alert_executed" | "tradingview.alert_refused" | "account.updated" | "account.passed" | "account.failed" | "account.payout_eligible" | "account.disabled" | "account.removed" | "key.loss_stop" | "key.expiring" | "system.restarted" | "risk.warning" | "risk.cleared" | (string & {});
+  /** What happened (GET /v1/webhook-event-types says what each type means). */ type: "order.created" | "order.edited" | "order.filled" | "order.canceled" | "order.rejected" | "order.expired" | "fill.created" | "position.opened" | "position.changed" | "position.closed" | "strategy.created" | "strategy.leg_placed" | "strategy.leg_modified" | "strategy.leg_filled" | "strategy.leg_canceled" | "strategy.leg_rejected" | "strategy.orphan_repaired" | "strategy.slice" | "strategy.triggered" | "strategy.ended" | "tradingview.alert_executed" | "tradingview.alert_refused" | "account.updated" | "account.passed" | "account.failed" | "account.payout_eligible" | "account.disabled" | "account.removed" | "key.loss_stop" | "key.expiring" | "system.restarted" | "risk.warning" | "risk.cleared" | "alert.triggered" | (string & {});
   /** The account number. */ account_id: string;
   /** When it happened. */ time: number;
   /** Where it came from: an order placed through this API or by an AI assistant (the MCP server), one placed on a trading platform, the engine itself (positions), a strategy of this API, or a TradingView alert. */ source: "api" | "mcp" | "platform" | "engine" | "strategy" | "tradingview" | (string & {});
@@ -697,7 +707,7 @@ export interface Event {
 /** What a json webhook endpoint receives: the event as GET /v1/events shows it, with the endpoint's API version and environment. */
 export interface WebhookPayload {
   /** The event; pass it as after (GET /v1/events) or resume (the stream) to continue from it. */ id: string;
-  /** What happened; webhook.ping is a test. */ type: "order.created" | "order.edited" | "order.filled" | "order.canceled" | "order.rejected" | "order.expired" | "fill.created" | "position.opened" | "position.changed" | "position.closed" | "strategy.created" | "strategy.leg_placed" | "strategy.leg_modified" | "strategy.leg_filled" | "strategy.leg_canceled" | "strategy.leg_rejected" | "strategy.orphan_repaired" | "strategy.slice" | "strategy.ended" | "tradingview.alert_executed" | "tradingview.alert_refused" | "account.updated" | "account.passed" | "account.failed" | "account.payout_eligible" | "account.disabled" | "account.removed" | "key.loss_stop" | "key.expiring" | "system.restarted" | "risk.warning" | "risk.cleared" | "webhook.ping" | (string & {});
+  /** What happened; webhook.ping is a test. */ type: "order.created" | "order.edited" | "order.filled" | "order.canceled" | "order.rejected" | "order.expired" | "fill.created" | "position.opened" | "position.changed" | "position.closed" | "strategy.created" | "strategy.leg_placed" | "strategy.leg_modified" | "strategy.leg_filled" | "strategy.leg_canceled" | "strategy.leg_rejected" | "strategy.orphan_repaired" | "strategy.slice" | "strategy.triggered" | "strategy.ended" | "tradingview.alert_executed" | "tradingview.alert_refused" | "account.updated" | "account.passed" | "account.failed" | "account.payout_eligible" | "account.disabled" | "account.removed" | "key.loss_stop" | "key.expiring" | "system.restarted" | "risk.warning" | "risk.cleared" | "alert.triggered" | "webhook.ping" | (string & {});
   /** The account number (none on webhook.ping). */ account_id?: string;
   /** When it happened. */ time: number;
   /** Where it came from: an order placed through this API or by an AI assistant (the MCP server), one placed on a trading platform, the engine itself (positions), a strategy of this API, or a TradingView alert. */ source: "api" | "mcp" | "platform" | "engine" | "strategy" | "tradingview" | (string & {});
@@ -733,7 +743,7 @@ export interface ExitsLeg {
 
 export interface Exits {
   /** The account number. */ account_id: string;
-  /** A market id: the asset and USD. */ market: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The strategy that keeps these exits (type exits); null when there are none. */ strategy_id: string | null;
   /** The open position; null when flat. */ position: {
     /** Long or short. */ side: "long" | "short" | (string & {});
@@ -783,8 +793,8 @@ export interface Strategy {
   /** The strategy. */ id: string;
   /** Your own id for it. */ client_strategy_id: string | null;
   /** The account number. */ account_id: string;
-  /** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. */ type: "exits" | "bracket" | "oco" | "twap" | "vwap" | "scaled" | "chase" | (string & {});
-  /** A market id: the asset and USD. */ market: string;
+  /** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached. */ type: "exits" | "bracket" | "oco" | "twap" | "vwap" | "scaled" | "chase" | "conditional" | (string & {});
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
   /** The side of its orders (exits: the closing side). */ side: "buy" | "sell" | (string & {}) | null;
   /** waiting: armed, nothing placed yet. working: running. completed: done as asked. canceled: you ended it. ended: it stopped for end_reason. */ status: "waiting" | "working" | "completed" | "canceled" | "ended" | (string & {});
   /** Why it stopped. */ end_reason: "take_profit" | "stop_loss" | "filled" | "position_closed" | "position_reversed" | "canceled_by_user" | "external" | "key_revoked" | "account_closed" | "engine_restart" | "child_rejected" | "price_bound" | "expired" | (string & {}) | null;
@@ -800,7 +810,7 @@ export interface WebhookEndpoint {
   /** The endpoint. */ id: string;
   /** Its address: the host and the start of the path (never whole: chat addresses carry tokens). */ url: string | null;
   /** json: the signed event. discord, slack, telegram: a chat message. */ format: "json" | "discord" | "slack" | "telegram" | (string & {});
-  /** The groups it receives (see GET /v1/webhook-event-types). */ events: Array<"orders" | "positions" | "account" | "risk" | (string & {})>;
+  /** The groups it receives (see GET /v1/webhook-event-types). */ events: Array<"orders" | "positions" | "account" | "risk" | "alerts" | (string & {})>;
   /** disabled: we stopped after failures in a row; turn it on again from your dashboard. */ status: "active" | "paused" | "disabled" | (string & {});
   /** The version its events are written in. */ api_version: string;
   /** Its environment: it receives that environment's events only. */ environment: "live" | "sandbox" | (string & {});
@@ -829,7 +839,7 @@ export interface WebhookDelivery {
 
 export interface WebhookEventType {
   /** The type. */ type: string;
-  /** The group that receives it; null: every endpoint (the test). */ group: "orders" | "positions" | "account" | "risk" | (string & {}) | null;
+  /** The group that receives it; null: every endpoint (the test). */ group: "orders" | "positions" | "account" | "risk" | "alerts" | (string & {}) | null;
   /** What it means. */ description: string;
 }
 
@@ -899,6 +909,46 @@ export interface DeletedHook {
   /** It was revoked: its address answers 404 from now on. */ deleted: boolean;
 }
 
+/** A level on a market, told once when the price reaches it (alert.triggered: the account stream, webhooks, GET /v1/events). It never places or changes an order. */
+export interface PriceAlert {
+  /** The alert. */ id: string;
+  /** The account number. */ account_id: string;
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
+  /** Its level. */ price: string;
+  /** above: it fires once the price reaches the level from below; below: from above. Set from the price when the level was set. */ condition: "above" | "below" | (string & {});
+  /** Your note, sent with it. */ note: string | null;
+  /** armed: it waits for its level. triggered: it fired (rearm arms it again). disabled: its account or market went away before it fired. */ status: "armed" | "triggered" | "disabled" | (string & {});
+  /** The price it watches: the market's last trade (the middle of the book until there is one), the price trailing stops follow. */ price_source: "last" | (string & {});
+  /** The price it fired at. */ trigger_price: string | null;
+  /** When it fired. */ triggered_at: number | null;
+  /** Why it was disabled. */ disabled_reason: "account_removed" | "market_removed" | (string & {}) | null;
+  /** When it was set. */ created_at: number;
+  /** Its latest change. */ updated_at: number;
+}
+
+/** A new price alert. Its condition (above or below) is set from the price now. */
+export interface CreatePriceAlert {
+  /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
+  /** The level; not the price now. */ price: string | number;
+  /** Your note (at most 280 characters). */ note?: string;
+}
+
+/** What to change on an armed alert: at least one field. */
+export interface ChangePriceAlert {
+  /** A new level; its condition is set again from the price now. */ price?: string | number;
+  /** A new note; null removes it. */ note?: string | null;
+}
+
+export interface DeletedAlert {
+  /** The alert. */ id: string;
+  /** It was deleted. */ deleted: boolean;
+}
+
+export interface RestrictedCountry {
+  /** The country, ISO 3166-1 alpha-2. */ code: string;
+  /** Its name in English. */ name: string;
+}
+
 export interface CancelAllResult {
   /** The account number. */ account_id: string;
   /** The market, or null for every market. */ market: string | null;
@@ -929,7 +979,7 @@ export type AccountRiskOrNull = {
     /** The value of the short ones. */ short: string;
     /** Gross exposure over equity. */ effective_leverage: string | null;
     /** Per market, largest first. */ markets: Array<{
-    /** A market id: the asset and USD. */ market: string;
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
     /** The value held on it. */ notional: string;
     /** That value over equity. */ leverage: string | null;
     /** The exposure cap of the market. */ cap: string | null;
@@ -949,7 +999,7 @@ export type AccountRiskOrNull = {
     /** Days the rule needs. */ required: number | null;
   };
     nearest_liquidation: {
-    /** A market id: the asset and USD. */ market: string;
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */ market: string;
     /** Its liquidation price. */ price: string;
     /** How far the price is from it, in percent. */ distance_pct: string;
   } | null;
@@ -1023,6 +1073,13 @@ export interface ListStrategiesQuery {
   /** next_cursor from the previous page, with the same filters. */ cursor?: string;
 }
 
+export interface ListAlertsQuery {
+  /** Only alerts with this status (default all). */ status?: "all" | "armed" | "triggered" | "disabled" | (string & {});
+  /** Only this market. */ market?: string;
+  /** Page size. */ limit?: number;
+  /** next_cursor from the previous page, with the same filters. */ cursor?: string;
+}
+
 export interface ListWebhookDeliveriesQuery {
   /** Page size. */ limit?: number;
   /** next_cursor from the previous page, with the same filters. */ cursor?: string;
@@ -1049,6 +1106,8 @@ export interface PlatformResource {
   status(opts?: RequestOptions): Promise<Status>;
   /** Get the limits */
   limits(opts?: RequestOptions): Promise<Limits>;
+  /** List restricted countries */
+  restrictedCountries(opts?: ListOptions): PagePromise<RestrictedCountry>;
 }
 
 export interface MeResource {
@@ -1151,6 +1210,21 @@ export interface StrategiesResource {
   cancel(accountId: string, strategyId: string, opts?: RequestOptions): Promise<Strategy>;
 }
 
+export interface AlertsResource {
+  /** Create a price alert */
+  create(accountId: string, body: CreatePriceAlert, opts?: RequestOptions): Promise<PriceAlert>;
+  /** List price alerts */
+  list(accountId: string, query?: ListAlertsQuery, opts?: ListOptions): PagePromise<PriceAlert>;
+  /** Get a price alert */
+  get(accountId: string, alertId: string, opts?: RequestOptions): Promise<PriceAlert>;
+  /** Move a price alert */
+  modify(accountId: string, alertId: string, body: ChangePriceAlert, opts?: RequestOptions): Promise<PriceAlert>;
+  /** Delete a price alert */
+  delete(accountId: string, alertId: string, opts?: RequestOptions): Promise<DeletedAlert>;
+  /** Arm a price alert again */
+  rearm(accountId: string, alertId: string, opts?: RequestOptions): Promise<PriceAlert>;
+}
+
 export interface WebhookEndpointsResource {
   /** List webhook endpoints */
   list(opts?: ListOptions): PagePromise<WebhookEndpoint>;
@@ -1210,6 +1284,7 @@ export interface Resources {
   events: EventsResource;
   exits: ExitsResource;
   strategies: StrategiesResource;
+  alerts: AlertsResource;
   webhookEndpoints: WebhookEndpointsResource;
   tradingview: TradingviewResource;
   fills: FillsResource;

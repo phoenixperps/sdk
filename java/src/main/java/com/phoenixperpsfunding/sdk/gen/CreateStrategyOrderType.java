@@ -5,16 +5,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
 
-/** Two orders that rest. Open: a value from a newer API version is kept as is. */
+/** conditional: the order it sends (default market). Open: a value from a newer API version is kept as is. */
 public final class CreateStrategyOrderType {
+    /** market */
+    public static final CreateStrategyOrderType MARKET = new CreateStrategyOrderType("market");
+
     /** limit */
     public static final CreateStrategyOrderType LIMIT = new CreateStrategyOrderType("limit");
-
-    /** stop_market */
-    public static final CreateStrategyOrderType STOP_MARKET = new CreateStrategyOrderType("stop_market");
-
-    /** stop_limit */
-    public static final CreateStrategyOrderType STOP_LIMIT = new CreateStrategyOrderType("stop_limit");
 
     private final String value;
 
@@ -26,12 +23,10 @@ public final class CreateStrategyOrderType {
     @JsonCreator
     public static CreateStrategyOrderType of(String value) {
         switch (value) {
+            case "market":
+                return MARKET;
             case "limit":
                 return LIMIT;
-            case "stop_market":
-                return STOP_MARKET;
-            case "stop_limit":
-                return STOP_LIMIT;
             default:
                 return new CreateStrategyOrderType(value);
         }

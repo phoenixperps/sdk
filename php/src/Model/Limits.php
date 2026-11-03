@@ -11,7 +11,7 @@ use PhoenixPerps\Decimal;
 /** Limits */
 final class Limits implements \JsonSerializable
 {
-    private const WIRE = ['environment' => true, 'rate' => true, 'keys' => true, 'orders' => true, 'sandbox' => true, 'strategies' => true, 'body_max_bytes' => true, 'page_limit' => true];
+    private const WIRE = ['environment' => true, 'rate' => true, 'keys' => true, 'orders' => true, 'sandbox' => true, 'strategies' => true, 'alerts' => true, 'body_max_bytes' => true, 'page_limit' => true];
 
     public function __construct(
         /** The environment of the host you called. */
@@ -26,6 +26,8 @@ final class Limits implements \JsonSerializable
         public readonly ?LimitsSandbox $sandbox = null,
         /** The strategies. */
         public readonly ?LimitsStrategies $strategies = null,
+        /** The alerts. */
+        public readonly ?LimitsAlerts $alerts = null,
         /** The largest request body. */
         public readonly ?int $bodyMaxBytes = null,
         /** The page limit. */
@@ -45,6 +47,7 @@ final class Limits implements \JsonSerializable
             orders: isset($d['orders']) && is_array($d['orders']) ? LimitsOrders::fromArray($d['orders']) : null,
             sandbox: isset($d['sandbox']) && is_array($d['sandbox']) ? LimitsSandbox::fromArray($d['sandbox']) : null,
             strategies: isset($d['strategies']) && is_array($d['strategies']) ? LimitsStrategies::fromArray($d['strategies']) : null,
+            alerts: isset($d['alerts']) && is_array($d['alerts']) ? LimitsAlerts::fromArray($d['alerts']) : null,
             bodyMaxBytes: $d['body_max_bytes'] ?? null,
             pageLimit: isset($d['page_limit']) && is_array($d['page_limit']) ? LimitsPageLimit::fromArray($d['page_limit']) : null,
             extra: array_diff_key($d, self::WIRE),
@@ -72,6 +75,9 @@ final class Limits implements \JsonSerializable
         }
         if ($this->strategies !== null) {
             $out['strategies'] = $this->strategies->toArray();
+        }
+        if ($this->alerts !== null) {
+            $out['alerts'] = $this->alerts->toArray();
         }
         if ($this->bodyMaxBytes !== null) {
             $out['body_max_bytes'] = $this->bodyMaxBytes;

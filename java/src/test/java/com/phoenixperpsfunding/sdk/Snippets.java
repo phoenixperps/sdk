@@ -32,6 +32,12 @@ final class Snippets {
         System.out.println(limits);
     }
 
+    static void listRestrictedCountries(PhoenixPerpsClient client) {
+        for (RestrictedCountry restrictedCountry : client.platform().restrictedCountries().data()) {
+            System.out.println(restrictedCountry.name());
+        }
+    }
+
     static void getMe(PhoenixPerpsClient client) {
         Me me = client.me().get();
         System.out.println(me);
@@ -218,7 +224,7 @@ final class Snippets {
                         .price(new BigDecimal("61900")), new ExitsBatchOperation()
                         .op(ExitsBatchOperationOp.PLACE)
                         .group(ExitsLegGroup.TAKE_PROFIT)
-                        .type(CreateStrategyOrderType.LIMIT)
+                        .type(CreateStrategyOrderType2.LIMIT)
                         .price(new BigDecimal("63000"))
                         .size(new BigDecimal("0.01")))));
         System.out.println(exits);
@@ -263,6 +269,41 @@ final class Snippets {
     static void cancelStrategy(PhoenixPerpsClient client) {
         Strategy strategy = client.strategies().cancel("SANDBOX-00042-001", "stg_01JAB7Q8XK4M2N5P7R9S3T5V7W");
         System.out.println(strategy);
+    }
+
+    static void createAlert(PhoenixPerpsClient client) {
+        PriceAlert priceAlert = client.alerts().create("SANDBOX-00042-001", new CreatePriceAlert()
+                .market("BTC-USD")
+                .price(new BigDecimal("120000"))
+                .note("breakout"));
+        System.out.println(priceAlert);
+    }
+
+    static void listAlerts(PhoenixPerpsClient client) {
+        for (PriceAlert priceAlert : client.alerts().listAutoPaging("SANDBOX-00042-001", null)) {
+            System.out.println(priceAlert.id());
+        }
+    }
+
+    static void getAlert(PhoenixPerpsClient client) {
+        PriceAlert priceAlert = client.alerts().get("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W");
+        System.out.println(priceAlert);
+    }
+
+    static void changeAlert(PhoenixPerpsClient client) {
+        PriceAlert priceAlert = client.alerts().modify("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W", new ChangePriceAlert()
+                .price(new BigDecimal("121000")));
+        System.out.println(priceAlert);
+    }
+
+    static void deleteAlert(PhoenixPerpsClient client) {
+        DeletedAlert deletedAlert = client.alerts().delete("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W");
+        System.out.println(deletedAlert);
+    }
+
+    static void rearmAlert(PhoenixPerpsClient client) {
+        PriceAlert priceAlert = client.alerts().rearm("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W");
+        System.out.println(priceAlert);
     }
 
     static void listWebhookEndpoints(PhoenixPerpsClient client) {

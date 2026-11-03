@@ -13,6 +13,7 @@ final class Ops
     public const GET_SPEC = ['id' => 'getSpec', 'method' => 'GET', 'path' => '/v1/openapi.json', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'public'];
     public const GET_STATUS = ['id' => 'getStatus', 'method' => 'GET', 'path' => '/v1/status', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'public'];
     public const GET_LIMITS = ['id' => 'getLimits', 'method' => 'GET', 'path' => '/v1/limits', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'public'];
+    public const LIST_RESTRICTED_COUNTRIES = ['id' => 'listRestrictedCountries', 'method' => 'GET', 'path' => '/v1/restricted-countries', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'public'];
     public const GET_ME = ['id' => 'getMe', 'method' => 'GET', 'path' => '/v1/me', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
     public const LIST_MARKETS = ['id' => 'listMarkets', 'method' => 'GET', 'path' => '/v1/markets', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'public'];
     public const LIST_MARKET_STATS = ['id' => 'listMarketStats', 'method' => 'GET', 'path' => '/v1/markets/stats', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'public'];
@@ -47,6 +48,12 @@ final class Ops
     public const LIST_STRATEGIES = ['id' => 'listStrategies', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/strategies', 'idempotent' => false, 'retrySafe' => true, 'cursor' => 'cursor', 'scope' => 'read'];
     public const GET_STRATEGY = ['id' => 'getStrategy', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/strategies/{strategy_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
     public const CANCEL_STRATEGY = ['id' => 'cancelStrategy', 'method' => 'DELETE', 'path' => '/v1/accounts/{account_id}/strategies/{strategy_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'trade'];
+    public const CREATE_ALERT = ['id' => 'createAlert', 'method' => 'POST', 'path' => '/v1/accounts/{account_id}/alerts', 'idempotent' => true, 'retrySafe' => false, 'cursor' => null, 'scope' => 'read'];
+    public const LIST_ALERTS = ['id' => 'listAlerts', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/alerts', 'idempotent' => false, 'retrySafe' => true, 'cursor' => 'cursor', 'scope' => 'read'];
+    public const GET_ALERT = ['id' => 'getAlert', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/alerts/{alert_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
+    public const CHANGE_ALERT = ['id' => 'changeAlert', 'method' => 'PATCH', 'path' => '/v1/accounts/{account_id}/alerts/{alert_id}', 'idempotent' => false, 'retrySafe' => false, 'cursor' => null, 'scope' => 'read'];
+    public const DELETE_ALERT = ['id' => 'deleteAlert', 'method' => 'DELETE', 'path' => '/v1/accounts/{account_id}/alerts/{alert_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
+    public const REARM_ALERT = ['id' => 'rearmAlert', 'method' => 'POST', 'path' => '/v1/accounts/{account_id}/alerts/{alert_id}/rearm', 'idempotent' => false, 'retrySafe' => false, 'cursor' => null, 'scope' => 'read'];
     public const LIST_WEBHOOK_ENDPOINTS = ['id' => 'listWebhookEndpoints', 'method' => 'GET', 'path' => '/v1/webhook-endpoints', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
     public const GET_WEBHOOK_ENDPOINT = ['id' => 'getWebhookEndpoint', 'method' => 'GET', 'path' => '/v1/webhook-endpoints/{endpoint_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
     public const DELETE_WEBHOOK_ENDPOINT = ['id' => 'deleteWebhookEndpoint', 'method' => 'DELETE', 'path' => '/v1/webhook-endpoints/{endpoint_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'trade'];

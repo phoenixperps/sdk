@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 namespace PhoenixPerps\Enum;
 
-/** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. Open: the field is a string, and a value from a newer API version is kept as is. */
+/** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market). Open: the field is a string, and a value from a newer API version is kept as is. */
 final class CreateStrategyType
 {
     public const TRAILING_STOP = 'trailing_stop';
@@ -16,7 +16,8 @@ final class CreateStrategyType
     public const VWAP = 'vwap';
     public const SCALED = 'scaled';
     public const CHASE = 'chase';
+    public const CONDITIONAL = 'conditional';
 
     /** Every value this SDK version knows. */
-    public const ALL_VALUES = [self::TRAILING_STOP, self::BREAK_EVEN, self::OCO, self::TWAP, self::VWAP, self::SCALED, self::CHASE];
+    public const ALL_VALUES = [self::TRAILING_STOP, self::BREAK_EVEN, self::OCO, self::TWAP, self::VWAP, self::SCALED, self::CHASE, self::CONDITIONAL];
 }

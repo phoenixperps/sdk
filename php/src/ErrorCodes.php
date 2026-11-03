@@ -228,6 +228,21 @@ final class ErrorCodes
     /** 422 rule_rejection. */
     public const RUNG_WOULD_FILL = 'rung_would_fill';
 
+    /** 422 rule_rejection. */
+    public const TRIGGER_ALREADY_MET = 'trigger_already_met';
+
+    /** 404 not_found. */
+    public const ALERT_NOT_FOUND = 'alert_not_found';
+
+    /** 422 rule_rejection. */
+    public const ALERT_LIMIT = 'alert_limit';
+
+    /** 422 rule_rejection. */
+    public const ALERT_AT_PRICE = 'alert_at_price';
+
+    /** 409 conflict. */
+    public const ALERT_NOT_ARMED = 'alert_not_armed';
+
     /** 403 permission. */
     public const STRATEGY_TYPE_DISABLED = 'strategy_type_disabled';
 

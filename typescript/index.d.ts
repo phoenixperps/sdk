@@ -33,6 +33,7 @@ export declare class PhoenixPerps implements Resources {
   events: Resources['events'];
   exits: Resources['exits'];
   strategies: Resources['strategies'];
+  alerts: Resources['alerts'];
   webhookEndpoints: Resources['webhookEndpoints'];
   tradingview: Resources['tradingview'];
   fills: Resources['fills'];

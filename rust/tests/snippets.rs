@@ -29,6 +29,14 @@ pub async fn get_limits(client: &Client) -> Result<()> {
     Ok(())
 }
 
+pub async fn list_restricted_countries(client: &Client) -> Result<()> {
+    let page = client.platform().restricted_countries().await?;
+    for restricted_country in &page.data {
+        println!("{}", restricted_country.name);
+    }
+    Ok(())
+}
+
 pub async fn get_me(client: &Client) -> Result<()> {
     let me = client.me().get().await?;
     println!("{me:?}");
@@ -282,7 +290,7 @@ pub async fn set_exits(client: &Client) -> Result<()> {
         }, ExitsBatchOperation {
             op: ExitsBatchOperationOp::Place,
             group: Some(ExitsLegGroup::TakeProfit),
-            r#type: Some(CreateStrategyOrderType::Limit),
+            r#type: Some(CreateStrategyOrderType2::Limit),
             price: Some(dec("63000")),
             size: Some(dec("0.01")),
             ..Default::default()
@@ -349,6 +357,54 @@ pub async fn get_strategy(client: &Client) -> Result<()> {
 pub async fn cancel_strategy(client: &Client) -> Result<()> {
     let strategy = client.strategies().cancel("SANDBOX-00042-001", "stg_01JAB7Q8XK4M2N5P7R9S3T5V7W").await?;
     println!("{strategy:?}");
+    Ok(())
+}
+
+pub async fn create_alert(client: &Client) -> Result<()> {
+    let price_alert = client.alerts().create("SANDBOX-00042-001", &CreatePriceAlert {
+        market: "BTC-USD".into(),
+        price: dec("120000"),
+        note: Some("breakout".into()),
+        ..Default::default()
+    }).await?;
+    println!("{price_alert:?}");
+    Ok(())
+}
+
+pub async fn list_alerts(client: &Client) -> Result<()> {
+    let options = RequestOptions::default();
+    let mut items = client.alerts().list_auto_paging("SANDBOX-00042-001", None, &options);
+    while let Some(item) = items.next().await {
+        let price_alert = item?;
+        println!("{}", price_alert.id);
+    }
+    Ok(())
+}
+
+pub async fn get_alert(client: &Client) -> Result<()> {
+    let price_alert = client.alerts().get("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W").await?;
+    println!("{price_alert:?}");
+    Ok(())
+}
+
+pub async fn change_alert(client: &Client) -> Result<()> {
+    let price_alert = client.alerts().modify("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W", &ChangePriceAlert {
+        price: Some(dec("121000")),
+        ..Default::default()
+    }).await?;
+    println!("{price_alert:?}");
+    Ok(())
+}
+
+pub async fn delete_alert(client: &Client) -> Result<()> {
+    let deleted_alert = client.alerts().delete("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W").await?;
+    println!("{deleted_alert:?}");
+    Ok(())
+}
+
+pub async fn rearm_alert(client: &Client) -> Result<()> {
+    let price_alert = client.alerts().rearm("SANDBOX-00042-001", "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W").await?;
+    println!("{price_alert:?}");
     Ok(())
 }
 

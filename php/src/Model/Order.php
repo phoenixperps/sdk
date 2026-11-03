@@ -20,7 +20,7 @@ final class Order implements \JsonSerializable
         public readonly ?string $clientOrderId = null,
         /** The account number. */
         public readonly ?string $accountId = null,
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The order's side; null for an order placed elsewhere before the API saw it. */
         public readonly ?string $side = null,

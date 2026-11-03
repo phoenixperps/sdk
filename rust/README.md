@@ -6,7 +6,7 @@ Docs: https://docs.phoenixperpsfunding.com
 
 ```toml
 [dependencies]
-phoenixperps = { git = "https://github.com/phoenixperps/sdk", tag = "v1.1.0" }
+phoenixperps = { git = "https://github.com/phoenixperps/sdk", tag = "v1.2.0" }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 rust_decimal = "1"
 ```
@@ -53,7 +53,7 @@ async fn main() -> phoenixperps::Result<()> {
 ## Calls
 
 Resources follow the API: `platform()`, `me()`, `markets()`, `accounts()`, `history()`, `margin()`, `positions()`,
-`orders()`, `fills()`, `exits()`, `strategies()`, `events()`, `webhook_endpoints()`, `tradingview()`. Field names are
+`orders()`, `fills()`, `exits()`, `strategies()`, `alerts()`, `events()`, `webhook_endpoints()`, `tradingview()`. Field names are
 the API's own (snake_case; `r#type`). Prices and sizes are `rust_decimal::Decimal`, exact, sent as strings. Enums are
 open: a value from a newer API lands in `Other(String)`, and fields this version does not know land in `extra`.
 

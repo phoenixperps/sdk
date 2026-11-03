@@ -14,7 +14,7 @@ final class MarketStats implements \JsonSerializable
     private const WIRE = ['market' => true, 'last' => true, 'change_24h' => true, 'change_24h_pct' => true, 'high_24h' => true, 'low_24h' => true, 'volume_24h' => true, 'notional_volume_24h' => true, 'open_interest' => true, 'notional_open_interest' => true];
 
     public function __construct(
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The last trade. */
         public readonly ?string $last = null,

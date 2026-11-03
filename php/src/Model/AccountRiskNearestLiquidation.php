@@ -14,7 +14,7 @@ final class AccountRiskNearestLiquidation implements \JsonSerializable
     private const WIRE = ['market' => true, 'price' => true, 'distance_pct' => true];
 
     public function __construct(
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** Its liquidation price. */
         public readonly ?string $price = null,

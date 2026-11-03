@@ -24,6 +24,9 @@ func dispatch(ctx context.Context, c *Client, call confCall) (*RawResponse, []st
 	case "platform.limits":
 		_, err := c.Platform.Limits(ctx, opts...)
 		return &raw, nil, err
+	case "platform.restrictedCountries":
+		_, err := c.Platform.RestrictedCountries(ctx, opts...)
+		return &raw, nil, err
 	case "me.get":
 		_, err := c.Me.Get(ctx, opts...)
 		return &raw, nil, err
@@ -219,6 +222,43 @@ func dispatch(ctx context.Context, c *Client, call confCall) (*RawResponse, []st
 		return &raw, nil, err
 	case "strategies.cancel":
 		_, err := c.Strategies.Cancel(ctx, call.Path["account_id"], call.Path["strategy_id"], opts...)
+		return &raw, nil, err
+	case "alerts.create":
+		body := new(CreatePriceAlert)
+		if err := into(call.Body, body); err != nil {
+			return nil, nil, err
+		}
+		_, err := c.Alerts.Create(ctx, call.Path["account_id"], *body, opts...)
+		return &raw, nil, err
+	case "alerts.list":
+		var params *AlertsListParams
+		if call.Query != nil {
+			params = new(AlertsListParams)
+			if err := into(call.Query, params); err != nil {
+				return nil, nil, err
+			}
+		}
+		if call.Iterate {
+			ids, err := collect(c.Alerts.ListAutoPaging(ctx, call.Path["account_id"], params, append(opts, WithMaxItems(call.MaxItems))...))
+			return &raw, ids, err
+		}
+		_, err := c.Alerts.List(ctx, call.Path["account_id"], params, opts...)
+		return &raw, nil, err
+	case "alerts.get":
+		_, err := c.Alerts.Get(ctx, call.Path["account_id"], call.Path["alert_id"], opts...)
+		return &raw, nil, err
+	case "alerts.modify":
+		body := new(ChangePriceAlert)
+		if err := into(call.Body, body); err != nil {
+			return nil, nil, err
+		}
+		_, err := c.Alerts.Modify(ctx, call.Path["account_id"], call.Path["alert_id"], *body, opts...)
+		return &raw, nil, err
+	case "alerts.delete":
+		_, err := c.Alerts.Delete(ctx, call.Path["account_id"], call.Path["alert_id"], opts...)
+		return &raw, nil, err
+	case "alerts.rearm":
+		_, err := c.Alerts.Rearm(ctx, call.Path["account_id"], call.Path["alert_id"], opts...)
 		return &raw, nil, err
 	case "webhookEndpoints.list":
 		_, err := c.WebhookEndpoints.List(ctx, opts...)

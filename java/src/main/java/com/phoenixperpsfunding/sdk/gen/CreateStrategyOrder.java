@@ -18,7 +18,7 @@ public final class CreateStrategyOrder {
     private OrderSide side;
 
     @JsonProperty("type")
-    private CreateStrategyOrderType type;
+    private CreateStrategyOrderType2 type;
 
     @JsonProperty("size")
     private BigDecimal size;
@@ -47,12 +47,12 @@ public final class CreateStrategyOrder {
     }
 
     /** Two orders that rest. */
-    public CreateStrategyOrderType type() {
+    public CreateStrategyOrderType2 type() {
         return type;
     }
 
     /** Sets type. */
-    public CreateStrategyOrder type(CreateStrategyOrderType value) {
+    public CreateStrategyOrder type(CreateStrategyOrderType2 value) {
         this.type = value;
         return this;
     }

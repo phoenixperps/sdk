@@ -17,6 +17,7 @@ use PhoenixPerps\Resource\OrdersResource;
 use PhoenixPerps\Resource\EventsResource;
 use PhoenixPerps\Resource\ExitsResource;
 use PhoenixPerps\Resource\StrategiesResource;
+use PhoenixPerps\Resource\AlertsResource;
 use PhoenixPerps\Resource\WebhookEndpointsResource;
 use PhoenixPerps\Resource\TradingViewResource;
 use PhoenixPerps\Resource\FillsResource;
@@ -57,6 +58,9 @@ abstract class BaseClient
     /** The strategies calls. */
     public readonly StrategiesResource $strategies;
 
+    /** The alerts calls. */
+    public readonly AlertsResource $alerts;
+
     /** The webhookEndpoints calls. */
     public readonly WebhookEndpointsResource $webhookEndpoints;
 
@@ -79,6 +83,7 @@ abstract class BaseClient
         $this->events = new EventsResource($c);
         $this->exits = new ExitsResource($c);
         $this->strategies = new StrategiesResource($c);
+        $this->alerts = new AlertsResource($c);
         $this->webhookEndpoints = new WebhookEndpointsResource($c);
         $this->tradingView = new TradingViewResource($c);
         $this->fills = new FillsResource($c);

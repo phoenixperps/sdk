@@ -16,7 +16,7 @@ final class LimitsStrategies implements \JsonSerializable
     public function __construct(
         /** Running strategies an account may hold. */
         public readonly ?int $perAccount = null,
-        /** Of those, programs (oco, twap, vwap, scaled, chase). */
+        /** Of those, programs (oco, twap, vwap, scaled, chase, conditional). */
         public readonly ?int $programsPerAccount = null,
         /** Working orders of strategies on one account. */
         public readonly ?int $legsPerAccount = null,

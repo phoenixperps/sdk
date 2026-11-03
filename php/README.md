@@ -53,7 +53,7 @@ A body can also be an array in the API's own words: `['market' => 'BTC-USD', 'si
 ## Calls
 
 Resources follow the API: `platform`, `me`, `markets`, `accounts`, `history`, `margin`, `positions`, `orders`, `fills`,
-`exits`, `strategies`, `events`, `webhookEndpoints`, `tradingView`. Answers are readonly objects (camelCase properties);
+`exits`, `strategies`, `alerts`, `events`, `webhookEndpoints`, `tradingView`. Answers are readonly objects (camelCase properties);
 prices and sizes are strings, exact. Enums are open: the fields are strings and `Enum\*` classes name the known values;
 fields this version does not know land in `$extra`.
 

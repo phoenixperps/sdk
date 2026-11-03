@@ -15,6 +15,7 @@ internal static class Ops
     internal static readonly Operation GetSpec = new("getSpec", "GET", "/v1/openapi.json", false, true, null, "public");
     internal static readonly Operation GetStatus = new("getStatus", "GET", "/v1/status", false, true, null, "public");
     internal static readonly Operation GetLimits = new("getLimits", "GET", "/v1/limits", false, true, null, "public");
+    internal static readonly Operation ListRestrictedCountries = new("listRestrictedCountries", "GET", "/v1/restricted-countries", false, true, null, "public");
     internal static readonly Operation GetMe = new("getMe", "GET", "/v1/me", false, true, null, "read");
     internal static readonly Operation ListMarkets = new("listMarkets", "GET", "/v1/markets", false, true, null, "public");
     internal static readonly Operation ListMarketStats = new("listMarketStats", "GET", "/v1/markets/stats", false, true, null, "public");
@@ -49,6 +50,12 @@ internal static class Ops
     internal static readonly Operation ListStrategies = new("listStrategies", "GET", "/v1/accounts/{account_id}/strategies", false, true, "cursor", "read");
     internal static readonly Operation GetStrategy = new("getStrategy", "GET", "/v1/accounts/{account_id}/strategies/{strategy_id}", false, true, null, "read");
     internal static readonly Operation CancelStrategy = new("cancelStrategy", "DELETE", "/v1/accounts/{account_id}/strategies/{strategy_id}", false, true, null, "trade");
+    internal static readonly Operation CreateAlert = new("createAlert", "POST", "/v1/accounts/{account_id}/alerts", true, false, null, "read");
+    internal static readonly Operation ListAlerts = new("listAlerts", "GET", "/v1/accounts/{account_id}/alerts", false, true, "cursor", "read");
+    internal static readonly Operation GetAlert = new("getAlert", "GET", "/v1/accounts/{account_id}/alerts/{alert_id}", false, true, null, "read");
+    internal static readonly Operation ChangeAlert = new("changeAlert", "PATCH", "/v1/accounts/{account_id}/alerts/{alert_id}", false, false, null, "read");
+    internal static readonly Operation DeleteAlert = new("deleteAlert", "DELETE", "/v1/accounts/{account_id}/alerts/{alert_id}", false, true, null, "read");
+    internal static readonly Operation RearmAlert = new("rearmAlert", "POST", "/v1/accounts/{account_id}/alerts/{alert_id}/rearm", false, false, null, "read");
     internal static readonly Operation ListWebhookEndpoints = new("listWebhookEndpoints", "GET", "/v1/webhook-endpoints", false, true, null, "read");
     internal static readonly Operation GetWebhookEndpoint = new("getWebhookEndpoint", "GET", "/v1/webhook-endpoints/{endpoint_id}", false, true, null, "read");
     internal static readonly Operation DeleteWebhookEndpoint = new("deleteWebhookEndpoint", "DELETE", "/v1/webhook-endpoints/{endpoint_id}", false, true, null, "trade");
@@ -106,6 +113,9 @@ public sealed partial class PhoenixPerpsClient
     /// <summary>The strategies calls.</summary>
     public StrategiesResource Strategies { get; private set; } = null!;
 
+    /// <summary>The alerts calls.</summary>
+    public AlertsResource Alerts { get; private set; } = null!;
+
     /// <summary>The webhookEndpoints calls.</summary>
     public WebhookEndpointsResource WebhookEndpoints { get; private set; } = null!;
 
@@ -128,6 +138,7 @@ public sealed partial class PhoenixPerpsClient
         Events = new EventsResource(this);
         Exits = new ExitsResource(this);
         Strategies = new StrategiesResource(this);
+        Alerts = new AlertsResource(this);
         WebhookEndpoints = new WebhookEndpointsResource(this);
         TradingView = new TradingViewResource(this);
         Fills = new FillsResource(this);
@@ -156,6 +167,10 @@ public sealed class PlatformResource
     /// <summary>Get the limits.</summary>
     public Task<Limits> LimitsAsync(RequestOptions? options = null, CancellationToken cancellationToken = default) =>
         _c.OneAsync(Ops.GetLimits, null, null, Json.Default.Limits, options, cancellationToken);
+
+    /// <summary>List restricted countries.</summary>
+    public Task<Page<RestrictedCountry>> RestrictedCountriesAsync(RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.ListAsync(Ops.ListRestrictedCountries, null, null, Json.Default.PageRestrictedCountry, options, cancellationToken);
 }
 
 /// <summary>The me calls (client.Me).</summary>
@@ -392,6 +407,42 @@ public sealed class StrategiesResource
     /// <summary>Cancel a strategy.</summary>
     public Task<Strategy> CancelAsync(string accountId, string strategyId, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
         _c.OneAsync(Ops.CancelStrategy, new[] { accountId, strategyId }, null, Json.Default.Strategy, options, cancellationToken);
+}
+
+/// <summary>The alerts calls (client.Alerts).</summary>
+public sealed class AlertsResource
+{
+    private readonly PhoenixPerpsClient _c;
+
+    internal AlertsResource(PhoenixPerpsClient c) => _c = c;
+
+    /// <summary>Create a price alert.</summary>
+    public Task<PriceAlert> CreateAsync(string accountId, CreatePriceAlert body, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.OneAsync(Ops.CreateAlert, new[] { accountId }, null, body, Json.Default.CreatePriceAlert, Json.Default.PriceAlert, options, cancellationToken);
+
+    /// <summary>List price alerts.</summary>
+    public Task<Page<PriceAlert>> ListAsync(string accountId, AlertsListParams? query = null, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.ListAsync(Ops.ListAlerts, new[] { accountId }, query?.ToQuery(), Json.Default.PagePriceAlert, options, cancellationToken);
+
+    /// <summary>Every item of ListAsync, page after page (RequestOptions.MaxItems caps it).</summary>
+    public IAsyncEnumerable<PriceAlert> ListAutoPagingAsync(string accountId, AlertsListParams? query = null, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.AutoPagingAsync(() => ListAsync(accountId, query, options, cancellationToken), options, cancellationToken);
+
+    /// <summary>Get a price alert.</summary>
+    public Task<PriceAlert> GetAsync(string accountId, string alertId, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.OneAsync(Ops.GetAlert, new[] { accountId, alertId }, null, Json.Default.PriceAlert, options, cancellationToken);
+
+    /// <summary>Move a price alert.</summary>
+    public Task<PriceAlert> ModifyAsync(string accountId, string alertId, ChangePriceAlert body, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.OneAsync(Ops.ChangeAlert, new[] { accountId, alertId }, null, body, Json.Default.ChangePriceAlert, Json.Default.PriceAlert, options, cancellationToken);
+
+    /// <summary>Delete a price alert.</summary>
+    public Task<DeletedAlert> DeleteAsync(string accountId, string alertId, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.OneAsync(Ops.DeleteAlert, new[] { accountId, alertId }, null, Json.Default.DeletedAlert, options, cancellationToken);
+
+    /// <summary>Arm a price alert again.</summary>
+    public Task<PriceAlert> RearmAsync(string accountId, string alertId, RequestOptions? options = null, CancellationToken cancellationToken = default) =>
+        _c.OneAsync(Ops.RearmAlert, new[] { accountId, alertId }, null, Json.Default.PriceAlert, options, cancellationToken);
 }
 
 /// <summary>The webhookEndpoints calls (client.WebhookEndpoints).</summary>

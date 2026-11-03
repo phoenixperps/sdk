@@ -2,6 +2,19 @@
 
 One version for every SDK (`VERSION`). Inside v1 the API only adds; a release says what each SDK gained or fixed.
 
+## 1.2.0
+
+Price alerts, conditional orders and the restricted countries.
+
+- Every SDK: `alerts` (create, list, get, modify, rearm, delete): a level on a market, told once (`alert.triggered`)
+  when the price reaches it, never trading; the events group `alerts` for webhooks.
+- The `conditional` strategy: an order (market or limit) sent once a price is reached, on its own market (a buy when
+  the price falls to `trigger_price`, a sell when it rises) or on another one (`trigger_market`, `trigger_direction`),
+  with `expires_at` and `exits`; the event `strategy.triggered`.
+- `platform.restrictedCountries`: the countries whose residents cannot sign up or buy.
+- The error codes `trigger_already_met`, `alert_not_found`, `alert_limit`, `alert_at_price`, `alert_not_armed`; the
+  limits' `alerts`.
+
 ## 1.1.0
 
 For a market's options: the same asset on another venue, or on Standard Market Hours.

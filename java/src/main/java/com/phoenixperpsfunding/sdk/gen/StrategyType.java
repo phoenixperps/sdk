@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
 
-/** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. Open: a value from a newer API version is kept as is. */
+/** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached. Open: a value from a newer API version is kept as is. */
 public final class StrategyType {
     /** exits */
     public static final StrategyType EXITS = new StrategyType("exits");
@@ -27,6 +27,9 @@ public final class StrategyType {
 
     /** chase */
     public static final StrategyType CHASE = new StrategyType("chase");
+
+    /** conditional */
+    public static final StrategyType CONDITIONAL = new StrategyType("conditional");
 
     private final String value;
 
@@ -52,6 +55,8 @@ public final class StrategyType {
                 return SCALED;
             case "chase":
                 return CHASE;
+            case "conditional":
+                return CONDITIONAL;
             default:
                 return new StrategyType(value);
         }

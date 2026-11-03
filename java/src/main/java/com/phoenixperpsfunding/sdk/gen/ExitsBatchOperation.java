@@ -24,7 +24,7 @@ public final class ExitsBatchOperation {
     private ExitsLegGroup group;
 
     @JsonProperty("type")
-    private CreateStrategyOrderType type;
+    private CreateStrategyOrderType2 type;
 
     @JsonProperty("price")
     private BigDecimal price;
@@ -78,12 +78,12 @@ public final class ExitsBatchOperation {
     }
 
     /** place: limit for a take-profit (the default); stop_market (the default) or stop_limit for a stop-loss. */
-    public CreateStrategyOrderType type() {
+    public CreateStrategyOrderType2 type() {
         return type;
     }
 
     /** Sets type. */
-    public ExitsBatchOperation type(CreateStrategyOrderType value) {
+    public ExitsBatchOperation type(CreateStrategyOrderType2 value) {
         this.type = value;
         return this;
     }

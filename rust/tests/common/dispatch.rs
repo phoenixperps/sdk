@@ -22,6 +22,10 @@ pub async fn dispatch(c: &Client, call: &Call) -> Result<Answer> {
             let r = c.platform().limits_with(&RequestOptions::default()).await?;
             Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
         }
+        "platform.restrictedCountries" => {
+            let r = c.platform().restricted_countries_with(&RequestOptions::default()).await?;
+            Ok(Answer::Value(serde_json::to_value(r.map(|p| p.data)).unwrap()))
+        }
         "me.get" => {
             let r = c.me().get_with(&RequestOptions::default()).await?;
             Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
@@ -187,6 +191,37 @@ pub async fn dispatch(c: &Client, call: &Call) -> Result<Answer> {
         }
         "strategies.cancel" => {
             let r = c.strategies().cancel(&call.path("account_id"), &call.path("strategy_id")).await?;
+            Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
+        }
+        "alerts.create" => {
+            let body: CreatePriceAlert = call.body();
+            let r = c.alerts().create(&call.path("account_id"), &body).await?;
+            Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
+        }
+        "alerts.list" => {
+            let params: Option<AlertsListParams> = call.query();
+            if call.iterate {
+                let opts = RequestOptions { max_items: call.max_items, ..Default::default() };
+                return Ok(Answer::Items(ids(c.alerts().list_auto_paging(&call.path("account_id"), params.as_ref(), &opts)).await?));
+            }
+            let r = c.alerts().list_with(&call.path("account_id"), params.as_ref(), &RequestOptions::default()).await?;
+            Ok(Answer::Value(serde_json::to_value(r.map(|p| p.data)).unwrap()))
+        }
+        "alerts.get" => {
+            let r = c.alerts().get_with(&call.path("account_id"), &call.path("alert_id"), &RequestOptions::default()).await?;
+            Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
+        }
+        "alerts.modify" => {
+            let body: ChangePriceAlert = call.body();
+            let r = c.alerts().modify(&call.path("account_id"), &call.path("alert_id"), &body).await?;
+            Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
+        }
+        "alerts.delete" => {
+            let r = c.alerts().delete(&call.path("account_id"), &call.path("alert_id")).await?;
+            Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
+        }
+        "alerts.rearm" => {
+            let r = c.alerts().rearm(&call.path("account_id"), &call.path("alert_id")).await?;
             Ok(Answer::Value(serde_json::to_value(&r).unwrap()))
         }
         "webhookEndpoints.list" => {

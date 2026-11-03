@@ -4,7 +4,7 @@ The Phoenix Perpetuals API for Node.js and TypeScript: every REST call, the acco
 retries, idempotency keys, paging and typed errors. Node 22 or later. Docs: https://docs.phoenixperpsfunding.com
 
 ```
-npm install https://github.com/phoenixperps/sdk/releases/download/v1.1.0/phoenixperps-sdk-1.1.0.tgz
+npm install https://github.com/phoenixperps/sdk/releases/download/v1.2.0/phoenixperps-sdk-1.2.0.tgz
 ```
 
 ```js
@@ -36,7 +36,7 @@ const order = await client.orders.create(account.id, {
 ## Calls
 
 Resources follow the API: `platform`, `me`, `markets`, `accounts`, `history`, `margin`, `positions`, `orders`, `fills`,
-`exits`, `strategies`, `events`, `webhookEndpoints`, `tradingview`. Prices and sizes are decimal strings, in and out
+`exits`, `strategies`, `alerts`, `events`, `webhookEndpoints`, `tradingview`. Prices and sizes are decimal strings, in and out
 (a number goes out in its decimal form, never with an exponent).
 
 - A call is tried again only when that is safe (a read, or a write carrying its Idempotency-Key), after a network

@@ -27,6 +27,7 @@ final class EventType
     public const STRATEGY_LEG_REJECTED = 'strategy.leg_rejected';
     public const STRATEGY_ORPHAN_REPAIRED = 'strategy.orphan_repaired';
     public const STRATEGY_SLICE = 'strategy.slice';
+    public const STRATEGY_TRIGGERED = 'strategy.triggered';
     public const STRATEGY_ENDED = 'strategy.ended';
     public const TRADINGVIEW_ALERT_EXECUTED = 'tradingview.alert_executed';
     public const TRADINGVIEW_ALERT_REFUSED = 'tradingview.alert_refused';
@@ -41,7 +42,8 @@ final class EventType
     public const SYSTEM_RESTARTED = 'system.restarted';
     public const RISK_WARNING = 'risk.warning';
     public const RISK_CLEARED = 'risk.cleared';
+    public const ALERT_TRIGGERED = 'alert.triggered';
 
     /** Every value this SDK version knows. */
-    public const ALL_VALUES = [self::ORDER_CREATED, self::ORDER_EDITED, self::ORDER_FILLED, self::ORDER_CANCELED, self::ORDER_REJECTED, self::ORDER_EXPIRED, self::FILL_CREATED, self::POSITION_OPENED, self::POSITION_CHANGED, self::POSITION_CLOSED, self::STRATEGY_CREATED, self::STRATEGY_LEG_PLACED, self::STRATEGY_LEG_MODIFIED, self::STRATEGY_LEG_FILLED, self::STRATEGY_LEG_CANCELED, self::STRATEGY_LEG_REJECTED, self::STRATEGY_ORPHAN_REPAIRED, self::STRATEGY_SLICE, self::STRATEGY_ENDED, self::TRADINGVIEW_ALERT_EXECUTED, self::TRADINGVIEW_ALERT_REFUSED, self::ACCOUNT_UPDATED, self::ACCOUNT_PASSED, self::ACCOUNT_FAILED, self::ACCOUNT_PAYOUT_ELIGIBLE, self::ACCOUNT_DISABLED, self::ACCOUNT_REMOVED, self::KEY_LOSS_STOP, self::KEY_EXPIRING, self::SYSTEM_RESTARTED, self::RISK_WARNING, self::RISK_CLEARED];
+    public const ALL_VALUES = [self::ORDER_CREATED, self::ORDER_EDITED, self::ORDER_FILLED, self::ORDER_CANCELED, self::ORDER_REJECTED, self::ORDER_EXPIRED, self::FILL_CREATED, self::POSITION_OPENED, self::POSITION_CHANGED, self::POSITION_CLOSED, self::STRATEGY_CREATED, self::STRATEGY_LEG_PLACED, self::STRATEGY_LEG_MODIFIED, self::STRATEGY_LEG_FILLED, self::STRATEGY_LEG_CANCELED, self::STRATEGY_LEG_REJECTED, self::STRATEGY_ORPHAN_REPAIRED, self::STRATEGY_SLICE, self::STRATEGY_TRIGGERED, self::STRATEGY_ENDED, self::TRADINGVIEW_ALERT_EXECUTED, self::TRADINGVIEW_ALERT_REFUSED, self::ACCOUNT_UPDATED, self::ACCOUNT_PASSED, self::ACCOUNT_FAILED, self::ACCOUNT_PAYOUT_ELIGIBLE, self::ACCOUNT_DISABLED, self::ACCOUNT_REMOVED, self::KEY_LOSS_STOP, self::KEY_EXPIRING, self::SYSTEM_RESTARTED, self::RISK_WARNING, self::RISK_CLEARED, self::ALERT_TRIGGERED];
 }

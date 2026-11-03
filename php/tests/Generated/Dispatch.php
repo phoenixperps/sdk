@@ -27,6 +27,9 @@ final class Dispatch
                 return ['result' => $c->platform->status($options)?->toArray()];
             case 'platform.limits':
                 return ['result' => $c->platform->limits($options)?->toArray()];
+            case 'platform.restrictedCountries':
+                $page = $c->platform->restrictedCountries($options);
+                return ['result' => $page === null ? null : array_map(fn ($x) => $x->toArray(), $page->data)];
             case 'me.get':
                 return ['result' => $c->me->get($options)?->toArray()];
             case 'markets.list':
@@ -117,6 +120,22 @@ final class Dispatch
                 return ['result' => $c->strategies->get($call['path']['account_id'], $call['path']['strategy_id'], $options)?->toArray()];
             case 'strategies.cancel':
                 return ['result' => $c->strategies->cancel($call['path']['account_id'], $call['path']['strategy_id'], $options)->toArray()];
+            case 'alerts.create':
+                return ['result' => $c->alerts->create($call['path']['account_id'], $call['body'] ?? [], $options)->toArray()];
+            case 'alerts.list':
+                if (!empty($call['iterate'])) {
+                    return ['items' => self::ids($c->alerts->listAutoPaging($call['path']['account_id'], $call['query'] ?? null, $options))];
+                }
+                $page = $c->alerts->list($call['path']['account_id'], $call['query'] ?? null, $options);
+                return ['result' => $page === null ? null : array_map(fn ($x) => $x->toArray(), $page->data)];
+            case 'alerts.get':
+                return ['result' => $c->alerts->get($call['path']['account_id'], $call['path']['alert_id'], $options)?->toArray()];
+            case 'alerts.modify':
+                return ['result' => $c->alerts->modify($call['path']['account_id'], $call['path']['alert_id'], $call['body'] ?? [], $options)->toArray()];
+            case 'alerts.delete':
+                return ['result' => $c->alerts->delete($call['path']['account_id'], $call['path']['alert_id'], $options)->toArray()];
+            case 'alerts.rearm':
+                return ['result' => $c->alerts->rearm($call['path']['account_id'], $call['path']['alert_id'], $options)->toArray()];
             case 'webhookEndpoints.list':
                 $page = $c->webhookEndpoints->list($options);
                 return ['result' => $page === null ? null : array_map(fn ($x) => $x->toArray(), $page->data)];

@@ -39,7 +39,7 @@ WithHTTPClient, WithLogger)`
 ## Calls
 
 Services follow the API: `Platform`, `Me`, `Markets`, `Accounts`, `History`, `Margin`, `Positions`, `Orders`, `Fills`,
-`Exits`, `Strategies`, `Events`, `WebhookEndpoints`, `TradingView`. Prices and sizes are `Decimal`, a string type:
+`Exits`, `Strategies`, `Alerts`, `Events`, `WebhookEndpoints`, `TradingView`. Prices and sizes are `Decimal`, a string type:
 exact, never a float (`DecimalOf(f)` writes a float in plain form). Optional fields are pointers: `Dec("1")`,
 `Ptr(true)`. Enums are open: a value from a newer API is kept as is.
 

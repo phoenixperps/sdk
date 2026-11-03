@@ -14,7 +14,7 @@ final class Market implements \JsonSerializable
     private const WIRE = ['market' => true, 'name' => true, 'status' => true, 'venue' => true, 'trading_hours' => true, 'option_of' => true, 'options' => true, 'tick_size' => true, 'size_step' => true, 'min_size' => true, 'min_notional' => true, 'max_leverage' => true, 'fee_rate_pct' => true, 'exposure_cap' => true, 'max_slippage_pct' => true];
 
     public function __construct(
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The market's name; for a currency, the pair its price is quoted in (JPY-USD: USD/JPY, yen per dollar). */
         public readonly ?string $name = null,

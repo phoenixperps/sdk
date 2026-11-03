@@ -10,13 +10,14 @@ if TYPE_CHECKING:
 SPEC_VERSION = "1.0.0"
 SERVERS = {"live":"https://api.phoenixperpsfunding.com","sandbox":"https://sandbox-api.phoenixperpsfunding.com"}
 STREAMS: Dict[str, Any] = {"account":{"live":"wss://api.phoenixperpsfunding.com/v1/stream","sandbox":"wss://sandbox-api.phoenixperpsfunding.com/v1/stream"},"market":"wss://stream.phoenixperpsfunding.com/v1/market-data"}
-ERROR_CODES = {"invalid_request":{"type":"invalid_request","status":400,"retryable":False},"invalid_parameter":{"type":"invalid_request","status":400,"retryable":False},"unknown_field":{"type":"invalid_request","status":400,"retryable":False},"invalid_cursor":{"type":"invalid_request","status":400,"retryable":False},"invalid_json":{"type":"invalid_request","status":400,"retryable":False},"missing_api_key":{"type":"authentication","status":401,"retryable":False},"invalid_api_key":{"type":"authentication","status":401,"retryable":False},"expired_api_key":{"type":"authentication","status":401,"retryable":False},"revoked_api_key":{"type":"authentication","status":401,"retryable":False},"invalid_token":{"type":"authentication","status":401,"retryable":False},"expired_token":{"type":"authentication","status":401,"retryable":False},"revoked_token":{"type":"authentication","status":401,"retryable":False},"wrong_resource":{"type":"authentication","status":401,"retryable":False},"wrong_environment":{"type":"authentication","status":401,"retryable":False},"ip_not_allowed":{"type":"permission","status":403,"retryable":False},"insufficient_permission":{"type":"permission","status":403,"retryable":False},"api_disabled":{"type":"permission","status":403,"retryable":False},"invalid_size_step":{"type":"invalid_request","status":400,"retryable":False},"invalid_price_tick":{"type":"invalid_request","status":400,"retryable":False},"price_out_of_band":{"type":"rule_rejection","status":422,"retryable":False},"stop_already_triggered":{"type":"rule_rejection","status":422,"retryable":False},"post_only_would_fill":{"type":"rule_rejection","status":422,"retryable":False},"limit_inside_spread":{"type":"rule_rejection","status":422,"retryable":False},"order_too_small":{"type":"rule_rejection","status":422,"retryable":False},"working_order_cap":{"type":"rule_rejection","status":422,"retryable":False},"client_order_id_conflict":{"type":"conflict","status":409,"retryable":False},"order_not_working":{"type":"conflict","status":409,"retryable":False},"idempotency_key_reused":{"type":"invalid_request","status":400,"retryable":False},"json_too_deep":{"type":"invalid_request","status":400,"retryable":False},"operation_in_progress":{"type":"conflict","status":409,"retryable":True},"key_market_not_allowed":{"type":"key_limit","status":422,"retryable":False},"key_reduce_only":{"type":"key_limit","status":422,"retryable":False},"key_max_order_notional":{"type":"key_limit","status":422,"retryable":False},"key_max_position_notional":{"type":"key_limit","status":422,"retryable":False},"key_loss_stop_active":{"type":"key_limit","status":422,"retryable":False},"insufficient_margin":{"type":"rule_rejection","status":422,"retryable":False},"exposure_cap_exceeded":{"type":"rule_rejection","status":422,"retryable":False},"reduce_only_violation":{"type":"rule_rejection","status":422,"retryable":False},"slippage_exceeded":{"type":"rule_rejection","status":422,"retryable":False},"no_price":{"type":"engine","status":503,"retryable":True},"stale_quote":{"type":"engine","status":503,"retryable":True},"market_closed":{"type":"rule_rejection","status":422,"retryable":False},"market_not_offered":{"type":"rule_rejection","status":422,"retryable":False},"market_option_held":{"type":"rule_rejection","status":422,"retryable":False},"weekend_close":{"type":"rule_rejection","status":422,"retryable":False},"market_halted":{"type":"rule_rejection","status":422,"retryable":False},"position_liquidating":{"type":"rule_rejection","status":422,"retryable":False},"account_paused":{"type":"rule_rejection","status":422,"retryable":False},"account_not_tradable":{"type":"rule_rejection","status":422,"retryable":False},"insufficient_balance":{"type":"rule_rejection","status":422,"retryable":False},"margin_mode_locked":{"type":"conflict","status":409,"retryable":False},"margin_rejected":{"type":"rule_rejection","status":422,"retryable":False},"invalid_leverage":{"type":"invalid_request","status":400,"retryable":False},"liquidation_risk":{"type":"rule_rejection","status":422,"retryable":False},"position_not_isolated":{"type":"conflict","status":409,"retryable":False},"engine_busy":{"type":"engine","status":503,"retryable":True},"order_rejected":{"type":"rule_rejection","status":422,"retryable":False},"exits_changed":{"type":"conflict","status":409,"retryable":False},"exit_operation_failed":{"type":"rule_rejection","status":422,"retryable":False},"exit_would_fill":{"type":"rule_rejection","status":422,"retryable":False},"exits_exceed_position":{"type":"rule_rejection","status":422,"retryable":False},"exit_leg_cap":{"type":"rule_rejection","status":422,"retryable":False},"strategy_limit":{"type":"rule_rejection","status":422,"retryable":False},"strategy_not_active":{"type":"conflict","status":409,"retryable":False},"strategy_not_found":{"type":"not_found","status":404,"retryable":False},"client_strategy_id_conflict":{"type":"conflict","status":409,"retryable":False},"webhook_endpoint_not_found":{"type":"not_found","status":404,"retryable":False},"tradingview_hook_not_found":{"type":"not_found","status":404,"retryable":False},"tradingview_alert_not_found":{"type":"not_found","status":404,"retryable":False},"webhook_endpoint_not_active":{"type":"conflict","status":409,"retryable":False},"delivery_not_found":{"type":"not_found","status":404,"retryable":False},"event_not_found":{"type":"not_found","status":404,"retryable":False},"rung_would_fill":{"type":"rule_rejection","status":422,"retryable":False},"strategy_type_disabled":{"type":"permission","status":403,"retryable":False},"account_not_found":{"type":"not_found","status":404,"retryable":False},"market_not_found":{"type":"not_found","status":404,"retryable":False},"order_not_found":{"type":"not_found","status":404,"retryable":False},"position_not_found":{"type":"not_found","status":404,"retryable":False},"route_not_found":{"type":"not_found","status":404,"retryable":False},"method_not_allowed":{"type":"method","status":405,"retryable":False},"payload_too_large":{"type":"payload","status":413,"retryable":False},"uri_too_long":{"type":"payload","status":414,"retryable":False},"unsupported_media_type":{"type":"payload","status":415,"retryable":False},"sandbox_limit_reached":{"type":"conflict","status":409,"retryable":False},"account_not_ready":{"type":"conflict","status":409,"retryable":True},"sandbox_opening":{"type":"conflict","status":409,"retryable":True},"idempotency_key_required":{"type":"invalid_request","status":400,"retryable":False},"invalid_idempotency_key":{"type":"invalid_request","status":400,"retryable":False},"rate_limited":{"type":"rate_limit","status":429,"retryable":True},"not_ready":{"type":"engine","status":503,"retryable":True},"state_unavailable":{"type":"engine","status":503,"retryable":True},"engine_unavailable":{"type":"engine","status":503,"retryable":True},"limiter_unavailable":{"type":"server","status":503,"retryable":True},"sandbox_disabled":{"type":"engine","status":503,"retryable":False},"environment_disabled":{"type":"engine","status":503,"retryable":False},"temporarily_unavailable":{"type":"server","status":503,"retryable":True},"capacity":{"type":"engine","status":503,"retryable":True},"internal_error":{"type":"server","status":500,"retryable":True}}
+ERROR_CODES = {"invalid_request":{"type":"invalid_request","status":400,"retryable":False},"invalid_parameter":{"type":"invalid_request","status":400,"retryable":False},"unknown_field":{"type":"invalid_request","status":400,"retryable":False},"invalid_cursor":{"type":"invalid_request","status":400,"retryable":False},"invalid_json":{"type":"invalid_request","status":400,"retryable":False},"missing_api_key":{"type":"authentication","status":401,"retryable":False},"invalid_api_key":{"type":"authentication","status":401,"retryable":False},"expired_api_key":{"type":"authentication","status":401,"retryable":False},"revoked_api_key":{"type":"authentication","status":401,"retryable":False},"invalid_token":{"type":"authentication","status":401,"retryable":False},"expired_token":{"type":"authentication","status":401,"retryable":False},"revoked_token":{"type":"authentication","status":401,"retryable":False},"wrong_resource":{"type":"authentication","status":401,"retryable":False},"wrong_environment":{"type":"authentication","status":401,"retryable":False},"ip_not_allowed":{"type":"permission","status":403,"retryable":False},"insufficient_permission":{"type":"permission","status":403,"retryable":False},"api_disabled":{"type":"permission","status":403,"retryable":False},"invalid_size_step":{"type":"invalid_request","status":400,"retryable":False},"invalid_price_tick":{"type":"invalid_request","status":400,"retryable":False},"price_out_of_band":{"type":"rule_rejection","status":422,"retryable":False},"stop_already_triggered":{"type":"rule_rejection","status":422,"retryable":False},"post_only_would_fill":{"type":"rule_rejection","status":422,"retryable":False},"limit_inside_spread":{"type":"rule_rejection","status":422,"retryable":False},"order_too_small":{"type":"rule_rejection","status":422,"retryable":False},"working_order_cap":{"type":"rule_rejection","status":422,"retryable":False},"client_order_id_conflict":{"type":"conflict","status":409,"retryable":False},"order_not_working":{"type":"conflict","status":409,"retryable":False},"idempotency_key_reused":{"type":"invalid_request","status":400,"retryable":False},"json_too_deep":{"type":"invalid_request","status":400,"retryable":False},"operation_in_progress":{"type":"conflict","status":409,"retryable":True},"key_market_not_allowed":{"type":"key_limit","status":422,"retryable":False},"key_reduce_only":{"type":"key_limit","status":422,"retryable":False},"key_max_order_notional":{"type":"key_limit","status":422,"retryable":False},"key_max_position_notional":{"type":"key_limit","status":422,"retryable":False},"key_loss_stop_active":{"type":"key_limit","status":422,"retryable":False},"insufficient_margin":{"type":"rule_rejection","status":422,"retryable":False},"exposure_cap_exceeded":{"type":"rule_rejection","status":422,"retryable":False},"reduce_only_violation":{"type":"rule_rejection","status":422,"retryable":False},"slippage_exceeded":{"type":"rule_rejection","status":422,"retryable":False},"no_price":{"type":"engine","status":503,"retryable":True},"stale_quote":{"type":"engine","status":503,"retryable":True},"market_closed":{"type":"rule_rejection","status":422,"retryable":False},"market_not_offered":{"type":"rule_rejection","status":422,"retryable":False},"market_option_held":{"type":"rule_rejection","status":422,"retryable":False},"weekend_close":{"type":"rule_rejection","status":422,"retryable":False},"market_halted":{"type":"rule_rejection","status":422,"retryable":False},"position_liquidating":{"type":"rule_rejection","status":422,"retryable":False},"account_paused":{"type":"rule_rejection","status":422,"retryable":False},"account_not_tradable":{"type":"rule_rejection","status":422,"retryable":False},"insufficient_balance":{"type":"rule_rejection","status":422,"retryable":False},"margin_mode_locked":{"type":"conflict","status":409,"retryable":False},"margin_rejected":{"type":"rule_rejection","status":422,"retryable":False},"invalid_leverage":{"type":"invalid_request","status":400,"retryable":False},"liquidation_risk":{"type":"rule_rejection","status":422,"retryable":False},"position_not_isolated":{"type":"conflict","status":409,"retryable":False},"engine_busy":{"type":"engine","status":503,"retryable":True},"order_rejected":{"type":"rule_rejection","status":422,"retryable":False},"exits_changed":{"type":"conflict","status":409,"retryable":False},"exit_operation_failed":{"type":"rule_rejection","status":422,"retryable":False},"exit_would_fill":{"type":"rule_rejection","status":422,"retryable":False},"exits_exceed_position":{"type":"rule_rejection","status":422,"retryable":False},"exit_leg_cap":{"type":"rule_rejection","status":422,"retryable":False},"strategy_limit":{"type":"rule_rejection","status":422,"retryable":False},"strategy_not_active":{"type":"conflict","status":409,"retryable":False},"strategy_not_found":{"type":"not_found","status":404,"retryable":False},"client_strategy_id_conflict":{"type":"conflict","status":409,"retryable":False},"webhook_endpoint_not_found":{"type":"not_found","status":404,"retryable":False},"tradingview_hook_not_found":{"type":"not_found","status":404,"retryable":False},"tradingview_alert_not_found":{"type":"not_found","status":404,"retryable":False},"webhook_endpoint_not_active":{"type":"conflict","status":409,"retryable":False},"delivery_not_found":{"type":"not_found","status":404,"retryable":False},"event_not_found":{"type":"not_found","status":404,"retryable":False},"rung_would_fill":{"type":"rule_rejection","status":422,"retryable":False},"trigger_already_met":{"type":"rule_rejection","status":422,"retryable":False},"alert_not_found":{"type":"not_found","status":404,"retryable":False},"alert_limit":{"type":"rule_rejection","status":422,"retryable":False},"alert_at_price":{"type":"rule_rejection","status":422,"retryable":False},"alert_not_armed":{"type":"conflict","status":409,"retryable":False},"strategy_type_disabled":{"type":"permission","status":403,"retryable":False},"account_not_found":{"type":"not_found","status":404,"retryable":False},"market_not_found":{"type":"not_found","status":404,"retryable":False},"order_not_found":{"type":"not_found","status":404,"retryable":False},"position_not_found":{"type":"not_found","status":404,"retryable":False},"route_not_found":{"type":"not_found","status":404,"retryable":False},"method_not_allowed":{"type":"method","status":405,"retryable":False},"payload_too_large":{"type":"payload","status":413,"retryable":False},"uri_too_long":{"type":"payload","status":414,"retryable":False},"unsupported_media_type":{"type":"payload","status":415,"retryable":False},"sandbox_limit_reached":{"type":"conflict","status":409,"retryable":False},"account_not_ready":{"type":"conflict","status":409,"retryable":True},"sandbox_opening":{"type":"conflict","status":409,"retryable":True},"idempotency_key_required":{"type":"invalid_request","status":400,"retryable":False},"invalid_idempotency_key":{"type":"invalid_request","status":400,"retryable":False},"rate_limited":{"type":"rate_limit","status":429,"retryable":True},"not_ready":{"type":"engine","status":503,"retryable":True},"state_unavailable":{"type":"engine","status":503,"retryable":True},"engine_unavailable":{"type":"engine","status":503,"retryable":True},"limiter_unavailable":{"type":"server","status":503,"retryable":True},"sandbox_disabled":{"type":"engine","status":503,"retryable":False},"environment_disabled":{"type":"engine","status":503,"retryable":False},"temporarily_unavailable":{"type":"server","status":503,"retryable":True},"capacity":{"type":"engine","status":503,"retryable":True},"internal_error":{"type":"server","status":500,"retryable":True}}
 
 OPS: Dict[str, Dict[str, Any]] = {
     "getApi": {"id":"getApi","http":"GET","path":"/v1","idempotent":False,"retry_safe":True,"scope":"public","paging":None},
     "getSpec": {"id":"getSpec","http":"GET","path":"/v1/openapi.json","idempotent":False,"retry_safe":True,"scope":"public","paging":None},
     "getStatus": {"id":"getStatus","http":"GET","path":"/v1/status","idempotent":False,"retry_safe":True,"scope":"public","paging":None},
     "getLimits": {"id":"getLimits","http":"GET","path":"/v1/limits","idempotent":False,"retry_safe":True,"scope":"public","paging":None},
+    "listRestrictedCountries": {"id":"listRestrictedCountries","http":"GET","path":"/v1/restricted-countries","idempotent":False,"retry_safe":True,"scope":"public","paging":None},
     "getMe": {"id":"getMe","http":"GET","path":"/v1/me","idempotent":False,"retry_safe":True,"scope":"read","paging":None},
     "listMarkets": {"id":"listMarkets","http":"GET","path":"/v1/markets","idempotent":False,"retry_safe":True,"scope":"public","paging":None},
     "listMarketStats": {"id":"listMarketStats","http":"GET","path":"/v1/markets/stats","idempotent":False,"retry_safe":True,"scope":"public","paging":None},
@@ -51,6 +52,12 @@ OPS: Dict[str, Dict[str, Any]] = {
     "listStrategies": {"id":"listStrategies","http":"GET","path":"/v1/accounts/{account_id}/strategies","idempotent":False,"retry_safe":True,"scope":"read","paging":{"param":"cursor","items":"data","next":"next_cursor","has_more":"has_more","limit":"limit"}},
     "getStrategy": {"id":"getStrategy","http":"GET","path":"/v1/accounts/{account_id}/strategies/{strategy_id}","idempotent":False,"retry_safe":True,"scope":"read","paging":None},
     "cancelStrategy": {"id":"cancelStrategy","http":"DELETE","path":"/v1/accounts/{account_id}/strategies/{strategy_id}","idempotent":False,"retry_safe":True,"scope":"trade","paging":None},
+    "createAlert": {"id":"createAlert","http":"POST","path":"/v1/accounts/{account_id}/alerts","idempotent":True,"retry_safe":False,"scope":"read","paging":None},
+    "listAlerts": {"id":"listAlerts","http":"GET","path":"/v1/accounts/{account_id}/alerts","idempotent":False,"retry_safe":True,"scope":"read","paging":{"param":"cursor","items":"data","next":"next_cursor","has_more":"has_more","limit":"limit"}},
+    "getAlert": {"id":"getAlert","http":"GET","path":"/v1/accounts/{account_id}/alerts/{alert_id}","idempotent":False,"retry_safe":True,"scope":"read","paging":None},
+    "changeAlert": {"id":"changeAlert","http":"PATCH","path":"/v1/accounts/{account_id}/alerts/{alert_id}","idempotent":False,"retry_safe":False,"scope":"read","paging":None},
+    "deleteAlert": {"id":"deleteAlert","http":"DELETE","path":"/v1/accounts/{account_id}/alerts/{alert_id}","idempotent":False,"retry_safe":True,"scope":"read","paging":None},
+    "rearmAlert": {"id":"rearmAlert","http":"POST","path":"/v1/accounts/{account_id}/alerts/{alert_id}/rearm","idempotent":False,"retry_safe":False,"scope":"read","paging":None},
     "listWebhookEndpoints": {"id":"listWebhookEndpoints","http":"GET","path":"/v1/webhook-endpoints","idempotent":False,"retry_safe":True,"scope":"read","paging":None},
     "getWebhookEndpoint": {"id":"getWebhookEndpoint","http":"GET","path":"/v1/webhook-endpoints/{endpoint_id}","idempotent":False,"retry_safe":True,"scope":"read","paging":None},
     "deleteWebhookEndpoint": {"id":"deleteWebhookEndpoint","http":"DELETE","path":"/v1/webhook-endpoints/{endpoint_id}","idempotent":False,"retry_safe":True,"scope":"trade","paging":None},
@@ -93,6 +100,10 @@ class PlatformResource:
     def limits(self, **opts: Any) -> types.Limits:
         """Get the limits"""
         return self._c._one(OPS["getLimits"], opts=opts)
+
+    def restricted_countries(self, **opts: Any) -> Page[types.RestrictedCountry]:
+        """List restricted countries"""
+        return self._c._page(OPS["listRestrictedCountries"], opts=opts)
 
 
 class MeResource:
@@ -285,6 +296,35 @@ class StrategiesResource:
         return self._c._one(OPS["cancelStrategy"], path={"account_id": account_id, "strategy_id": strategy_id}, opts=opts)
 
 
+class AlertsResource:
+    def __init__(self, client: Any) -> None:
+        self._c = client
+
+    def create(self, account_id: str, body: Mapping[str, Any], **opts: Any) -> types.PriceAlert:
+        """Create a price alert"""
+        return self._c._one(OPS["createAlert"], path={"account_id": account_id}, body=body, opts=opts)
+
+    def list(self, account_id: str, query: Optional[Dict[str, Any]] = None, **opts: Any) -> Page[types.PriceAlert]:
+        """List price alerts"""
+        return self._c._page(OPS["listAlerts"], path={"account_id": account_id}, query=query, opts=opts)
+
+    def get(self, account_id: str, alert_id: str, **opts: Any) -> types.PriceAlert:
+        """Get a price alert"""
+        return self._c._one(OPS["getAlert"], path={"account_id": account_id, "alert_id": alert_id}, opts=opts)
+
+    def modify(self, account_id: str, alert_id: str, body: Mapping[str, Any], **opts: Any) -> types.PriceAlert:
+        """Move a price alert"""
+        return self._c._one(OPS["changeAlert"], path={"account_id": account_id, "alert_id": alert_id}, body=body, opts=opts)
+
+    def delete(self, account_id: str, alert_id: str, **opts: Any) -> types.DeletedAlert:
+        """Delete a price alert"""
+        return self._c._one(OPS["deleteAlert"], path={"account_id": account_id, "alert_id": alert_id}, opts=opts)
+
+    def rearm(self, account_id: str, alert_id: str, **opts: Any) -> types.PriceAlert:
+        """Arm a price alert again"""
+        return self._c._one(OPS["rearmAlert"], path={"account_id": account_id, "alert_id": alert_id}, opts=opts)
+
+
 class WebhookEndpointsResource:
     def __init__(self, client: Any) -> None:
         self._c = client
@@ -395,6 +435,10 @@ class AsyncPlatformResource:
     async def limits(self, **opts: Any) -> types.Limits:
         """Get the limits"""
         return await self._c._one(OPS["getLimits"], opts=opts)
+
+    def restricted_countries(self, **opts: Any) -> _AsyncPageCall[types.RestrictedCountry]:
+        """List restricted countries"""
+        return self._c._page(OPS["listRestrictedCountries"], opts=opts)
 
 
 class AsyncMeResource:
@@ -587,6 +631,35 @@ class AsyncStrategiesResource:
         return await self._c._one(OPS["cancelStrategy"], path={"account_id": account_id, "strategy_id": strategy_id}, opts=opts)
 
 
+class AsyncAlertsResource:
+    def __init__(self, client: Any) -> None:
+        self._c = client
+
+    async def create(self, account_id: str, body: Mapping[str, Any], **opts: Any) -> types.PriceAlert:
+        """Create a price alert"""
+        return await self._c._one(OPS["createAlert"], path={"account_id": account_id}, body=body, opts=opts)
+
+    def list(self, account_id: str, query: Optional[Dict[str, Any]] = None, **opts: Any) -> _AsyncPageCall[types.PriceAlert]:
+        """List price alerts"""
+        return self._c._page(OPS["listAlerts"], path={"account_id": account_id}, query=query, opts=opts)
+
+    async def get(self, account_id: str, alert_id: str, **opts: Any) -> types.PriceAlert:
+        """Get a price alert"""
+        return await self._c._one(OPS["getAlert"], path={"account_id": account_id, "alert_id": alert_id}, opts=opts)
+
+    async def modify(self, account_id: str, alert_id: str, body: Mapping[str, Any], **opts: Any) -> types.PriceAlert:
+        """Move a price alert"""
+        return await self._c._one(OPS["changeAlert"], path={"account_id": account_id, "alert_id": alert_id}, body=body, opts=opts)
+
+    async def delete(self, account_id: str, alert_id: str, **opts: Any) -> types.DeletedAlert:
+        """Delete a price alert"""
+        return await self._c._one(OPS["deleteAlert"], path={"account_id": account_id, "alert_id": alert_id}, opts=opts)
+
+    async def rearm(self, account_id: str, alert_id: str, **opts: Any) -> types.PriceAlert:
+        """Arm a price alert again"""
+        return await self._c._one(OPS["rearmAlert"], path={"account_id": account_id, "alert_id": alert_id}, opts=opts)
+
+
 class AsyncWebhookEndpointsResource:
     def __init__(self, client: Any) -> None:
         self._c = client
@@ -690,6 +763,7 @@ RESOURCES = {
     "events": (EventsResource, AsyncEventsResource),
     "exits": (ExitsResource, AsyncExitsResource),
     "strategies": (StrategiesResource, AsyncStrategiesResource),
+    "alerts": (AlertsResource, AsyncAlertsResource),
     "webhook_endpoints": (WebhookEndpointsResource, AsyncWebhookEndpointsResource),
     "tradingview": (TradingviewResource, AsyncTradingviewResource),
     "fills": (FillsResource, AsyncFillsResource),
@@ -708,6 +782,7 @@ class Resources:
     events: EventsResource
     exits: ExitsResource
     strategies: StrategiesResource
+    alerts: AlertsResource
     webhook_endpoints: WebhookEndpointsResource
     tradingview: TradingviewResource
     fills: FillsResource
@@ -725,6 +800,7 @@ class AsyncResources:
     events: AsyncEventsResource
     exits: AsyncExitsResource
     strategies: AsyncStrategiesResource
+    alerts: AsyncAlertsResource
     webhook_endpoints: AsyncWebhookEndpointsResource
     tradingview: AsyncTradingviewResource
     fills: AsyncFillsResource

@@ -225,6 +225,21 @@ public final class ErrorCodes {
     /** 422 rule_rejection. */
     public static final String RUNG_WOULD_FILL = "rung_would_fill";
 
+    /** 422 rule_rejection. */
+    public static final String TRIGGER_ALREADY_MET = "trigger_already_met";
+
+    /** 404 not_found. */
+    public static final String ALERT_NOT_FOUND = "alert_not_found";
+
+    /** 422 rule_rejection. */
+    public static final String ALERT_LIMIT = "alert_limit";
+
+    /** 422 rule_rejection. */
+    public static final String ALERT_AT_PRICE = "alert_at_price";
+
+    /** 409 conflict. */
+    public static final String ALERT_NOT_ARMED = "alert_not_armed";
+
     /** 403 permission. */
     public static final String STRATEGY_TYPE_DISABLED = "strategy_type_disabled";
 

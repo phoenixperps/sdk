@@ -9,6 +9,7 @@ namespace PhoenixPerps\Resource;
 use PhoenixPerps\Client;
 use PhoenixPerps\Model\Limits;
 use PhoenixPerps\Model\Platform;
+use PhoenixPerps\Model\RestrictedCountry;
 use PhoenixPerps\Model\Status;
 use PhoenixPerps\Ops;
 use PhoenixPerps\Page;
@@ -50,5 +51,12 @@ final class PlatformResource
     {
         $d = $this->c->one(Ops::GET_LIMITS, [], null, null, $options);
         return $d === null ? null : Limits::fromArray($d);
+    }
+
+    /** List restricted countries. */
+    /** @return Page<RestrictedCountry>|null null on a 304 Not Modified */
+    public function restrictedCountries(?RequestOptions $options = null): ?Page
+    {
+        return $this->c->list(Ops::LIST_RESTRICTED_COUNTRIES, [], null, [RestrictedCountry::class, 'fromArray'], $options);
     }
 }

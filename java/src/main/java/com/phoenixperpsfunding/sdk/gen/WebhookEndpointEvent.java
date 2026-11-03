@@ -19,6 +19,9 @@ public final class WebhookEndpointEvent {
     /** risk */
     public static final WebhookEndpointEvent RISK = new WebhookEndpointEvent("risk");
 
+    /** alerts */
+    public static final WebhookEndpointEvent ALERTS = new WebhookEndpointEvent("alerts");
+
     private final String value;
 
     private WebhookEndpointEvent(String value) {
@@ -37,6 +40,8 @@ public final class WebhookEndpointEvent {
                 return ACCOUNT;
             case "risk":
                 return RISK;
+            case "alerts":
+                return ALERTS;
             default:
                 return new WebhookEndpointEvent(value);
         }

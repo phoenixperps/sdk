@@ -16,7 +16,7 @@ final class Exits implements \JsonSerializable
     public function __construct(
         /** The account number. */
         public readonly ?string $accountId = null,
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The strategy that keeps these exits (type exits); null when there are none. */
         public readonly ?string $strategyId = null,

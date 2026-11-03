@@ -6,13 +6,12 @@ declare(strict_types=1);
 
 namespace PhoenixPerps\Enum;
 
-/** Two orders that rest. Open: the field is a string, and a value from a newer API version is kept as is. */
+/** conditional: the order it sends (default market). Open: the field is a string, and a value from a newer API version is kept as is. */
 final class CreateStrategyOrderType
 {
+    public const MARKET = 'market';
     public const LIMIT = 'limit';
-    public const STOP_MARKET = 'stop_market';
-    public const STOP_LIMIT = 'stop_limit';
 
     /** Every value this SDK version knows. */
-    public const ALL_VALUES = [self::LIMIT, self::STOP_MARKET, self::STOP_LIMIT];
+    public const ALL_VALUES = [self::MARKET, self::LIMIT];
 }

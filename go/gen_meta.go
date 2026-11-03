@@ -92,6 +92,11 @@ const (
 	ErrCodeDeliveryNotFound         = "delivery_not_found"
 	ErrCodeEventNotFound            = "event_not_found"
 	ErrCodeRungWouldFill            = "rung_would_fill"
+	ErrCodeTriggerAlreadyMet        = "trigger_already_met"
+	ErrCodeAlertNotFound            = "alert_not_found"
+	ErrCodeAlertLimit               = "alert_limit"
+	ErrCodeAlertAtPrice             = "alert_at_price"
+	ErrCodeAlertNotArmed            = "alert_not_armed"
 	ErrCodeStrategyTypeDisabled     = "strategy_type_disabled"
 	ErrCodeAccountNotFound          = "account_not_found"
 	ErrCodeMarketNotFound           = "market_not_found"
@@ -201,6 +206,11 @@ var ErrorCodes = map[string]ErrorCodeInfo{
 	"delivery_not_found":          {"not_found", 404, false},
 	"event_not_found":             {"not_found", 404, false},
 	"rung_would_fill":             {"rule_rejection", 422, false},
+	"trigger_already_met":         {"rule_rejection", 422, false},
+	"alert_not_found":             {"not_found", 404, false},
+	"alert_limit":                 {"rule_rejection", 422, false},
+	"alert_at_price":              {"rule_rejection", 422, false},
+	"alert_not_armed":             {"conflict", 409, false},
 	"strategy_type_disabled":      {"permission", 403, false},
 	"account_not_found":           {"not_found", 404, false},
 	"market_not_found":            {"not_found", 404, false},

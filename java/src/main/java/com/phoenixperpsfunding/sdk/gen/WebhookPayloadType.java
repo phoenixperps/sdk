@@ -61,6 +61,9 @@ public final class WebhookPayloadType {
     /** strategy.slice */
     public static final WebhookPayloadType STRATEGY_SLICE = new WebhookPayloadType("strategy.slice");
 
+    /** strategy.triggered */
+    public static final WebhookPayloadType STRATEGY_TRIGGERED = new WebhookPayloadType("strategy.triggered");
+
     /** strategy.ended */
     public static final WebhookPayloadType STRATEGY_ENDED = new WebhookPayloadType("strategy.ended");
 
@@ -102,6 +105,9 @@ public final class WebhookPayloadType {
 
     /** risk.cleared */
     public static final WebhookPayloadType RISK_CLEARED = new WebhookPayloadType("risk.cleared");
+
+    /** alert.triggered */
+    public static final WebhookPayloadType ALERT_TRIGGERED = new WebhookPayloadType("alert.triggered");
 
     /** webhook.ping */
     public static final WebhookPayloadType WEBHOOK_PING = new WebhookPayloadType("webhook.ping");
@@ -152,6 +158,8 @@ public final class WebhookPayloadType {
                 return STRATEGY_ORPHAN_REPAIRED;
             case "strategy.slice":
                 return STRATEGY_SLICE;
+            case "strategy.triggered":
+                return STRATEGY_TRIGGERED;
             case "strategy.ended":
                 return STRATEGY_ENDED;
             case "tradingview.alert_executed":
@@ -180,6 +188,8 @@ public final class WebhookPayloadType {
                 return RISK_WARNING;
             case "risk.cleared":
                 return RISK_CLEARED;
+            case "alert.triggered":
+                return ALERT_TRIGGERED;
             case "webhook.ping":
                 return WEBHOOK_PING;
             default:

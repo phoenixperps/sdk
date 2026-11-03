@@ -350,8 +350,9 @@ const (
 // CreateStrategyType: trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the
 // entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap,
 // vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a
-// ladder of limits. chase: a limit that follows the bid or ask. Open: a value from a newer API version is kept
-// as is.
+// ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is
+// reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one
+// (trigger_market). Open: a value from a newer API version is kept as is.
 type CreateStrategyType string
 
 const (
@@ -362,15 +363,35 @@ const (
 	CreateStrategyTypeVWAP         CreateStrategyType = "vwap"
 	CreateStrategyTypeScaled       CreateStrategyType = "scaled"
 	CreateStrategyTypeChase        CreateStrategyType = "chase"
+	CreateStrategyTypeConditional  CreateStrategyType = "conditional"
 )
 
-// CreateStrategyOrderType: Two orders that rest. Open: a value from a newer API version is kept as is.
+// CreateStrategyTriggerDirection: conditional, with another trigger_market: send the order once it trades at or
+// above trigger_price, or at or below it. On this market it is set by the side and not given. Open: a value from
+// a newer API version is kept as is.
+type CreateStrategyTriggerDirection string
+
+const (
+	CreateStrategyTriggerDirectionAbove CreateStrategyTriggerDirection = "above"
+	CreateStrategyTriggerDirectionBelow CreateStrategyTriggerDirection = "below"
+)
+
+// CreateStrategyOrderType: conditional: the order it sends (default market). Open: a value from a newer API
+// version is kept as is.
 type CreateStrategyOrderType string
 
 const (
-	CreateStrategyOrderTypeLimit      CreateStrategyOrderType = "limit"
-	CreateStrategyOrderTypeStopMarket CreateStrategyOrderType = "stop_market"
-	CreateStrategyOrderTypeStopLimit  CreateStrategyOrderType = "stop_limit"
+	CreateStrategyOrderTypeMarket CreateStrategyOrderType = "market"
+	CreateStrategyOrderTypeLimit  CreateStrategyOrderType = "limit"
+)
+
+// CreateStrategyOrderType2: Two orders that rest. Open: a value from a newer API version is kept as is.
+type CreateStrategyOrderType2 string
+
+const (
+	CreateStrategyOrderType2Limit      CreateStrategyOrderType2 = "limit"
+	CreateStrategyOrderType2StopMarket CreateStrategyOrderType2 = "stop_market"
+	CreateStrategyOrderType2StopLimit  CreateStrategyOrderType2 = "stop_limit"
 )
 
 // CreateStrategyDistribution: scaled: equal sizes, growing toward end_price, or shrinking. Open: a value from a
@@ -434,6 +455,7 @@ const (
 	EventTypeStrategyLegRejected      EventType = "strategy.leg_rejected"
 	EventTypeStrategyOrphanRepaired   EventType = "strategy.orphan_repaired"
 	EventTypeStrategySlice            EventType = "strategy.slice"
+	EventTypeStrategyTriggered        EventType = "strategy.triggered"
 	EventTypeStrategyEnded            EventType = "strategy.ended"
 	EventTypeTradingviewAlertExecuted EventType = "tradingview.alert_executed"
 	EventTypeTradingviewAlertRefused  EventType = "tradingview.alert_refused"
@@ -448,6 +470,7 @@ const (
 	EventTypeSystemRestarted          EventType = "system.restarted"
 	EventTypeRiskWarning              EventType = "risk.warning"
 	EventTypeRiskCleared              EventType = "risk.cleared"
+	EventTypeAlertTriggered           EventType = "alert.triggered"
 )
 
 // EventSource: Where it came from: an order placed through this API or by an AI assistant (the MCP server), one
@@ -487,6 +510,7 @@ const (
 	WebhookPayloadTypeStrategyLegRejected      WebhookPayloadType = "strategy.leg_rejected"
 	WebhookPayloadTypeStrategyOrphanRepaired   WebhookPayloadType = "strategy.orphan_repaired"
 	WebhookPayloadTypeStrategySlice            WebhookPayloadType = "strategy.slice"
+	WebhookPayloadTypeStrategyTriggered        WebhookPayloadType = "strategy.triggered"
 	WebhookPayloadTypeStrategyEnded            WebhookPayloadType = "strategy.ended"
 	WebhookPayloadTypeTradingviewAlertExecuted WebhookPayloadType = "tradingview.alert_executed"
 	WebhookPayloadTypeTradingviewAlertRefused  WebhookPayloadType = "tradingview.alert_refused"
@@ -501,6 +525,7 @@ const (
 	WebhookPayloadTypeSystemRestarted          WebhookPayloadType = "system.restarted"
 	WebhookPayloadTypeRiskWarning              WebhookPayloadType = "risk.warning"
 	WebhookPayloadTypeRiskCleared              WebhookPayloadType = "risk.cleared"
+	WebhookPayloadTypeAlertTriggered           WebhookPayloadType = "alert.triggered"
 	WebhookPayloadTypeWebhookPing              WebhookPayloadType = "webhook.ping"
 )
 
@@ -547,17 +572,19 @@ const (
 
 // StrategyType: exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills.
 // oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder
-// of limits. chase: a limit that follows the price. Open: a value from a newer API version is kept as is.
+// of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached. Open: a
+// value from a newer API version is kept as is.
 type StrategyType string
 
 const (
-	StrategyTypeExits   StrategyType = "exits"
-	StrategyTypeBracket StrategyType = "bracket"
-	StrategyTypeOCO     StrategyType = "oco"
-	StrategyTypeTWAP    StrategyType = "twap"
-	StrategyTypeVWAP    StrategyType = "vwap"
-	StrategyTypeScaled  StrategyType = "scaled"
-	StrategyTypeChase   StrategyType = "chase"
+	StrategyTypeExits       StrategyType = "exits"
+	StrategyTypeBracket     StrategyType = "bracket"
+	StrategyTypeOCO         StrategyType = "oco"
+	StrategyTypeTWAP        StrategyType = "twap"
+	StrategyTypeVWAP        StrategyType = "vwap"
+	StrategyTypeScaled      StrategyType = "scaled"
+	StrategyTypeChase       StrategyType = "chase"
+	StrategyTypeConditional StrategyType = "conditional"
 )
 
 // StrategyStatus: waiting: armed, nothing placed yet. working: running. completed: done as asked. canceled: you
@@ -610,6 +637,7 @@ const (
 	WebhookEndpointEventPositions WebhookEndpointEvent = "positions"
 	WebhookEndpointEventAccount   WebhookEndpointEvent = "account"
 	WebhookEndpointEventRisk      WebhookEndpointEvent = "risk"
+	WebhookEndpointEventAlerts    WebhookEndpointEvent = "alerts"
 )
 
 // WebhookEndpointStatus: disabled: we stopped after failures in a row; turn it on again from your dashboard.
@@ -643,6 +671,7 @@ const (
 	WebhookEventTypeGroupPositions WebhookEventTypeGroup = "positions"
 	WebhookEventTypeGroupAccount   WebhookEventTypeGroup = "account"
 	WebhookEventTypeGroupRisk      WebhookEventTypeGroup = "risk"
+	WebhookEventTypeGroupAlerts    WebhookEventTypeGroup = "alerts"
 )
 
 // TradingViewHookStatus: paused: alerts are refused (link_paused). Open: a value from a newer API version is
@@ -690,6 +719,41 @@ const (
 	TradingViewAlertStatusRateLimited TradingViewAlertStatus = "rate_limited"
 )
 
+// PriceAlertCondition: above: it fires once the price reaches the level from below; below: from above. Set from
+// the price when the level was set. Open: a value from a newer API version is kept as is.
+type PriceAlertCondition string
+
+const (
+	PriceAlertConditionAbove PriceAlertCondition = "above"
+	PriceAlertConditionBelow PriceAlertCondition = "below"
+)
+
+// PriceAlertStatus: armed: it waits for its level. triggered: it fired (rearm arms it again). disabled: its
+// account or market went away before it fired. Open: a value from a newer API version is kept as is.
+type PriceAlertStatus string
+
+const (
+	PriceAlertStatusArmed     PriceAlertStatus = "armed"
+	PriceAlertStatusTriggered PriceAlertStatus = "triggered"
+	PriceAlertStatusDisabled  PriceAlertStatus = "disabled"
+)
+
+// PriceAlertPriceSource: The price it watches: the market's last trade (the middle of the book until there is
+// one), the price trailing stops follow. Open: a value from a newer API version is kept as is.
+type PriceAlertPriceSource string
+
+const (
+	PriceAlertPriceSourceLast PriceAlertPriceSource = "last"
+)
+
+// PriceAlertDisabledReason: Why it was disabled. Open: a value from a newer API version is kept as is.
+type PriceAlertDisabledReason string
+
+const (
+	PriceAlertDisabledReasonAccountRemoved PriceAlertDisabledReason = "account_removed"
+	PriceAlertDisabledReasonMarketRemoved  PriceAlertDisabledReason = "market_removed"
+)
+
 // LimitStandingStatus: Where it stands. Open: a value from a newer API version is kept as is.
 type LimitStandingStatus string
 
@@ -716,6 +780,16 @@ const (
 	StrategiesListParamsStatusAll    StrategiesListParamsStatus = "all"
 	StrategiesListParamsStatusActive StrategiesListParamsStatus = "active"
 	StrategiesListParamsStatusEnded  StrategiesListParamsStatus = "ended"
+)
+
+// AlertsListParamsStatus: one of the values below. Open: a value from a newer API version is kept as is.
+type AlertsListParamsStatus string
+
+const (
+	AlertsListParamsStatusAll       AlertsListParamsStatus = "all"
+	AlertsListParamsStatusArmed     AlertsListParamsStatus = "armed"
+	AlertsListParamsStatusTriggered AlertsListParamsStatus = "triggered"
+	AlertsListParamsStatusDisabled  AlertsListParamsStatus = "disabled"
 )
 
 // ErrorEnvelope: Every error has this shape.
@@ -830,6 +904,7 @@ type Limits struct {
 	Orders     LimitsOrders     `json:"orders"`
 	Sandbox    *LimitsSandbox   `json:"sandbox,omitempty"`
 	Strategies LimitsStrategies `json:"strategies"`
+	Alerts     LimitsAlerts     `json:"alerts"`
 	// The largest request body.
 	BodyMaxBytes int64           `json:"body_max_bytes"`
 	PageLimit    LimitsPageLimit `json:"page_limit"`
@@ -958,7 +1033,7 @@ type LimitsSandbox struct {
 type LimitsStrategies struct {
 	// Running strategies an account may hold.
 	PerAccount int64 `json:"per_account"`
-	// Of those, programs (oco, twap, vwap, scaled, chase).
+	// Of those, programs (oco, twap, vwap, scaled, chase, conditional).
 	ProgramsPerAccount int64 `json:"programs_per_account"`
 	// Working orders of strategies on one account.
 	LegsPerAccount int64 `json:"legs_per_account"`
@@ -982,6 +1057,16 @@ type LimitsStrategies struct {
 	ChaseMaxMinutes int64 `json:"chase_max_minutes"`
 }
 
+// LimitsAlerts: see the API reference.
+type LimitsAlerts struct {
+	// Price alerts armed at once on one account.
+	ArmedPerAccount int64 `json:"armed_per_account"`
+	// Price alerts armed at once across your accounts.
+	ArmedPerCustomer int64 `json:"armed_per_customer"`
+	// How long an alert that fired (or was disabled) stays listed, in days.
+	KeptDays int64 `json:"kept_days"`
+}
+
 // LimitsPageLimit: see the API reference.
 type LimitsPageLimit struct {
 	// Items a page holds by default.
@@ -992,7 +1077,7 @@ type LimitsPageLimit struct {
 
 // Market: see the API reference.
 type Market struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The market's name; for a currency, the pair its price is quoted in (JPY-USD: USD/JPY, yen per dollar).
 	Name string `json:"name"`
@@ -1028,7 +1113,7 @@ type Market struct {
 
 // MarketOption: see the API reference.
 type MarketOption struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// Its venue.
 	Venue *string `json:"venue"`
@@ -1048,7 +1133,7 @@ type MarketMaxSlippagePct struct {
 
 // MarketStats: A market's 24-hour figures and open interest. A figure not known yet is null.
 type MarketStats struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The last trade.
 	Last *Decimal `json:"last"`
@@ -1275,7 +1360,7 @@ func (x AccountRiskExposure) MarshalJSON() ([]byte, error) {
 
 // AccountRiskExposureMarket: see the API reference.
 type AccountRiskExposureMarket struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The value held on it.
 	Notional Decimal `json:"notional"`
@@ -1309,7 +1394,7 @@ type AccountRiskTradingDays struct {
 
 // AccountRiskNearestLiquidation: see the API reference.
 type AccountRiskNearestLiquidation struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// Its liquidation price.
 	Price Decimal `json:"price"`
@@ -1533,7 +1618,7 @@ type DailyResult struct {
 
 // MarginSetting: see the API reference.
 type MarginSetting struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The leverage new positions on this market get.
 	Leverage int64 `json:"leverage"`
@@ -1564,7 +1649,7 @@ type ExitLeg struct {
 type Position struct {
 	// This position, while it stays open on the same side.
 	ID string `json:"id"`
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// Long or short.
 	Side PositionSide `json:"side"`
@@ -1638,7 +1723,7 @@ func (x PositionExits) MarshalJSON() ([]byte, error) {
 
 // ClosedPosition: see the API reference.
 type ClosedPosition struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// Long or short.
 	Side PositionSide `json:"side"`
@@ -1698,7 +1783,7 @@ type Order struct {
 	ClientOrderID *string `json:"client_order_id"`
 	// The account number.
 	AccountID string `json:"account_id"`
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The order's side; null for an order placed elsewhere before the API saw it.
 	Side *OrderSide `json:"side"`
@@ -1760,7 +1845,7 @@ type Fill struct {
 	ID string `json:"id"`
 	// Its order.
 	OrderID string `json:"order_id"`
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The side; null for an order placed elsewhere before the API saw it.
 	Side *OrderSide `json:"side"`
@@ -1874,7 +1959,7 @@ type MeAssistantBudget struct {
 
 // CreateOrder: A new order.
 type CreateOrder struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The order's side.
 	Side OrderSide `json:"side"`
@@ -1980,14 +2065,15 @@ type CreateStrategy struct {
 	// trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the
 	// price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in
 	// market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits.
-	// chase: a limit that follows the bid or ask.
+	// chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market
+	// (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market).
 	Type CreateStrategyType `json:"type"`
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The order's side.
 	Side *OrderSide `json:"side,omitempty"`
-	// trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase: the
-	// whole size.
+	// trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase,
+	// conditional: the whole size.
 	Size *Decimal `json:"size,omitempty"`
 	// trailing_stop: how far behind the best price (or percent).
 	Distance *Decimal `json:"distance,omitempty"`
@@ -2003,8 +2089,21 @@ type CreateStrategy struct {
 	TriggerDistance *Decimal `json:"trigger_distance,omitempty"`
 	// break_even: the same, in percent of the entry.
 	TriggerPercent *Decimal `json:"trigger_percent,omitempty"`
-	// break_even: or once the price reaches this.
+	// break_even: or once the price reaches this. conditional: the level that sends the order (the trigger market's
+	// price; its tick).
 	TriggerPrice *Decimal `json:"trigger_price,omitempty"`
+	// conditional: the market whose price is watched (absent: this market). Any market we list.
+	TriggerMarket *string `json:"trigger_market,omitempty"`
+	// conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or
+	// below it. On this market it is set by the side and not given.
+	TriggerDirection *CreateStrategyTriggerDirection `json:"trigger_direction,omitempty"`
+	// conditional: the order it sends (default market).
+	OrderType *CreateStrategyOrderType `json:"order_type,omitempty"`
+	// conditional: the limit of its order, with order_type limit.
+	LimitPrice *Decimal `json:"limit_price,omitempty"`
+	// conditional: until when it waits for its price (default and longest: the gtd maximum, see GET /v1/limits). Its
+	// order, once sent, stands on its own.
+	ExpiresAt *int64 `json:"expires_at,omitempty"`
 	// break_even: ticks beyond the entry, on the profit side. chase: ticks behind the bid (buy) or ask (sell).
 	OffsetTicks *int64 `json:"offset_ticks,omitempty"`
 	// oco: the two orders.
@@ -2016,13 +2115,13 @@ type CreateStrategy struct {
 	IntervalSeconds *int64 `json:"interval_seconds,omitempty"`
 	// twap, vwap: vary each slice's time and size a little (the sizes still add up to size).
 	Randomize *bool `json:"randomize,omitempty"`
-	// twap, vwap, scaled, chase: only reduce your position (a twap ends when the position is closed).
+	// twap, vwap, scaled, chase, conditional: only reduce your position (a twap ends when the position is closed).
 	ReduceOnly *bool `json:"reduce_only,omitempty"`
 	// twap, vwap (buy): slices wait while the price is above this. chase (buy): its cap.
 	MaxPrice *Decimal `json:"max_price,omitempty"`
 	// twap, vwap (sell): slices wait while the price is below this. chase (sell): its floor.
 	MinPrice *Decimal `json:"min_price,omitempty"`
-	// twap, vwap: each slice's slippage budget, in percent.
+	// twap, vwap: each slice's slippage budget, in percent. conditional: its market order's.
 	MaxSlippagePct *Decimal `json:"max_slippage_pct,omitempty"`
 	// scaled: the first rung.
 	StartPrice *Decimal `json:"start_price,omitempty"`
@@ -2044,7 +2143,7 @@ type CreateStrategy struct {
 	OnExpiry *CreateStrategyOnExpiry `json:"on_expiry,omitempty"`
 	// chase: it may rest through the last price (it would then fill at once).
 	AllowCross *bool `json:"allow_cross,omitempty"`
-	// Your own id for the strategy (oco, twap, vwap, scaled, chase): unique in this environment.
+	// Your own id for the strategy (oco, twap, vwap, scaled, chase, conditional): unique in this environment.
 	ClientStrategyID *string `json:"client_strategy_id,omitempty"`
 }
 
@@ -2053,7 +2152,7 @@ type CreateStrategyOrder struct {
 	// The order's side.
 	Side OrderSide `json:"side"`
 	// Two orders that rest.
-	Type CreateStrategyOrderType `json:"type"`
+	Type CreateStrategyOrderType2 `json:"type"`
 	// Its size.
 	Size Decimal `json:"size"`
 	// Its limit price.
@@ -2087,7 +2186,7 @@ type ClosePosition struct {
 
 // CancelAll: Optional: only this market.
 type CancelAll struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market *string `json:"market,omitempty"`
 }
 
@@ -2102,7 +2201,7 @@ type MarginSettingInput struct {
 
 // MarginSettingResult: see the API reference.
 type MarginSettingResult struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The margin mode.
 	MarginMode MarginMode `json:"margin_mode"`
@@ -2115,7 +2214,7 @@ type WhatIf struct {
 	// What the order would do now: fill at once, rest, or be refused (reject says why).
 	Result WhatIfResult  `json:"result"`
 	Reject *WhatIfReject `json:"reject"`
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The order's side.
 	Side OrderSide `json:"side"`
@@ -2239,7 +2338,7 @@ type ExitsLeg struct {
 	// take_profit: a limit on the profit side. stop_loss: a stop on the loss side.
 	Group ExitsLegGroup `json:"group"`
 	// take_profit legs are limits; stop_loss legs are stop_market or stop_limit.
-	Type CreateStrategyOrderType `json:"type"`
+	Type CreateStrategyOrderType2 `json:"type"`
 	// The order's status; waiting: a stop-loss not placed yet (it waits for its activation price or its break-even).
 	Status ExitsLegStatus `json:"status"`
 	// Its size.
@@ -2286,7 +2385,7 @@ type ExitsLegBreakEven struct {
 type Exits struct {
 	// The account number.
 	AccountID string `json:"account_id"`
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The strategy that keeps these exits (type exits); null when there are none.
 	StrategyID *string `json:"strategy_id"`
@@ -2375,7 +2474,7 @@ type ExitsBatchOperation struct {
 	// place: the group of the new leg.
 	Group *ExitsLegGroup `json:"group,omitempty"`
 	// place: limit for a take-profit (the default); stop_market (the default) or stop_limit for a stop-loss.
-	Type *CreateStrategyOrderType `json:"type,omitempty"`
+	Type *CreateStrategyOrderType2 `json:"type,omitempty"`
 	// The take-profit price, or the stop price.
 	Price *Decimal `json:"price,omitempty"`
 	// The limit of a stop_limit leg.
@@ -2430,9 +2529,9 @@ type Strategy struct {
 	AccountID string `json:"account_id"`
 	// exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two
 	// orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of
-	// limits. chase: a limit that follows the price.
+	// limits. chase: a limit that follows the price. conditional: an order sent once a price is reached.
 	Type StrategyType `json:"type"`
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The side of its orders (exits: the closing side).
 	Side *OrderSide `json:"side"`
@@ -2695,6 +2794,74 @@ type DeletedHook struct {
 	Deleted bool `json:"deleted"`
 }
 
+// PriceAlert: A level on a market, told once when the price reaches it (alert.triggered: the account stream,
+// webhooks, GET /v1/events). It never places or changes an order.
+type PriceAlert struct {
+	// The alert.
+	ID string `json:"id"`
+	// The account number.
+	AccountID string `json:"account_id"`
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
+	Market string `json:"market"`
+	// Its level.
+	Price Decimal `json:"price"`
+	// above: it fires once the price reaches the level from below; below: from above. Set from the price when the
+	// level was set.
+	Condition PriceAlertCondition `json:"condition"`
+	// Your note, sent with it.
+	Note *string `json:"note"`
+	// armed: it waits for its level. triggered: it fired (rearm arms it again). disabled: its account or market went
+	// away before it fired.
+	Status PriceAlertStatus `json:"status"`
+	// The price it watches: the market's last trade (the middle of the book until there is one), the price trailing
+	// stops follow.
+	PriceSource PriceAlertPriceSource `json:"price_source"`
+	// The price it fired at.
+	TriggerPrice *Decimal `json:"trigger_price"`
+	// When it fired.
+	TriggeredAt *int64 `json:"triggered_at"`
+	// Why it was disabled.
+	DisabledReason *PriceAlertDisabledReason `json:"disabled_reason"`
+	// When it was set.
+	CreatedAt int64 `json:"created_at"`
+	// Its latest change.
+	UpdatedAt int64 `json:"updated_at"`
+}
+
+// CreatePriceAlert: A new price alert. Its condition (above or below) is set from the price now.
+type CreatePriceAlert struct {
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
+	Market string `json:"market"`
+	// The level; not the price now.
+	Price Decimal `json:"price"`
+	// Your note (at most 280 characters).
+	Note *string `json:"note,omitempty"`
+}
+
+// ChangePriceAlert: What to change on an armed alert: at least one field.
+type ChangePriceAlert struct {
+	// A new level; its condition is set again from the price now.
+	Price *Decimal `json:"price,omitempty"`
+	// A new note; null removes it.
+	Note *string `json:"note,omitempty"`
+}
+
+// DeletedAlert: see the API reference.
+type DeletedAlert struct {
+	// The alert.
+	ID string `json:"id"`
+	// It was deleted.
+	Deleted bool `json:"deleted"`
+}
+
+// RestrictedCountry: see the API reference.
+type RestrictedCountry struct {
+	// The country, ISO 3166-1 alpha-2.
+	Code string `json:"code"`
+	// Its name in English.
+	Name string `json:"name"`
+}
+
 // CancelAllResult: see the API reference.
 type CancelAllResult struct {
 	// The account number.
@@ -2797,7 +2964,7 @@ func (x AccountRiskOrNullExposure) MarshalJSON() ([]byte, error) {
 
 // AccountRiskOrNullExposureMarket: see the API reference.
 type AccountRiskOrNullExposureMarket struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// The value held on it.
 	Notional Decimal `json:"notional"`
@@ -2831,7 +2998,7 @@ type AccountRiskOrNullTradingDays struct {
 
 // AccountRiskOrNullNearestLiquidation: see the API reference.
 type AccountRiskOrNullNearestLiquidation struct {
-	// A market id: the asset and USD.
+	// A market id: the asset and USD; an option adds its venue or hours after a dot.
 	Market string `json:"market"`
 	// Its liquidation price.
 	Price Decimal `json:"price"`
@@ -3045,6 +3212,38 @@ func (p *StrategiesListParams) values() url.Values {
 	}
 	if p.ClientStrategyID != nil {
 		v.Set("client_strategy_id", string(*p.ClientStrategyID))
+	}
+	if p.Limit != nil {
+		v.Set("limit", strconv.FormatInt(*p.Limit, 10))
+	}
+	if p.Cursor != nil {
+		v.Set("cursor", string(*p.Cursor))
+	}
+	return v
+}
+
+// AlertsListParams: The query of list price alerts.
+type AlertsListParams struct {
+	// Only alerts with this status (default all).
+	Status *AlertsListParamsStatus `json:"status,omitempty"`
+	// Only this market.
+	Market *string `json:"market,omitempty"`
+	// Page size.
+	Limit *int64 `json:"limit,omitempty"`
+	// next_cursor from the previous page, with the same filters.
+	Cursor *string `json:"cursor,omitempty"`
+}
+
+func (p *AlertsListParams) values() url.Values {
+	v := url.Values{}
+	if p == nil {
+		return v
+	}
+	if p.Status != nil {
+		v.Set("status", string(*p.Status))
+	}
+	if p.Market != nil {
+		v.Set("market", string(*p.Market))
 	}
 	if p.Limit != nil {
 		v.Set("limit", strconv.FormatInt(*p.Limit, 10))

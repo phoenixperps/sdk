@@ -23,7 +23,7 @@ public final class MarginSettingResult {
     @JsonProperty("leverage")
     private Long leverage;
 
-    /** A market id: the asset and USD. */
+    /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
     public String market() {
         return market;
     }

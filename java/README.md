@@ -10,7 +10,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.phoenixperpsfunding:phoenixperps-sdk:1.1.0")
+    implementation("com.phoenixperpsfunding:phoenixperps-sdk:1.2.0")
 }
 ```
 
@@ -48,7 +48,7 @@ Order order = client.orders().create(account.id(), new CreateOrder()
 ## Calls
 
 Resources follow the API: `platform()`, `me()`, `markets()`, `accounts()`, `history()`, `margin()`, `positions()`,
-`orders()`, `fills()`, `exits()`, `strategies()`, `events()`, `webhookEndpoints()`, `tradingView()`. Prices and sizes
+`orders()`, `fills()`, `exits()`, `strategies()`, `alerts()`, `events()`, `webhookEndpoints()`, `tradingView()`. Prices and sizes
 are `BigDecimal`, exact, sent as strings. Enums are open: a value from a newer API is kept as is, and fields this
 version does not know land in `extra()`.
 

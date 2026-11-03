@@ -22,6 +22,9 @@ final class Dispatch {
             case "platform.limits": {
                 return Result.of(c.platform().limits(options));
             }
+            case "platform.restrictedCountries": {
+                return Result.of(c.platform().restrictedCountries(options));
+            }
             case "me.get": {
                 return Result.of(c.me().get(options));
             }
@@ -135,6 +138,27 @@ final class Dispatch {
             }
             case "strategies.cancel": {
                 return Result.of(c.strategies().cancel(call.path("account_id"), call.path("strategy_id"), options));
+            }
+            case "alerts.create": {
+                return Result.of(c.alerts().create(call.path("account_id"), call.body(CreatePriceAlert.class), options));
+            }
+            case "alerts.list": {
+                if (call.iterate()) {
+                    return Result.items(ids(c.alerts().listAutoPaging(call.path("account_id"), call.query(AlertsListParams.class), options.withMaxItems(call.maxItems()))));
+                }
+                return Result.of(c.alerts().list(call.path("account_id"), call.query(AlertsListParams.class), options));
+            }
+            case "alerts.get": {
+                return Result.of(c.alerts().get(call.path("account_id"), call.path("alert_id"), options));
+            }
+            case "alerts.modify": {
+                return Result.of(c.alerts().modify(call.path("account_id"), call.path("alert_id"), call.body(ChangePriceAlert.class), options));
+            }
+            case "alerts.delete": {
+                return Result.of(c.alerts().delete(call.path("account_id"), call.path("alert_id"), options));
+            }
+            case "alerts.rearm": {
+                return Result.of(c.alerts().rearm(call.path("account_id"), call.path("alert_id"), options));
             }
             case "webhookEndpoints.list": {
                 return Result.of(c.webhookEndpoints().list(options));

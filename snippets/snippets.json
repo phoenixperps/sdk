@@ -119,6 +119,36 @@
       "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\n$limits = $client->platform->limits();\nprint_r($limits->toArray());\n"
     }
   ],
+  "listRestrictedCountries": [
+    {
+      "lang": "python",
+      "source": "from phoenixperps import PhoenixPerps\n\nclient = PhoenixPerps()  # the key: PHOENIXPERPS_API_KEY\nfor restricted_country in client.platform.restricted_countries().data:\n    print(restricted_country[\"name\"])\n"
+    },
+    {
+      "lang": "typescript",
+      "source": "import { PhoenixPerps } from '@phoenixperps/sdk';\n\nconst client = new PhoenixPerps(); // the key: PHOENIXPERPS_API_KEY\nconst { data } = await client.platform.restrictedCountries();\nfor (const restrictedCountry of data) console.log(restrictedCountry.name);\n"
+    },
+    {
+      "lang": "go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\tpage, err := client.Platform.RestrictedCountries(ctx)\n\tif err != nil {\n\t\treturn err\n\t}\n\tfor _, restrictedCountry := range page.Data {\n\t\tfmt.Println(restrictedCountry.Name)\n\t}\n\treturn nil\n}\n"
+    },
+    {
+      "lang": "csharp",
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar page = await client.Platform.RestrictedCountriesAsync();\nforeach (var restrictedCountry in page.Data)\n    Console.WriteLine(restrictedCountry.Name);\n"
+    },
+    {
+      "lang": "java",
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nfor (RestrictedCountry restrictedCountry : client.platform().restrictedCountries().data()) {\n    System.out.println(restrictedCountry.name());\n}\n"
+    },
+    {
+      "lang": "rust",
+      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let page = client.platform().restricted_countries().await?;\n    for restricted_country in &page.data {\n        println!(\"{}\", restricted_country.name);\n    }\n    Ok(())\n}\n"
+    },
+    {
+      "lang": "php",
+      "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\nforeach ($client->platform->restrictedCountries()->data as $restrictedCountry) {\n    echo $restrictedCountry->name, \"\\n\";\n}\n"
+    }
+  ],
   "getMe": [
     {
       "lang": "python",
@@ -970,19 +1000,19 @@
     },
     {
       "lang": "go",
-      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\texits, err := client.Exits.Set(ctx, \"SANDBOX-00042-001\", \"BTC-USD\", phoenixperps.ExitsBatch{\n\t\tExpectedPosition: &phoenixperps.ExitsBatchExpectedPosition{\n\t\t\tSide: phoenixperps.PositionSideLong,\n\t\t\tSize: \"0.01\",\n\t\t},\n\t\tExpectedExits: []phoenixperps.ExitsBatchExpectedExit{\n\t\t\t{\n\t\t\t\tID:    \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\n\t\t\t\tSize:  \"0.01\",\n\t\t\t\tPrice: phoenixperps.Dec(\"61700\"),\n\t\t\t},\n\t\t},\n\t\tOperations: []phoenixperps.ExitsBatchOperation{\n\t\t\t{\n\t\t\t\tOp:    phoenixperps.ExitsBatchOperationOpModify,\n\t\t\t\tID:    phoenixperps.Ptr(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\"),\n\t\t\t\tPrice: phoenixperps.Dec(\"61900\"),\n\t\t\t},\n\t\t\t{\n\t\t\t\tOp:    phoenixperps.ExitsBatchOperationOpPlace,\n\t\t\t\tGroup: phoenixperps.Ptr(phoenixperps.ExitsLegGroupTakeProfit),\n\t\t\t\tType:  phoenixperps.Ptr(phoenixperps.CreateStrategyOrderTypeLimit),\n\t\t\t\tPrice: phoenixperps.Dec(\"63000\"),\n\t\t\t\tSize:  phoenixperps.Dec(\"0.01\"),\n\t\t\t},\n\t\t},\n\t})\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"%+v\\n\", exits)\n\treturn nil\n}\n"
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\texits, err := client.Exits.Set(ctx, \"SANDBOX-00042-001\", \"BTC-USD\", phoenixperps.ExitsBatch{\n\t\tExpectedPosition: &phoenixperps.ExitsBatchExpectedPosition{\n\t\t\tSide: phoenixperps.PositionSideLong,\n\t\t\tSize: \"0.01\",\n\t\t},\n\t\tExpectedExits: []phoenixperps.ExitsBatchExpectedExit{\n\t\t\t{\n\t\t\t\tID:    \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\n\t\t\t\tSize:  \"0.01\",\n\t\t\t\tPrice: phoenixperps.Dec(\"61700\"),\n\t\t\t},\n\t\t},\n\t\tOperations: []phoenixperps.ExitsBatchOperation{\n\t\t\t{\n\t\t\t\tOp:    phoenixperps.ExitsBatchOperationOpModify,\n\t\t\t\tID:    phoenixperps.Ptr(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\"),\n\t\t\t\tPrice: phoenixperps.Dec(\"61900\"),\n\t\t\t},\n\t\t\t{\n\t\t\t\tOp:    phoenixperps.ExitsBatchOperationOpPlace,\n\t\t\t\tGroup: phoenixperps.Ptr(phoenixperps.ExitsLegGroupTakeProfit),\n\t\t\t\tType:  phoenixperps.Ptr(phoenixperps.CreateStrategyOrderType2Limit),\n\t\t\t\tPrice: phoenixperps.Dec(\"63000\"),\n\t\t\t\tSize:  phoenixperps.Dec(\"0.01\"),\n\t\t\t},\n\t\t},\n\t})\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"%+v\\n\", exits)\n\treturn nil\n}\n"
     },
     {
       "lang": "csharp",
-      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar exits = await client.Exits.SetAsync(\"SANDBOX-00042-001\", \"BTC-USD\", new ExitsBatch\n{\n    ExpectedPosition = new ExitsBatchExpectedPosition\n    {\n        Side = PositionSide.Long,\n        Size = 0.01m,\n    },\n    ExpectedExits = new()\n    {\n        new ExitsBatchExpectedExit\n        {\n            Id = \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\n            Size = 0.01m,\n            Price = 61700m,\n        },\n    },\n    Operations = new()\n    {\n        new ExitsBatchOperation\n        {\n            Op = ExitsBatchOperationOp.Modify,\n            Id = \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\n            Price = 61900m,\n        },\n        new ExitsBatchOperation\n        {\n            Op = ExitsBatchOperationOp.Place,\n            Group = ExitsLegGroup.TakeProfit,\n            Type = CreateStrategyOrderType.Limit,\n            Price = 63000m,\n            Size = 0.01m,\n        },\n    },\n});\nConsole.WriteLine(exits.Market);\n"
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar exits = await client.Exits.SetAsync(\"SANDBOX-00042-001\", \"BTC-USD\", new ExitsBatch\n{\n    ExpectedPosition = new ExitsBatchExpectedPosition\n    {\n        Side = PositionSide.Long,\n        Size = 0.01m,\n    },\n    ExpectedExits = new()\n    {\n        new ExitsBatchExpectedExit\n        {\n            Id = \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\n            Size = 0.01m,\n            Price = 61700m,\n        },\n    },\n    Operations = new()\n    {\n        new ExitsBatchOperation\n        {\n            Op = ExitsBatchOperationOp.Modify,\n            Id = \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\",\n            Price = 61900m,\n        },\n        new ExitsBatchOperation\n        {\n            Op = ExitsBatchOperationOp.Place,\n            Group = ExitsLegGroup.TakeProfit,\n            Type = CreateStrategyOrderType2.Limit,\n            Price = 63000m,\n            Size = 0.01m,\n        },\n    },\n});\nConsole.WriteLine(exits.Market);\n"
     },
     {
       "lang": "java",
-      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nExits exits = client.exits().set(\"SANDBOX-00042-001\", \"BTC-USD\", new ExitsBatch()\n        .expectedPosition(new ExitsBatchExpectedPosition()\n                .side(PositionSide.LONG)\n                .size(new BigDecimal(\"0.01\")))\n        .expectedExits(List.of(new ExitsBatchExpectedExit()\n                .id(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\n                .size(new BigDecimal(\"0.01\"))\n                .price(new BigDecimal(\"61700\"))))\n        .operations(List.of(new ExitsBatchOperation()\n                .op(ExitsBatchOperationOp.MODIFY)\n                .id(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\n                .price(new BigDecimal(\"61900\")), new ExitsBatchOperation()\n                .op(ExitsBatchOperationOp.PLACE)\n                .group(ExitsLegGroup.TAKE_PROFIT)\n                .type(CreateStrategyOrderType.LIMIT)\n                .price(new BigDecimal(\"63000\"))\n                .size(new BigDecimal(\"0.01\")))));\nSystem.out.println(exits);\n"
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nExits exits = client.exits().set(\"SANDBOX-00042-001\", \"BTC-USD\", new ExitsBatch()\n        .expectedPosition(new ExitsBatchExpectedPosition()\n                .side(PositionSide.LONG)\n                .size(new BigDecimal(\"0.01\")))\n        .expectedExits(List.of(new ExitsBatchExpectedExit()\n                .id(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\n                .size(new BigDecimal(\"0.01\"))\n                .price(new BigDecimal(\"61700\"))))\n        .operations(List.of(new ExitsBatchOperation()\n                .op(ExitsBatchOperationOp.MODIFY)\n                .id(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\n                .price(new BigDecimal(\"61900\")), new ExitsBatchOperation()\n                .op(ExitsBatchOperationOp.PLACE)\n                .group(ExitsLegGroup.TAKE_PROFIT)\n                .type(CreateStrategyOrderType2.LIMIT)\n                .price(new BigDecimal(\"63000\"))\n                .size(new BigDecimal(\"0.01\")))));\nSystem.out.println(exits);\n"
     },
     {
       "lang": "rust",
-      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let exits = client.exits().set(\"SANDBOX-00042-001\", \"BTC-USD\", &ExitsBatch {\n        expected_position: Some(ExitsBatchExpectedPosition {\n            side: PositionSide::Long,\n            size: dec(\"0.01\"),\n            ..Default::default()\n        }),\n        expected_exits: vec![ExitsBatchExpectedExit {\n            id: \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\".into(),\n            size: dec(\"0.01\"),\n            price: Some(dec(\"61700\")),\n            ..Default::default()\n        }],\n        operations: vec![ExitsBatchOperation {\n            op: ExitsBatchOperationOp::Modify,\n            id: Some(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\".into()),\n            price: Some(dec(\"61900\")),\n            ..Default::default()\n        }, ExitsBatchOperation {\n            op: ExitsBatchOperationOp::Place,\n            group: Some(ExitsLegGroup::TakeProfit),\n            r#type: Some(CreateStrategyOrderType::Limit),\n            price: Some(dec(\"63000\")),\n            size: Some(dec(\"0.01\")),\n            ..Default::default()\n        }],\n        ..Default::default()\n    }).await?;\n    println!(\"{exits:?}\");\n    Ok(())\n}\n"
+      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let exits = client.exits().set(\"SANDBOX-00042-001\", \"BTC-USD\", &ExitsBatch {\n        expected_position: Some(ExitsBatchExpectedPosition {\n            side: PositionSide::Long,\n            size: dec(\"0.01\"),\n            ..Default::default()\n        }),\n        expected_exits: vec![ExitsBatchExpectedExit {\n            id: \"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\".into(),\n            size: dec(\"0.01\"),\n            price: Some(dec(\"61700\")),\n            ..Default::default()\n        }],\n        operations: vec![ExitsBatchOperation {\n            op: ExitsBatchOperationOp::Modify,\n            id: Some(\"ord_01JAB7Q8XK4M2N5P7R9S3T5V7W\".into()),\n            price: Some(dec(\"61900\")),\n            ..Default::default()\n        }, ExitsBatchOperation {\n            op: ExitsBatchOperationOp::Place,\n            group: Some(ExitsLegGroup::TakeProfit),\n            r#type: Some(CreateStrategyOrderType2::Limit),\n            price: Some(dec(\"63000\")),\n            size: Some(dec(\"0.01\")),\n            ..Default::default()\n        }],\n        ..Default::default()\n    }).await?;\n    println!(\"{exits:?}\");\n    Ok(())\n}\n"
     },
     {
       "lang": "php",
@@ -1137,6 +1167,186 @@
     {
       "lang": "php",
       "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\n$strategy = $client->strategies->cancel('SANDBOX-00042-001', 'stg_01JAB7Q8XK4M2N5P7R9S3T5V7W');\nprint_r($strategy->toArray());\n"
+    }
+  ],
+  "createAlert": [
+    {
+      "lang": "python",
+      "source": "from phoenixperps import PhoenixPerps\n\nclient = PhoenixPerps()  # the key: PHOENIXPERPS_API_KEY\nprice_alert = client.alerts.create(\"SANDBOX-00042-001\", {\n    \"market\": \"BTC-USD\",\n    \"price\": \"120000\",\n    \"note\": \"breakout\",\n})\nprint(price_alert)\n"
+    },
+    {
+      "lang": "typescript",
+      "source": "import { PhoenixPerps } from '@phoenixperps/sdk';\n\nconst client = new PhoenixPerps(); // the key: PHOENIXPERPS_API_KEY\nconst priceAlert = await client.alerts.create('SANDBOX-00042-001', {\n  market: 'BTC-USD',\n  price: '120000',\n  note: 'breakout',\n});\nconsole.log(priceAlert);\n"
+    },
+    {
+      "lang": "go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\tpriceAlert, err := client.Alerts.Create(ctx, \"SANDBOX-00042-001\", phoenixperps.CreatePriceAlert{\n\t\tMarket: \"BTC-USD\",\n\t\tPrice:  \"120000\",\n\t\tNote:   phoenixperps.Ptr(\"breakout\"),\n\t})\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"%+v\\n\", priceAlert)\n\treturn nil\n}\n"
+    },
+    {
+      "lang": "csharp",
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar priceAlert = await client.Alerts.CreateAsync(\"SANDBOX-00042-001\", new CreatePriceAlert\n{\n    Market = \"BTC-USD\",\n    Price = 120000m,\n    Note = \"breakout\",\n});\nConsole.WriteLine(priceAlert.Id);\n"
+    },
+    {
+      "lang": "java",
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nPriceAlert priceAlert = client.alerts().create(\"SANDBOX-00042-001\", new CreatePriceAlert()\n        .market(\"BTC-USD\")\n        .price(new BigDecimal(\"120000\"))\n        .note(\"breakout\"));\nSystem.out.println(priceAlert);\n"
+    },
+    {
+      "lang": "rust",
+      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let price_alert = client.alerts().create(\"SANDBOX-00042-001\", &CreatePriceAlert {\n        market: \"BTC-USD\".into(),\n        price: dec(\"120000\"),\n        note: Some(\"breakout\".into()),\n        ..Default::default()\n    }).await?;\n    println!(\"{price_alert:?}\");\n    Ok(())\n}\n"
+    },
+    {
+      "lang": "php",
+      "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\n$priceAlert = $client->alerts->create('SANDBOX-00042-001', [\n    'market' => 'BTC-USD',\n    'price' => '120000',\n    'note' => 'breakout',\n]);\nprint_r($priceAlert->toArray());\n"
+    }
+  ],
+  "listAlerts": [
+    {
+      "lang": "python",
+      "source": "from phoenixperps import PhoenixPerps\n\nclient = PhoenixPerps()  # the key: PHOENIXPERPS_API_KEY\nfor price_alert in client.alerts.list(\"SANDBOX-00042-001\").auto_paging_iter():\n    print(price_alert[\"id\"])\n"
+    },
+    {
+      "lang": "typescript",
+      "source": "import { PhoenixPerps } from '@phoenixperps/sdk';\n\nconst client = new PhoenixPerps(); // the key: PHOENIXPERPS_API_KEY\nfor await (const priceAlert of client.alerts.list('SANDBOX-00042-001')) {\n  console.log(priceAlert.id);\n}\n"
+    },
+    {
+      "lang": "go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\tfor priceAlert, err := range client.Alerts.ListAutoPaging(ctx, \"SANDBOX-00042-001\", nil) {\n\t\tif err != nil {\n\t\t\treturn err\n\t\t}\n\t\tfmt.Println(priceAlert.ID)\n\t}\n\treturn nil\n}\n"
+    },
+    {
+      "lang": "csharp",
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nawait foreach (var priceAlert in client.Alerts.ListAutoPagingAsync(\"SANDBOX-00042-001\"))\n    Console.WriteLine(priceAlert.Id);\n"
+    },
+    {
+      "lang": "java",
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nfor (PriceAlert priceAlert : client.alerts().listAutoPaging(\"SANDBOX-00042-001\", null)) {\n    System.out.println(priceAlert.id());\n}\n"
+    },
+    {
+      "lang": "rust",
+      "source": "use futures_util::StreamExt;\nuse phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let options = RequestOptions::default();\n    let mut items = client.alerts().list_auto_paging(\"SANDBOX-00042-001\", None, &options);\n    while let Some(item) = items.next().await {\n        let price_alert = item?;\n        println!(\"{}\", price_alert.id);\n    }\n    Ok(())\n}\n"
+    },
+    {
+      "lang": "php",
+      "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\nforeach ($client->alerts->listAutoPaging('SANDBOX-00042-001') as $priceAlert) {\n    echo $priceAlert->id, \"\\n\";\n}\n"
+    }
+  ],
+  "getAlert": [
+    {
+      "lang": "python",
+      "source": "from phoenixperps import PhoenixPerps\n\nclient = PhoenixPerps()  # the key: PHOENIXPERPS_API_KEY\nprice_alert = client.alerts.get(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\nprint(price_alert)\n"
+    },
+    {
+      "lang": "typescript",
+      "source": "import { PhoenixPerps } from '@phoenixperps/sdk';\n\nconst client = new PhoenixPerps(); // the key: PHOENIXPERPS_API_KEY\nconst priceAlert = await client.alerts.get('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');\nconsole.log(priceAlert);\n"
+    },
+    {
+      "lang": "go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\tpriceAlert, err := client.Alerts.Get(ctx, \"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"%+v\\n\", priceAlert)\n\treturn nil\n}\n"
+    },
+    {
+      "lang": "csharp",
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar priceAlert = await client.Alerts.GetAsync(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\");\nConsole.WriteLine(priceAlert.Id);\n"
+    },
+    {
+      "lang": "java",
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nPriceAlert priceAlert = client.alerts().get(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\");\nSystem.out.println(priceAlert);\n"
+    },
+    {
+      "lang": "rust",
+      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let price_alert = client.alerts().get(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\").await?;\n    println!(\"{price_alert:?}\");\n    Ok(())\n}\n"
+    },
+    {
+      "lang": "php",
+      "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\n$priceAlert = $client->alerts->get('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');\nprint_r($priceAlert->toArray());\n"
+    }
+  ],
+  "changeAlert": [
+    {
+      "lang": "python",
+      "source": "from phoenixperps import PhoenixPerps\n\nclient = PhoenixPerps()  # the key: PHOENIXPERPS_API_KEY\nprice_alert = client.alerts.modify(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\", {\n    \"price\": \"121000\",\n})\nprint(price_alert)\n"
+    },
+    {
+      "lang": "typescript",
+      "source": "import { PhoenixPerps } from '@phoenixperps/sdk';\n\nconst client = new PhoenixPerps(); // the key: PHOENIXPERPS_API_KEY\nconst priceAlert = await client.alerts.modify('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W', {\n  price: '121000',\n});\nconsole.log(priceAlert);\n"
+    },
+    {
+      "lang": "go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\tpriceAlert, err := client.Alerts.Modify(ctx, \"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\", phoenixperps.ChangePriceAlert{\n\t\tPrice: phoenixperps.Dec(\"121000\"),\n\t})\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"%+v\\n\", priceAlert)\n\treturn nil\n}\n"
+    },
+    {
+      "lang": "csharp",
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar priceAlert = await client.Alerts.ModifyAsync(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\", new ChangePriceAlert\n{\n    Price = 121000m,\n});\nConsole.WriteLine(priceAlert.Id);\n"
+    },
+    {
+      "lang": "java",
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nPriceAlert priceAlert = client.alerts().modify(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\", new ChangePriceAlert()\n        .price(new BigDecimal(\"121000\")));\nSystem.out.println(priceAlert);\n"
+    },
+    {
+      "lang": "rust",
+      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let price_alert = client.alerts().modify(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\", &ChangePriceAlert {\n        price: Some(dec(\"121000\")),\n        ..Default::default()\n    }).await?;\n    println!(\"{price_alert:?}\");\n    Ok(())\n}\n"
+    },
+    {
+      "lang": "php",
+      "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\n$priceAlert = $client->alerts->modify('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W', [\n    'price' => '121000',\n]);\nprint_r($priceAlert->toArray());\n"
+    }
+  ],
+  "deleteAlert": [
+    {
+      "lang": "python",
+      "source": "from phoenixperps import PhoenixPerps\n\nclient = PhoenixPerps()  # the key: PHOENIXPERPS_API_KEY\ndeleted_alert = client.alerts.delete(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\nprint(deleted_alert)\n"
+    },
+    {
+      "lang": "typescript",
+      "source": "import { PhoenixPerps } from '@phoenixperps/sdk';\n\nconst client = new PhoenixPerps(); // the key: PHOENIXPERPS_API_KEY\nconst deletedAlert = await client.alerts.delete('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');\nconsole.log(deletedAlert);\n"
+    },
+    {
+      "lang": "go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\tdeletedAlert, err := client.Alerts.Delete(ctx, \"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"%+v\\n\", deletedAlert)\n\treturn nil\n}\n"
+    },
+    {
+      "lang": "csharp",
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar deletedAlert = await client.Alerts.DeleteAsync(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\");\nConsole.WriteLine(deletedAlert.Id);\n"
+    },
+    {
+      "lang": "java",
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nDeletedAlert deletedAlert = client.alerts().delete(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\");\nSystem.out.println(deletedAlert);\n"
+    },
+    {
+      "lang": "rust",
+      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let deleted_alert = client.alerts().delete(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\").await?;\n    println!(\"{deleted_alert:?}\");\n    Ok(())\n}\n"
+    },
+    {
+      "lang": "php",
+      "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\n$deletedAlert = $client->alerts->delete('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');\nprint_r($deletedAlert->toArray());\n"
+    }
+  ],
+  "rearmAlert": [
+    {
+      "lang": "python",
+      "source": "from phoenixperps import PhoenixPerps\n\nclient = PhoenixPerps()  # the key: PHOENIXPERPS_API_KEY\nprice_alert = client.alerts.rearm(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\nprint(price_alert)\n"
+    },
+    {
+      "lang": "typescript",
+      "source": "import { PhoenixPerps } from '@phoenixperps/sdk';\n\nconst client = new PhoenixPerps(); // the key: PHOENIXPERPS_API_KEY\nconst priceAlert = await client.alerts.rearm('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');\nconsole.log(priceAlert);\n"
+    },
+    {
+      "lang": "go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\n\tphoenixperps \"github.com/phoenixperps/sdk/go\"\n)\n\nfunc main() {\n\tclient, err := phoenixperps.NewClient() // the key: PHOENIXPERPS_API_KEY\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tif err := run(context.Background(), client); err != nil {\n\t\tlog.Fatal(err)\n\t}\n}\n\nfunc run(ctx context.Context, client *phoenixperps.Client) error {\n\tpriceAlert, err := client.Alerts.Rearm(ctx, \"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\")\n\tif err != nil {\n\t\treturn err\n\t}\n\tfmt.Printf(\"%+v\\n\", priceAlert)\n\treturn nil\n}\n"
+    },
+    {
+      "lang": "csharp",
+      "source": "using PhoenixPerps;\n\nusing var client = new PhoenixPerpsClient(); // the key: PHOENIXPERPS_API_KEY\nvar priceAlert = await client.Alerts.RearmAsync(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\");\nConsole.WriteLine(priceAlert.Id);\n"
+    },
+    {
+      "lang": "java",
+      "source": "import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;\nimport com.phoenixperpsfunding.sdk.gen.*;\nimport java.math.BigDecimal;\nimport java.util.List;\n\nPhoenixPerpsClient client = PhoenixPerpsClient.fromEnv(); // the key: PHOENIXPERPS_API_KEY\nPriceAlert priceAlert = client.alerts().rearm(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\");\nSystem.out.println(priceAlert);\n"
+    },
+    {
+      "lang": "rust",
+      "source": "use phoenixperps::*;\n\n#[tokio::main]\nasync fn main() -> Result<()> {\n    let client = Client::from_env()?; // the key: PHOENIXPERPS_API_KEY\n    let price_alert = client.alerts().rearm(\"SANDBOX-00042-001\", \"alr_01JAB7Q8XK4M2N5P7R9S3T5V7W\").await?;\n    println!(\"{price_alert:?}\");\n    Ok(())\n}\n"
+    },
+    {
+      "lang": "php",
+      "source": "<?php\n\nrequire 'vendor/autoload.php';\n\n$client = new PhoenixPerps\\Client(); // the key: PHOENIXPERPS_API_KEY\n$priceAlert = $client->alerts->rearm('SANDBOX-00042-001', 'alr_01JAB7Q8XK4M2N5P7R9S3T5V7W');\nprint_r($priceAlert->toArray());\n"
     }
   ],
   "listWebhookEndpoints": [

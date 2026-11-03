@@ -42,7 +42,7 @@ var order = await client.Orders.CreateAsync(accounts.Data[0].Id, new CreateOrder
 ## Calls
 
 Resources follow the API: `Platform`, `Me`, `Markets`, `Accounts`, `History`, `Margin`, `Positions`, `Orders`, `Fills`,
-`Exits`, `Strategies`, `Events`, `WebhookEndpoints`, `TradingView`. Prices and sizes are `decimal`, exact, sent as
+`Exits`, `Strategies`, `Alerts`, `Events`, `WebhookEndpoints`, `TradingView`. Prices and sizes are `decimal`, exact, sent as
 strings. Enums are open: a value from a newer API is kept as is, and fields this version does not know land in `Extra`.
 
 - A call is tried again only when that is safe (a read, a route the API marks retry-safe, or a call carrying an

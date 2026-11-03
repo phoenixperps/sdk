@@ -14,7 +14,7 @@ final class ClosedPosition implements \JsonSerializable
     private const WIRE = ['market' => true, 'side' => true, 'size' => true, 'entry_price' => true, 'exit_price' => true, 'gross_pnl' => true, 'fees' => true, 'pnl' => true, 'opened_at' => true, 'closed_at' => true, 'lots' => true];
 
     public function __construct(
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** Long or short. */
         public readonly ?string $side = null,

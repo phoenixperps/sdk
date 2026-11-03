@@ -61,7 +61,7 @@ public final class LimitsStrategies {
         return this;
     }
 
-    /** Of those, programs (oco, twap, vwap, scaled, chase). */
+    /** Of those, programs (oco, twap, vwap, scaled, chase, conditional). */
     public Long programsPerAccount() {
         return programsPerAccount;
     }

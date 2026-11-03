@@ -158,6 +158,29 @@
               "type": "noauth"
             }
           }
+        },
+        {
+          "name": "List restricted countries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/restricted-countries",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "restricted-countries"
+              ],
+              "variable": [],
+              "query": []
+            },
+            "description": "The countries whose residents cannot sign up or buy an account, as ISO 3166-1 alpha-2 codes with their names. The same list the website applies. No key needed.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
         }
       ]
     },
@@ -1358,7 +1381,7 @@
                 }
               }
             },
-            "description": "Starts a strategy on the account. trailing_stop and break_even change the position's exits (the answer is the exits strategy). The programs (oco, twap, vwap, scaled, chase) place orders for you: each one is checked as an order you place yourself, and listed under the strategy."
+            "description": "Starts a strategy on the account. trailing_stop and break_even change the position's exits (the answer is the exits strategy). The programs (oco, twap, vwap, scaled, chase, conditional) place orders for you: each one is checked as an order you place yourself, and listed under the strategy. A conditional waits (status waiting, nothing on the engine) until its price is reached, then sends its order (strategy.triggered)."
           }
         },
         {
@@ -1486,6 +1509,261 @@
               "query": []
             },
             "description": "Stops the strategy and cancels its working orders (reason strategy). Orders that already filled stay filled."
+          }
+        }
+      ]
+    },
+    {
+      "name": "alerts",
+      "item": [
+        {
+          "name": "Create a price alert",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/alerts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "alerts"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"market\": \"BTC-USD\",\n  \"price\": \"120000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Arms an alert on the market: alert.triggered is sent once (the account stream, webhooks, GET /v1/events) when the price reaches the level. Its condition, above or below, is set from the price now. A read key is enough: an alert never trades."
+          }
+        },
+        {
+          "name": "List price alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/alerts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "alerts"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                }
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Only alerts with this status (default all).",
+                  "disabled": true
+                },
+                {
+                  "key": "market",
+                  "value": "",
+                  "description": "Only this market.",
+                  "disabled": true
+                },
+                {
+                  "key": "limit",
+                  "value": "",
+                  "description": "Page size.",
+                  "disabled": true
+                },
+                {
+                  "key": "cursor",
+                  "value": "",
+                  "description": "next_cursor from the previous page, with the same filters.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "The account's price alerts, newest first: armed ones, and those that fired or were disabled in the last kept days (GET /v1/limits)."
+          }
+        },
+        {
+          "name": "Get a price alert",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/alerts/:alert_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "alerts",
+                ":alert_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "alert_id",
+                  "value": "{{alertId}}",
+                  "description": "The alert."
+                }
+              ],
+              "query": []
+            },
+            "description": "Get a price alert"
+          }
+        },
+        {
+          "name": "Move a price alert",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/alerts/:alert_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "alerts",
+                ":alert_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "alert_id",
+                  "value": "{{alertId}}",
+                  "description": "The alert."
+                }
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Changes an armed alert's level, its note, or both. A new level sets its condition again from the price now."
+          }
+        },
+        {
+          "name": "Delete a price alert",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/alerts/:alert_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "alerts",
+                ":alert_id"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "alert_id",
+                  "value": "{{alertId}}",
+                  "description": "The alert."
+                }
+              ],
+              "query": []
+            },
+            "description": "Delete a price alert"
+          }
+        },
+        {
+          "name": "Arm a price alert again",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/accounts/:account_id/alerts/:alert_id/rearm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "accounts",
+                ":account_id",
+                "alerts",
+                ":alert_id",
+                "rearm"
+              ],
+              "variable": [
+                {
+                  "key": "account_id",
+                  "value": "{{accountId}}",
+                  "description": "The account number."
+                },
+                {
+                  "key": "alert_id",
+                  "value": "{{alertId}}",
+                  "description": "The alert."
+                }
+              ],
+              "query": []
+            },
+            "description": "Arms an alert that fired (or was disabled) again at its level, its condition set from the price now. An armed alert is answered as it is."
           }
         }
       ]

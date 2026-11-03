@@ -11,16 +11,16 @@ use PhoenixPerps\Decimal;
 /** A new strategy. trailing_stop and break_even act on the position's exits: the answer is that exits strategy. */
 final class CreateStrategy implements \JsonSerializable
 {
-    private const WIRE = ['type' => true, 'market' => true, 'side' => true, 'size' => true, 'distance' => true, 'percent' => true, 'activation_price' => true, 'initial_stop_price' => true, 'replace_stops' => true, 'trigger_distance' => true, 'trigger_percent' => true, 'trigger_price' => true, 'offset_ticks' => true, 'orders' => true, 'exits' => true, 'duration_minutes' => true, 'interval_seconds' => true, 'randomize' => true, 'reduce_only' => true, 'max_price' => true, 'min_price' => true, 'max_slippage_pct' => true, 'start_price' => true, 'end_price' => true, 'rungs' => true, 'distribution' => true, 'post_only' => true, 'all_or_none' => true, 'allow_marketable' => true, 'max_minutes' => true, 'on_expiry' => true, 'allow_cross' => true, 'client_strategy_id' => true];
+    private const WIRE = ['type' => true, 'market' => true, 'side' => true, 'size' => true, 'distance' => true, 'percent' => true, 'activation_price' => true, 'initial_stop_price' => true, 'replace_stops' => true, 'trigger_distance' => true, 'trigger_percent' => true, 'trigger_price' => true, 'trigger_market' => true, 'trigger_direction' => true, 'order_type' => true, 'limit_price' => true, 'expires_at' => true, 'offset_ticks' => true, 'orders' => true, 'exits' => true, 'duration_minutes' => true, 'interval_seconds' => true, 'randomize' => true, 'reduce_only' => true, 'max_price' => true, 'min_price' => true, 'max_slippage_pct' => true, 'start_price' => true, 'end_price' => true, 'rungs' => true, 'distribution' => true, 'post_only' => true, 'all_or_none' => true, 'allow_marketable' => true, 'max_minutes' => true, 'on_expiry' => true, 'allow_cross' => true, 'client_strategy_id' => true];
 
     public function __construct(
-        /** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. */
+        /** trailing_stop: a stop-loss that follows the price. break_even: the stop-losses move to the entry once the price has gone your way far enough. oco: two orders, the first fill cancels the other. twap, vwap: an order in market slices over time (vwap sized by yesterday's volume over the same hours). scaled: a ladder of limits. chase: a limit that follows the bid or ask. conditional: an order sent once a price is reached, on this market (a buy when the price falls to trigger_price, a sell when it rises) or on another one (trigger_market). */
         public readonly ?string $type = null,
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The order's side. */
         public readonly ?string $side = null,
-        /** trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase: the whole size. */
+        /** trailing_stop: its size (absent: what the stop-losses leave of the position). twap, vwap, scaled, chase, conditional: the whole size. */
         public readonly string|int|float|null $size = null,
         /** trailing_stop: how far behind the best price (or percent). */
         public readonly string|int|float|null $distance = null,
@@ -36,8 +36,18 @@ final class CreateStrategy implements \JsonSerializable
         public readonly string|int|float|null $triggerDistance = null,
         /** break_even: the same, in percent of the entry. */
         public readonly string|int|float|null $triggerPercent = null,
-        /** break_even: or once the price reaches this. */
+        /** break_even: or once the price reaches this. conditional: the level that sends the order (the trigger market's price; its tick). */
         public readonly string|int|float|null $triggerPrice = null,
+        /** conditional: the market whose price is watched (absent: this market). Any market we list. */
+        public readonly ?string $triggerMarket = null,
+        /** conditional, with another trigger_market: send the order once it trades at or above trigger_price, or at or below it. On this market it is set by the side and not given. */
+        public readonly ?string $triggerDirection = null,
+        /** conditional: the order it sends (default market). */
+        public readonly ?string $orderType = null,
+        /** conditional: the limit of its order, with order_type limit. */
+        public readonly string|int|float|null $limitPrice = null,
+        /** conditional: until when it waits for its price (default and longest: the gtd maximum, see GET /v1/limits). Its order, once sent, stands on its own. */
+        public readonly ?int $expiresAt = null,
         /** break_even: ticks beyond the entry, on the profit side. chase: ticks behind the bid (buy) or ask (sell). */
         public readonly ?int $offsetTicks = null,
         /** oco: the two orders. */
@@ -51,13 +61,13 @@ final class CreateStrategy implements \JsonSerializable
         public readonly ?int $intervalSeconds = null,
         /** twap, vwap: vary each slice's time and size a little (the sizes still add up to size). */
         public readonly ?bool $randomize = null,
-        /** twap, vwap, scaled, chase: only reduce your position (a twap ends when the position is closed). */
+        /** twap, vwap, scaled, chase, conditional: only reduce your position (a twap ends when the position is closed). */
         public readonly ?bool $reduceOnly = null,
         /** twap, vwap (buy): slices wait while the price is above this. chase (buy): its cap. */
         public readonly string|int|float|null $maxPrice = null,
         /** twap, vwap (sell): slices wait while the price is below this. chase (sell): its floor. */
         public readonly string|int|float|null $minPrice = null,
-        /** twap, vwap: each slice's slippage budget, in percent. */
+        /** twap, vwap: each slice's slippage budget, in percent. conditional: its market order's. */
         public readonly string|int|float|null $maxSlippagePct = null,
         /** scaled: the first rung. */
         public readonly string|int|float|null $startPrice = null,
@@ -79,7 +89,7 @@ final class CreateStrategy implements \JsonSerializable
         public readonly ?string $onExpiry = null,
         /** chase: it may rest through the last price (it would then fill at once). */
         public readonly ?bool $allowCross = null,
-        /** Your own id for the strategy (oco, twap, vwap, scaled, chase): unique in this environment. */
+        /** Your own id for the strategy (oco, twap, vwap, scaled, chase, conditional): unique in this environment. */
         public readonly ?string $clientStrategyId = null,
         /** @var array<string, mixed> Fields this SDK version does not know yet (a newer API's), kept as they came. */
         public readonly array $extra = [],
@@ -102,6 +112,11 @@ final class CreateStrategy implements \JsonSerializable
             triggerDistance: $d['trigger_distance'] ?? null,
             triggerPercent: $d['trigger_percent'] ?? null,
             triggerPrice: $d['trigger_price'] ?? null,
+            triggerMarket: $d['trigger_market'] ?? null,
+            triggerDirection: $d['trigger_direction'] ?? null,
+            orderType: $d['order_type'] ?? null,
+            limitPrice: $d['limit_price'] ?? null,
+            expiresAt: $d['expires_at'] ?? null,
             offsetTicks: $d['offset_ticks'] ?? null,
             orders: isset($d['orders']) && is_array($d['orders']) ? array_map(fn ($x) => CreateStrategyOrder::fromArray($x), $d['orders']) : null,
             exits: isset($d['exits']) && is_array($d['exits']) ? OrderExits::fromArray($d['exits']) : null,
@@ -166,6 +181,21 @@ final class CreateStrategy implements \JsonSerializable
         }
         if ($this->triggerPrice !== null) {
             $out['trigger_price'] = Decimal::of($this->triggerPrice);
+        }
+        if ($this->triggerMarket !== null) {
+            $out['trigger_market'] = $this->triggerMarket;
+        }
+        if ($this->triggerDirection !== null) {
+            $out['trigger_direction'] = $this->triggerDirection;
+        }
+        if ($this->orderType !== null) {
+            $out['order_type'] = $this->orderType;
+        }
+        if ($this->limitPrice !== null) {
+            $out['limit_price'] = Decimal::of($this->limitPrice);
+        }
+        if ($this->expiresAt !== null) {
+            $out['expires_at'] = $this->expiresAt;
         }
         if ($this->offsetTicks !== null) {
             $out['offset_ticks'] = $this->offsetTicks;

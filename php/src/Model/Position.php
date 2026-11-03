@@ -16,7 +16,7 @@ final class Position implements \JsonSerializable
     public function __construct(
         /** This position, while it stays open on the same side. */
         public readonly ?string $id = null,
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** Long or short. */
         public readonly ?string $side = null,

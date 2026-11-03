@@ -14,7 +14,7 @@ final class CreateOrder implements \JsonSerializable
     private const WIRE = ['market' => true, 'side' => true, 'type' => true, 'size' => true, 'notional_usd' => true, 'limit_price' => true, 'stop_price' => true, 'worst_price' => true, 'max_slippage_pct' => true, 'reduce_only' => true, 'post_only' => true, 'time_in_force' => true, 'expires_at' => true, 'client_order_id' => true, 'exits' => true];
 
     public function __construct(
-        /** A market id: the asset and USD. */
+        /** A market id: the asset and USD; an option adds its venue or hours after a dot. */
         public readonly ?string $market = null,
         /** The order's side. */
         public readonly ?string $side = null,

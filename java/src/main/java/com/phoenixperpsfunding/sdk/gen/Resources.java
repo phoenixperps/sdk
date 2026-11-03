@@ -21,6 +21,7 @@ public final class Resources {
         static final Operation GET_SPEC = new Operation("getSpec", "GET", "/v1/openapi.json", false, true, null, "public");
         static final Operation GET_STATUS = new Operation("getStatus", "GET", "/v1/status", false, true, null, "public");
         static final Operation GET_LIMITS = new Operation("getLimits", "GET", "/v1/limits", false, true, null, "public");
+        static final Operation LIST_RESTRICTED_COUNTRIES = new Operation("listRestrictedCountries", "GET", "/v1/restricted-countries", false, true, null, "public");
         static final Operation GET_ME = new Operation("getMe", "GET", "/v1/me", false, true, null, "read");
         static final Operation LIST_MARKETS = new Operation("listMarkets", "GET", "/v1/markets", false, true, null, "public");
         static final Operation LIST_MARKET_STATS = new Operation("listMarketStats", "GET", "/v1/markets/stats", false, true, null, "public");
@@ -55,6 +56,12 @@ public final class Resources {
         static final Operation LIST_STRATEGIES = new Operation("listStrategies", "GET", "/v1/accounts/{account_id}/strategies", false, true, "cursor", "read");
         static final Operation GET_STRATEGY = new Operation("getStrategy", "GET", "/v1/accounts/{account_id}/strategies/{strategy_id}", false, true, null, "read");
         static final Operation CANCEL_STRATEGY = new Operation("cancelStrategy", "DELETE", "/v1/accounts/{account_id}/strategies/{strategy_id}", false, true, null, "trade");
+        static final Operation CREATE_ALERT = new Operation("createAlert", "POST", "/v1/accounts/{account_id}/alerts", true, false, null, "read");
+        static final Operation LIST_ALERTS = new Operation("listAlerts", "GET", "/v1/accounts/{account_id}/alerts", false, true, "cursor", "read");
+        static final Operation GET_ALERT = new Operation("getAlert", "GET", "/v1/accounts/{account_id}/alerts/{alert_id}", false, true, null, "read");
+        static final Operation CHANGE_ALERT = new Operation("changeAlert", "PATCH", "/v1/accounts/{account_id}/alerts/{alert_id}", false, false, null, "read");
+        static final Operation DELETE_ALERT = new Operation("deleteAlert", "DELETE", "/v1/accounts/{account_id}/alerts/{alert_id}", false, true, null, "read");
+        static final Operation REARM_ALERT = new Operation("rearmAlert", "POST", "/v1/accounts/{account_id}/alerts/{alert_id}/rearm", false, false, null, "read");
         static final Operation LIST_WEBHOOK_ENDPOINTS = new Operation("listWebhookEndpoints", "GET", "/v1/webhook-endpoints", false, true, null, "read");
         static final Operation GET_WEBHOOK_ENDPOINT = new Operation("getWebhookEndpoint", "GET", "/v1/webhook-endpoints/{endpoint_id}", false, true, null, "read");
         static final Operation DELETE_WEBHOOK_ENDPOINT = new Operation("deleteWebhookEndpoint", "DELETE", "/v1/webhook-endpoints/{endpoint_id}", false, true, null, "trade");
@@ -77,7 +84,7 @@ public final class Resources {
         static final Operation LIST_FILLS = new Operation("listFills", "GET", "/v1/accounts/{account_id}/fills", false, true, "cursor", "read");
 
         /** Every operation, for the raw request (its route's retry-safety and budget). */
-        public static final java.util.List<Operation> ALL = java.util.List.of(GET_API, GET_SPEC, GET_STATUS, GET_LIMITS, GET_ME, LIST_MARKETS, LIST_MARKET_STATS, GET_MARKET, LIST_ACCOUNTS, CREATE_SANDBOX_ACCOUNT, GET_ACCOUNT, GET_RISK, GET_TRADING_POLICY, GET_PROGRESS, GET_EQUITY_HISTORY, LIST_DAILY_RESULTS, LIST_MARGIN_SETTINGS, LIST_POSITIONS, GET_POSITION, LIST_CLOSED_POSITIONS, LIST_ORDERS, PLACE_ORDER, GET_ORDER, MODIFY_ORDER, CANCEL_ORDER, TEST_ORDER, CANCEL_ALL_ORDERS, CLOSE_POSITION, FLATTEN, SET_MARGIN, LIST_EVENTS, GET_EXITS, SET_EXITS, SET_ORDER_EXITS, CREATE_STRATEGY, LIST_STRATEGIES, GET_STRATEGY, CANCEL_STRATEGY, LIST_WEBHOOK_ENDPOINTS, GET_WEBHOOK_ENDPOINT, DELETE_WEBHOOK_ENDPOINT, TEST_WEBHOOK_ENDPOINT, LIST_WEBHOOK_DELIVERIES, GET_WEBHOOK_DELIVERY, RESEND_WEBHOOK_DELIVERY, DISABLE_WEBHOOK_ENDPOINT, ENABLE_WEBHOOK_ENDPOINT, LIST_TRADING_VIEW_HOOKS, GET_TRADING_VIEW_HOOK, DELETE_TRADING_VIEW_HOOK, LIST_TRADING_VIEW_ALERTS, GET_TRADING_VIEW_ALERT, DISABLE_TRADING_VIEW_HOOK, ENABLE_TRADING_VIEW_HOOK, PARSE_TRADING_VIEW_MESSAGE, LIST_WEBHOOK_EVENT_TYPES, GET_EVENT, LIST_FILLS);
+        public static final java.util.List<Operation> ALL = java.util.List.of(GET_API, GET_SPEC, GET_STATUS, GET_LIMITS, LIST_RESTRICTED_COUNTRIES, GET_ME, LIST_MARKETS, LIST_MARKET_STATS, GET_MARKET, LIST_ACCOUNTS, CREATE_SANDBOX_ACCOUNT, GET_ACCOUNT, GET_RISK, GET_TRADING_POLICY, GET_PROGRESS, GET_EQUITY_HISTORY, LIST_DAILY_RESULTS, LIST_MARGIN_SETTINGS, LIST_POSITIONS, GET_POSITION, LIST_CLOSED_POSITIONS, LIST_ORDERS, PLACE_ORDER, GET_ORDER, MODIFY_ORDER, CANCEL_ORDER, TEST_ORDER, CANCEL_ALL_ORDERS, CLOSE_POSITION, FLATTEN, SET_MARGIN, LIST_EVENTS, GET_EXITS, SET_EXITS, SET_ORDER_EXITS, CREATE_STRATEGY, LIST_STRATEGIES, GET_STRATEGY, CANCEL_STRATEGY, CREATE_ALERT, LIST_ALERTS, GET_ALERT, CHANGE_ALERT, DELETE_ALERT, REARM_ALERT, LIST_WEBHOOK_ENDPOINTS, GET_WEBHOOK_ENDPOINT, DELETE_WEBHOOK_ENDPOINT, TEST_WEBHOOK_ENDPOINT, LIST_WEBHOOK_DELIVERIES, GET_WEBHOOK_DELIVERY, RESEND_WEBHOOK_DELIVERY, DISABLE_WEBHOOK_ENDPOINT, ENABLE_WEBHOOK_ENDPOINT, LIST_TRADING_VIEW_HOOKS, GET_TRADING_VIEW_HOOK, DELETE_TRADING_VIEW_HOOK, LIST_TRADING_VIEW_ALERTS, GET_TRADING_VIEW_ALERT, DISABLE_TRADING_VIEW_HOOK, ENABLE_TRADING_VIEW_HOOK, PARSE_TRADING_VIEW_MESSAGE, LIST_WEBHOOK_EVENT_TYPES, GET_EVENT, LIST_FILLS);
     }
 
     /** Every resource of a client. */
@@ -115,6 +122,9 @@ public final class Resources {
         /** The strategies calls. */
         public final StrategiesResource strategies;
 
+        /** The alerts calls. */
+        public final AlertsResource alerts;
+
         /** The webhookEndpoints calls. */
         public final WebhookEndpointsResource webhookEndpoints;
 
@@ -137,6 +147,7 @@ public final class Resources {
             events = new EventsResource(c);
             exits = new ExitsResource(c);
             strategies = new StrategiesResource(c);
+            alerts = new AlertsResource(c);
             webhookEndpoints = new WebhookEndpointsResource(c);
             tradingView = new TradingViewResource(c);
             fills = new FillsResource(c);
@@ -203,6 +214,11 @@ public final class Resources {
             return resources().strategies;
         }
 
+        /** The alerts calls. */
+        default AlertsResource alerts() {
+            return resources().alerts;
+        }
+
         /** The webhookEndpoints calls. */
         default WebhookEndpointsResource webhookEndpoints() {
             return resources().webhookEndpoints;
@@ -265,6 +281,16 @@ public final class Resources {
         /** Get the limits. */
         public Limits limits() {
             return limits(null);
+        }
+
+        /** List restricted countries. */
+        public Page<RestrictedCountry> restrictedCountries(RequestOptions options) {
+            return c.list(Ops.LIST_RESTRICTED_COUNTRIES, null, null, RestrictedCountry.class, options);
+        }
+
+        /** List restricted countries. */
+        public Page<RestrictedCountry> restrictedCountries() {
+            return restrictedCountries(null);
         }
     }
 
@@ -745,6 +771,85 @@ public final class Resources {
         /** Cancel a strategy. */
         public Strategy cancel(String accountId, String strategyId) {
             return cancel(accountId, strategyId, null);
+        }
+    }
+
+    /** The alerts calls (client.alerts()). */
+    public static final class AlertsResource {
+        private final Transport c;
+
+        AlertsResource(Transport c) {
+            this.c = c;
+        }
+
+        /** Create a price alert. */
+        public PriceAlert create(String accountId, CreatePriceAlert body, RequestOptions options) {
+            return c.one(Ops.CREATE_ALERT, new String[] {accountId}, null, body, PriceAlert.class, options);
+        }
+
+        /** Create a price alert. */
+        public PriceAlert create(String accountId, CreatePriceAlert body) {
+            return create(accountId, body, null);
+        }
+
+        /** List price alerts. */
+        public Page<PriceAlert> list(String accountId, AlertsListParams params, RequestOptions options) {
+            return c.list(Ops.LIST_ALERTS, new String[] {accountId}, (params == null ? null : params.toQuery()), PriceAlert.class, options);
+        }
+
+        /** List price alerts. */
+        public Page<PriceAlert> list(String accountId, AlertsListParams params) {
+            return list(accountId, params, null);
+        }
+
+        /** Every item of list, page after page (RequestOptions.maxItems caps it). */
+        public Iterable<PriceAlert> listAutoPaging(String accountId, AlertsListParams params, RequestOptions options) {
+            return c.autoPaging(() -> list(accountId, params, options), options);
+        }
+
+        /** Every item of list, page after page. */
+        public Iterable<PriceAlert> listAutoPaging(String accountId, AlertsListParams params) {
+            return listAutoPaging(accountId, params, null);
+        }
+
+        /** Get a price alert. */
+        public PriceAlert get(String accountId, String alertId, RequestOptions options) {
+            return c.one(Ops.GET_ALERT, new String[] {accountId, alertId}, null, null, PriceAlert.class, options);
+        }
+
+        /** Get a price alert. */
+        public PriceAlert get(String accountId, String alertId) {
+            return get(accountId, alertId, null);
+        }
+
+        /** Move a price alert. */
+        public PriceAlert modify(String accountId, String alertId, ChangePriceAlert body, RequestOptions options) {
+            return c.one(Ops.CHANGE_ALERT, new String[] {accountId, alertId}, null, body, PriceAlert.class, options);
+        }
+
+        /** Move a price alert. */
+        public PriceAlert modify(String accountId, String alertId, ChangePriceAlert body) {
+            return modify(accountId, alertId, body, null);
+        }
+
+        /** Delete a price alert. */
+        public DeletedAlert delete(String accountId, String alertId, RequestOptions options) {
+            return c.one(Ops.DELETE_ALERT, new String[] {accountId, alertId}, null, null, DeletedAlert.class, options);
+        }
+
+        /** Delete a price alert. */
+        public DeletedAlert delete(String accountId, String alertId) {
+            return delete(accountId, alertId, null);
+        }
+
+        /** Arm a price alert again. */
+        public PriceAlert rearm(String accountId, String alertId, RequestOptions options) {
+            return c.one(Ops.REARM_ALERT, new String[] {accountId, alertId}, null, null, PriceAlert.class, options);
+        }
+
+        /** Arm a price alert again. */
+        public PriceAlert rearm(String accountId, String alertId) {
+            return rearm(accountId, alertId, null);
         }
     }
 

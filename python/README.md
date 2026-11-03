@@ -4,7 +4,7 @@ The Phoenix Perpetuals API for Python: every REST call (sync and async), the acc
 retries, idempotency keys, paging and typed errors. Python 3.10 or later. Docs: https://docs.phoenixperpsfunding.com
 
 ```
-pip install https://github.com/phoenixperps/sdk/releases/download/v1.1.0/phoenixperps-1.1.0-py3-none-any.whl
+pip install https://github.com/phoenixperps/sdk/releases/download/v1.2.0/phoenixperps-1.2.0-py3-none-any.whl
 ```
 
 ```python
@@ -39,7 +39,7 @@ Async: `AsyncPhoenixPerps`, the same calls awaited (`async with AsyncPhoenixPerp
 ## Calls
 
 Resources follow the API: `platform`, `me`, `markets`, `accounts`, `history`, `margin`, `positions`, `orders`, `fills`,
-`exits`, `strategies`, `events`, `webhook_endpoints`, `tradingview`. Prices and sizes are decimal strings; a `Decimal`
+`exits`, `strategies`, `alerts`, `events`, `webhook_endpoints`, `tradingview`. Prices and sizes are decimal strings; a `Decimal`
 or a float goes out in plain decimal form, never an exponent.
 
 - Answers are plain dicts, typed for your type checker with the TypedDicts of `phoenixperps.types` (`orders.create`

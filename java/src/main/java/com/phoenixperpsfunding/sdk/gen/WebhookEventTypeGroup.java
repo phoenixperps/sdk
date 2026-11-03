@@ -19,6 +19,9 @@ public final class WebhookEventTypeGroup {
     /** risk */
     public static final WebhookEventTypeGroup RISK = new WebhookEventTypeGroup("risk");
 
+    /** alerts */
+    public static final WebhookEventTypeGroup ALERTS = new WebhookEventTypeGroup("alerts");
+
     private final String value;
 
     private WebhookEventTypeGroup(String value) {
@@ -37,6 +40,8 @@ public final class WebhookEventTypeGroup {
                 return ACCOUNT;
             case "risk":
                 return RISK;
+            case "alerts":
+                return ALERTS;
             default:
                 return new WebhookEventTypeGroup(value);
         }

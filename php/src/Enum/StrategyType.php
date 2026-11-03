@@ -6,7 +6,7 @@ declare(strict_types=1);
 
 namespace PhoenixPerps\Enum;
 
-/** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. Open: the field is a string, and a value from a newer API version is kept as is. */
+/** exits: a position's take-profit and stop-loss legs. bracket: an order with exits once it fills. oco: two orders, the first fill cancels the other. twap, vwap: an order in slices over time. scaled: a ladder of limits. chase: a limit that follows the price. conditional: an order sent once a price is reached. Open: the field is a string, and a value from a newer API version is kept as is. */
 final class StrategyType
 {
     public const EXITS = 'exits';
@@ -16,7 +16,8 @@ final class StrategyType
     public const VWAP = 'vwap';
     public const SCALED = 'scaled';
     public const CHASE = 'chase';
+    public const CONDITIONAL = 'conditional';
 
     /** Every value this SDK version knows. */
-    public const ALL_VALUES = [self::EXITS, self::BRACKET, self::OCO, self::TWAP, self::VWAP, self::SCALED, self::CHASE];
+    public const ALL_VALUES = [self::EXITS, self::BRACKET, self::OCO, self::TWAP, self::VWAP, self::SCALED, self::CHASE, self::CONDITIONAL];
 }
