@@ -3,7 +3,7 @@
 package phoenixperps
 
 // SpecVersion is the version of the API spec this SDK was generated from.
-const SpecVersion = "1.0.0"
+const SpecVersion = "1.1.0"
 
 var servers = map[string]string{
 	"live":    "https://api.phoenixperpsfunding.com",

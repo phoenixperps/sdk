@@ -68,7 +68,10 @@ public sealed partial class PhoenixPerpsClient : IDisposable
     private readonly Action<string, string>? _logger;
     private readonly object _lock = new();
     private readonly HashSet<string> _warned = new();
-    private readonly Dictionary<string, RateLimit> _budgets = new();
+    // per budget: the operation's scope and the bucket that answered ("trade:bulk"), with when its next request comes
+    // back (null while some are left); the budgets each operation ("scope|id") met
+    private readonly Dictionary<string, (RateLimit Window, DateTimeOffset? NextAt)> _budgets = new();
+    private readonly Dictionary<string, HashSet<string>> _met = new();
     private RateLimit? _rateLimit;
 
     /// <summary>A client; a key of the other environment fails here, before any request. Without a key the public calls
@@ -154,36 +157,56 @@ public sealed partial class PhoenixPerpsClient : IDisposable
         _logger?.Invoke(level, message);
     }
 
-    // X-RateLimit-* are kept per budget: an operation's x-pp-scope (read, trade, public); a route this SDK does not know
-    // keeps a window of its own
-    private async Task PreWaitAsync(string budget, CancellationToken ct)
+    // X-RateLimit-* are kept per budget: the operation's x-pp-scope and the bucket the answer names (X-RateLimit-Scope),
+    // so a bucket bulk calls emptied holds bulk calls only (Q15). With nothing left, the next call of an operation that
+    // met it waits for the request it gives back (60 s / Limit, or a 429's Retry-After), never for the whole window.
+    private async Task PreWaitAsync(Operation op, CancellationToken ct)
     {
-        RateLimit? r;
-        lock (_lock) _budgets.TryGetValue(budget, out r);
-        if (r is null || r.Remaining > 0 || r.ResetAt is null) return;
-        var wait = r.ResetAt.Value - DateTimeOffset.UtcNow;
+        DateTimeOffset? until = null;
+        lock (_lock)
+        {
+            if (_met.TryGetValue(op.Scope + "|" + op.Id, out var met))
+                foreach (var b in met)
+                    if (_budgets.TryGetValue(b, out var w) && w.NextAt is { } at && (until is null || at > until)) until = at;
+        }
+        if (until is null) return;
+        var wait = until.Value - DateTimeOffset.UtcNow;
         if (wait > TimeSpan.Zero && wait < TimeSpan.FromMinutes(1)) await Task.Delay(wait, ct).ConfigureAwait(false);
     }
 
-    private void Remember(HttpResponseHeaders h, string budget)
+    private void Remember(HttpResponseHeaders h, Operation op)
     {
+        // any answer may say its version is deprecated, with or without the rate-limit headers (Q87)
+        string? dep = h.TryGetValues("Deprecation", out var dv) ? dv.FirstOrDefault() : null;
+        bool first;
+        lock (_lock) first = dep is not null && _warned.Add(dep);
+        if (first) Log("warn", $"phoenixperps: this API version is deprecated (Deprecation: {dep})");
         if (!h.TryGetValues("X-RateLimit-Limit", out var lv)) return;
-        int.TryParse(lv.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var limit);
-        var remaining = h.TryGetValues("X-RateLimit-Remaining", out var rv) && int.TryParse(rv.FirstOrDefault(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var rem) ? rem : 0;
+        double.TryParse(lv.FirstOrDefault(), NumberStyles.Float, CultureInfo.InvariantCulture, out var perMin);
+        var limit = (int)perMin;
+        var remaining = h.TryGetValues("X-RateLimit-Remaining", out var rv) && double.TryParse(rv.FirstOrDefault(), NumberStyles.Float, CultureInfo.InvariantCulture, out var rem) ? (int)rem : 0;
         DateTimeOffset? resetAt = null;
         if (h.TryGetValues("X-RateLimit-Reset", out var sv) && double.TryParse(sv.FirstOrDefault(), NumberStyles.Float, CultureInfo.InvariantCulture, out var reset))
         {
             // Reset as epoch seconds (above a year in seconds) or as seconds from now
             resetAt = reset > 31536000 ? DateTimeOffset.FromUnixTimeMilliseconds((long)(reset * 1000)) : DateTimeOffset.UtcNow.AddSeconds(reset);
         }
-        string? dep = h.TryGetValues("Deprecation", out var dv) ? dv.FirstOrDefault() : null;
-        bool first;
+        var scope = h.TryGetValues("X-RateLimit-Scope", out var cv) ? cv.FirstOrDefault() : null;
+        DateTimeOffset? next = null;
+        if (remaining <= 0)
+        {
+            var after = h.RetryAfter?.Delta ?? (h.RetryAfter?.Date is { } d ? d - DateTimeOffset.UtcNow : null);
+            next = DateTimeOffset.UtcNow + (after ?? (perMin > 0 ? TimeSpan.FromMinutes(1 / perMin) : TimeSpan.Zero));
+        }
+        var budget = op.Scope + ":" + scope;
         lock (_lock)
         {
-            _rateLimit = _budgets[budget] = new RateLimit(limit, remaining, resetAt);
-            first = dep is not null && _warned.Add(dep);
+            var window = new RateLimit(limit, remaining, resetAt) { Scope = scope };
+            _rateLimit = window;
+            _budgets[budget] = (window, next);
+            if (!_met.TryGetValue(op.Scope + "|" + op.Id, out var met)) _met[op.Scope + "|" + op.Id] = met = new();
+            met.Add(budget);
         }
-        if (first) Log("warn", $"phoenixperps: this API version is deprecated (Deprecation: {dep})");
     }
 
     private string Url(Operation op, string[]? path, List<KeyValuePair<string, string>>? query)
@@ -219,8 +242,9 @@ public sealed partial class PhoenixPerpsClient : IDisposable
     {
         if (!path.StartsWith('/')) throw new ValidationException("invalid_request", "The path starts with /.");
         var m = method.ToUpperInvariant();
-        var known = Route(m, path);
-        var op = new Operation("send", m, path, false, m == "GET" || known?.RetrySafe == true, null, known?.Scope);
+        // a known route keeps its Idempotency-Key (the same on every attempt), its retries and its budget (Q39)
+        var known = Route(m, path.Split('?')[0]);
+        var op = new Operation(known?.Id ?? "send", m, path, known?.Idempotent == true, m == "GET" || known?.RetrySafe == true, null, known?.Scope);
         return await SendAsync(op, null, query?.ToList(), body is null ? null : Encoding.UTF8.GetBytes(body), options, cancellationToken).ConfigureAwait(false);
     }
 
@@ -241,11 +265,10 @@ public sealed partial class PhoenixPerpsClient : IDisposable
         var retryable = op.RetrySafe || key is not null;
         var max = options?.MaxRetries ?? MaxRetries;
         var timeout = options?.Timeout ?? Timeout;
-        var budget = op.Scope ?? "";
         var url = Url(op, path, query);
         for (var attempt = 0; ; attempt++)
         {
-            await PreWaitAsync(budget, ct).ConfigureAwait(false);
+            await PreWaitAsync(op, ct).ConfigureAwait(false);
             HttpResponseMessage? res = null;
             byte[] bytes = Array.Empty<byte>();
             PhoenixPerpsException? failure = null;
@@ -281,7 +304,7 @@ public sealed partial class PhoenixPerpsClient : IDisposable
             {
                 using (res)
                 {
-                    Remember(res.Headers, budget);
+                    Remember(res.Headers, op);
                     var raw = new RawResponse
                     {
                         StatusCode = (int)res.StatusCode,
@@ -294,6 +317,14 @@ public sealed partial class PhoenixPerpsClient : IDisposable
                     // a 304 (If-None-Match, nothing changed) is no error: the call answers nothing
                     if (res.IsSuccessStatusCode || res.StatusCode == HttpStatusCode.NotModified) return raw;
                     var error = ErrorReader.From(res, bytes, key);
+                    // a cancel answered as already canceled or expired: the order no longer works, as asked (its own lost
+                    // answer asked again, HttpClient resending it on a dropped connection, or a cancel made elsewhere),
+                    // and the answer is that order (Q14); filled still fails
+                    if (op.Id == "cancelOrder" && error.Code == "order_not_working" && error.Details is { ValueKind: JsonValueKind.Object } det
+                        && det.TryGetProperty("status", out var st) && st.GetString() is "canceled" or "expired")
+                    {
+                        return await SendAsync(Ops.GetOrder, path, null, null, options is null ? null : options with { IdempotencyKey = null }, ct).ConfigureAwait(false);
+                    }
                     // the API's own retryable (a 409 operation_in_progress is, a 503 sandbox_disabled is not); an answer
                     // without its envelope (a proxy's 502 page) by its status
                     var again = retryable && attempt < max && error.Retryable == true;
@@ -394,6 +425,8 @@ public sealed partial class PhoenixPerpsClient : IDisposable
         var max = options?.MaxItems ?? 0;
         var n = 0;
         Page<T>? page = await first().ConfigureAwait(false);
+        // a 304 to the caller's If-None-Match: no page at all, said so rather than read as an empty list (Q102)
+        if (page is null) throw new NotModifiedException { Retryable = false };
         while (page is not null)
         {
             foreach (var item in page.Data)

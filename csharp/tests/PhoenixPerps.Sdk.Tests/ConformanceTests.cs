@@ -110,9 +110,9 @@ public sealed class ConformanceTests(MockServer mock) : IClassFixture<MockServer
 
     // what this runner knows of the vocabulary (scenarios.json "vocabulary"): anything else fails the scenario
     private static readonly HashSet<string> RestKeys = new() { "name", "client", "call", "calls", "exchanges", "expect" };
-    private static readonly HashSet<string> RestExpect = new() { "ok", "requests", "result", "error", "items", "cursors", "first_body", "min_elapsed_ms", "checks", "page_fields", "paths" };
+    private static readonly HashSet<string> RestExpect = new() { "ok", "requests", "result", "error", "items", "cursors", "first_body", "min_elapsed_ms", "max_elapsed_ms", "logged_deprecation", "checks", "page_fields", "paths" };
     private static readonly HashSet<string> StreamKeys = new() { "name", "stream", "connections", "subscribe", "unsubscribe", "expect" };
-    private static readonly HashSet<string> StreamExpect = new() { "events", "connections", "resume", "first_message", "error", "frames", "resubscribe", "unsubscribe_sent", "limits", "gap" };
+    private static readonly HashSet<string> StreamExpect = new() { "events", "connections", "resume", "first_message", "error", "frames", "resubscribe", "unsubscribe_sent", "limits", "gap", "subscribe_sizes" };
     private static readonly HashSet<string> ErrorKeys = new() { "class", "code", "status", "retry_after_ms", "order_id", "request_id", "retryable", "doc_url", "account_id" };
 
     public static IEnumerable<object[]> Scenarios() => Names("scenarios");
@@ -180,7 +180,8 @@ public sealed class ConformanceTests(MockServer mock) : IClassFixture<MockServer
         Known(sc, RestKeys, name);
         await Load(JsonSerializer.SerializeToElement(new Dictionary<string, JsonElement> { ["exchanges"] = sc.GetProperty("exchanges") }, JsonCtx.Default.DictionaryStringJsonElement));
         var suffix = sc.TryGetProperty("client", out var cl) && cl.TryGetProperty("base_url_suffix", out var bs) ? bs.GetString() : "";
-        using var c = new PhoenixPerpsClient(new PhoenixPerpsClientOptions { ApiKey = mock.Key, BaseUrl = mock.Url + suffix, MaxRetries = 2 });
+        var logs = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        using var c = new PhoenixPerpsClient(new PhoenixPerpsClientOptions { ApiKey = mock.Key, BaseUrl = mock.Url + suffix, MaxRetries = 2, Logger = (_, m) => logs.Enqueue(m) });
         var calls = sc.TryGetProperty("calls", out var cs) ? cs.EnumerateArray().ToList() : new List<JsonElement> { sc.GetProperty("call") };
         JsonElement? result = null;
         List<string>? items = null;
@@ -188,7 +189,18 @@ public sealed class ConformanceTests(MockServer mock) : IClassFixture<MockServer
         RawResponse? last = null;
         try
         {
-            foreach (var call in calls) (result, items) = await Conformance.Dispatch(c, new Call(call), new RequestOptions { OnResponse = r => last = r });
+            foreach (var call in calls)
+            {
+                if (call.TryGetProperty("raw", out var raw))
+                {
+                    // the SDK's raw request
+                    var r = await c.SendAsync(raw.GetProperty("method").GetString()!, raw.GetProperty("path").GetString()!, null, raw.TryGetProperty("body", out var rb) ? rb.GetRawText() : null);
+                    last = r;
+                    result = r.Body.Length > 0 ? JsonDocument.Parse(r.Body).RootElement.Clone() : null;
+                    continue;
+                }
+                (result, items) = await Conformance.Dispatch(c, new Call(call), new RequestOptions { OnResponse = r => last = r });
+            }
         }
         catch (PhoenixPerpsException e)
         {
@@ -228,7 +240,10 @@ public sealed class ConformanceTests(MockServer mock) : IClassFixture<MockServer
             }
         }
         if (x.TryGetProperty("first_body", out var fb)) Same(JsonNode.Parse(got[0].GetProperty("body").GetRawText()), fb);
-        if (x.TryGetProperty("min_elapsed_ms", out var me)) Assert.True(got[^1].GetProperty("at").GetInt64() - got[0].GetProperty("at").GetInt64() >= me.GetInt64());
+        var elapsed = got[^1].GetProperty("at").GetInt64() - got[0].GetProperty("at").GetInt64();
+        if (x.TryGetProperty("min_elapsed_ms", out var me)) Assert.True(elapsed >= me.GetInt64(), $"elapsed {elapsed} ms");
+        if (x.TryGetProperty("max_elapsed_ms", out var mx)) Assert.True(elapsed <= mx.GetInt64(), $"elapsed {elapsed} ms");
+        if (x.TryGetProperty("logged_deprecation", out var ld) && ld.GetBoolean()) Assert.Contains(logs, l => l.Contains("deprecated"));
         if (x.TryGetProperty("checks", out var checks))
         {
             foreach (var check in checks.EnumerateArray().Select(v => v.GetString()))
@@ -319,6 +334,9 @@ public sealed class ConformanceTests(MockServer mock) : IClassFixture<MockServer
         Assert.Equal("Bearer " + mock.Key, reqs[0].GetProperty("headers").GetProperty("authorization").GetString());
         if (x.TryGetProperty("first_message", out var fm)) Same(JsonNode.Parse(reqs[0].GetProperty("messages")[0].GetRawText()), fm);
         if (x.TryGetProperty("resubscribe", out var rs)) SameMessage(reqs[^1].GetProperty("messages")[0], rs);
+        if (x.TryGetProperty("subscribe_sizes", out var sizes))
+            foreach (var r in reqs)
+                Assert.Equal(sizes.EnumerateArray().Select(e => e.GetInt32()).ToList(), r.GetProperty("messages").EnumerateArray().Where(m => m.GetProperty("op").GetString() == "subscribe").Select(m => m.TryGetProperty("symbols", out var sy) ? sy.GetArrayLength() : 0).ToList());
         if (x.TryGetProperty("unsubscribe_sent", out var us))
             SameMessage(reqs.SelectMany(r => r.GetProperty("messages").EnumerateArray()).First(m => m.GetProperty("op").GetString() == "unsubscribe"), us);
     }
@@ -386,6 +404,11 @@ public sealed class ConformanceTests(MockServer mock) : IClassFixture<MockServer
         Assert.Equal("stale", Assert.Throws<WebhookVerificationException>(() => Webhooks.Verify(body, At(ts, S(v, "signature")), secret, null, now.AddSeconds(1000))).Code);
         Assert.Equal("bad_signature", Assert.Throws<WebhookVerificationException>(() => Webhooks.Verify(body + " ", At(ts, S(v, "signature")), secret, null, now)).Code);
         Assert.Equal("missing_headers", Assert.Throws<WebhookVerificationException>(() => Webhooks.Verify(body, new Dictionary<string, string>(), secret, null, now)).Code);
+        // no usable secret: a ValidationException, never a check against an empty key; empty ones are dropped (Q10)
+        var ns = v.GetProperty("no_secret");
+        foreach (var list in ns.GetProperty("secrets").EnumerateArray())
+            Assert.Equal(ns.GetProperty("error_code").GetString(), Assert.Throws<ValidationException>(() => Webhooks.Verify(body, At(ts, S(v, "signature")), list.EnumerateArray().Select(e => e.GetString()!).ToList(), null, now)).Code);
+        Assert.Equal("evt_01JAB7Q8XK4M2N5P7R9S3T5V7W", Webhooks.Verify(body, At(ts, S(v, "signature")), ns.GetProperty("with_one").EnumerateArray().Select(e => e.GetString()!).ToList(), null, now).Id);
         foreach (var x in v.GetProperty("extra").EnumerateArray())
         {
             var headers = At(S(x, "timestamp"), S(x, "signature"));

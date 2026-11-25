@@ -41,7 +41,7 @@ public final class Resources {
         static final Operation LIST_ORDERS = new Operation("listOrders", "GET", "/v1/accounts/{account_id}/orders", false, true, "cursor", "read");
         static final Operation PLACE_ORDER = new Operation("placeOrder", "POST", "/v1/accounts/{account_id}/orders", true, false, null, "trade");
         static final Operation GET_ORDER = new Operation("getOrder", "GET", "/v1/accounts/{account_id}/orders/{order_id}", false, true, null, "read");
-        static final Operation MODIFY_ORDER = new Operation("modifyOrder", "PATCH", "/v1/accounts/{account_id}/orders/{order_id}", false, false, null, "trade");
+        static final Operation MODIFY_ORDER = new Operation("modifyOrder", "PATCH", "/v1/accounts/{account_id}/orders/{order_id}", true, false, null, "trade");
         static final Operation CANCEL_ORDER = new Operation("cancelOrder", "DELETE", "/v1/accounts/{account_id}/orders/{order_id}", false, true, null, "trade");
         static final Operation TEST_ORDER = new Operation("testOrder", "POST", "/v1/accounts/{account_id}/orders/test", false, true, null, "read");
         static final Operation CANCEL_ALL_ORDERS = new Operation("cancelAllOrders", "POST", "/v1/accounts/{account_id}/orders/cancel-all", true, false, null, "trade");
@@ -50,7 +50,7 @@ public final class Resources {
         static final Operation SET_MARGIN = new Operation("setMargin", "PUT", "/v1/accounts/{account_id}/margin/{market}", false, true, null, "trade");
         static final Operation LIST_EVENTS = new Operation("listEvents", "GET", "/v1/events", false, true, "after", "read");
         static final Operation GET_EXITS = new Operation("getExits", "GET", "/v1/accounts/{account_id}/positions/{market}/exits", false, true, null, "read");
-        static final Operation SET_EXITS = new Operation("setExits", "PUT", "/v1/accounts/{account_id}/positions/{market}/exits", false, true, null, "trade");
+        static final Operation SET_EXITS = new Operation("setExits", "PUT", "/v1/accounts/{account_id}/positions/{market}/exits", true, true, null, "trade");
         static final Operation SET_ORDER_EXITS = new Operation("setOrderExits", "PUT", "/v1/accounts/{account_id}/orders/{order_id}/exits", false, true, null, "trade");
         static final Operation CREATE_STRATEGY = new Operation("createStrategy", "POST", "/v1/accounts/{account_id}/strategies", true, false, null, "trade");
         static final Operation LIST_STRATEGIES = new Operation("listStrategies", "GET", "/v1/accounts/{account_id}/strategies", false, true, "cursor", "read");

@@ -571,6 +571,68 @@ func (c *Client) MarketStream(ctx context.Context) *MarketStream {
 	return m
 }
 
+// limitsOf is the hello's symbols_per_subscribe and messages_per_s (50 and 20 before any hello); m.mu held.
+func (m *MarketStream) limitsOf() (perSubscribe, perSecond int) {
+	var l struct {
+		Symbols  int `json:"symbols_per_subscribe"`
+		Messages int `json:"messages_per_s"`
+	}
+	_ = json.Unmarshal(m.limits, &l)
+	perSubscribe, perSecond = l.Symbols, l.Messages
+	if perSubscribe <= 0 {
+		perSubscribe = 50
+	}
+	if perSecond <= 0 {
+		perSecond = 20
+	}
+	return perSubscribe, perSecond
+}
+
+// chunks are the symbols in parts of at most n (one part, empty, for none: the status channel).
+func chunks(symbols []string, n int) [][]string {
+	if len(symbols) <= n {
+		return [][]string{symbols}
+	}
+	var out [][]string
+	for i := 0; i < len(symbols); i += n {
+		out = append(out, symbols[i:min(i+n, len(symbols))])
+	}
+	return out
+}
+
+// askParts subscribes in messages of at most per symbols (Q16), answered as one: every part's symbols and refusals.
+func (m *MarketStream) askParts(ctx context.Context, channel string, symbols []string, params map[string]any, per int) (json.RawMessage, error) {
+	parts := chunks(symbols, per)
+	if len(parts) == 1 {
+		return m.ask(ctx, "subscribe", channel, symbols, params)
+	}
+	merged := map[string]any{}
+	took, rejected := []any{}, []any{}
+	for _, part := range parts {
+		reply, err := m.ask(ctx, "subscribe", channel, part, params)
+		if err != nil {
+			return nil, err
+		}
+		var r map[string]any
+		if json.Unmarshal(reply, &r) == nil {
+			for k, v := range r {
+				if _, ok := merged[k]; !ok {
+					merged[k] = v
+				}
+			}
+			if v, ok := r["symbols"].([]any); ok {
+				took = append(took, v...)
+			}
+			if v, ok := r["rejected"].([]any); ok {
+				rejected = append(rejected, v...)
+			}
+		}
+	}
+	merged["symbols"], merged["rejected"] = took, rejected
+	delete(merged, "id")
+	return json.Marshal(merged)
+}
+
 // Limits are the per-connection limits the hello announced: {"subscriptions", "symbols_per_subscribe", "messages_per_s"}
 // (nil before it).
 func (m *MarketStream) Limits() json.RawMessage {
@@ -656,8 +718,9 @@ func (m *MarketStream) Subscribe(ctx context.Context, channel string, symbols []
 			added = append(added, u)
 		}
 	}
+	per, _ := m.limitsOf()
 	m.mu.Unlock()
-	reply, err := m.ask(ctx, "subscribe", channel, symbols, params)
+	reply, err := m.askParts(ctx, channel, symbols, params, per)
 	// what the server refused (the whole ask, or a symbol of its reply's rejected) is not made again after a reconnect
 	var r struct {
 		Symbols *[]string `json:"symbols"`
@@ -773,7 +836,9 @@ func (m *MarketStream) Next(ctx context.Context) (MarketFrame, error) {
 	}
 }
 
-// Frames goes over the frames until the stream ends (an error that ended it is yielded once).
+// Frames goes over the market data frames until the stream ends (an error that ended it is yielded once): ticker,
+// book, trades, candles, stats and status; snapshot_end, which marks where a subscription's first frames end, only
+// through Next (Q63).
 func (m *MarketStream) Frames() iter.Seq2[MarketFrame, error] {
 	return func(yield func(MarketFrame, error) bool) {
 		for {
@@ -783,6 +848,9 @@ func (m *MarketStream) Frames() iter.Seq2[MarketFrame, error] {
 					yield(MarketFrame{}, err)
 				}
 				return
+			}
+			if f.Type == "snapshot_end" {
+				continue
 			}
 			if !yield(f, nil) {
 				return
@@ -908,18 +976,29 @@ func (m *MarketStream) read(conn *websocket.Conn, attempt *int) (time.Duration, 
 					subs = append(subs, s)
 				}
 			}
+			per, perS := m.limitsOf()
 			m.mu.Unlock()
-			for _, s := range subs { // every subscription again, as it was
+			// every subscription again, as it was, at most symbols_per_subscribe a message and messages_per_s a second (Q16)
+			sent := 0
+			for _, s := range subs {
 				m.mu.Lock()
-				m.nextID++
-				id := m.nextID
 				syms := make([]string, 0, len(s.symbols))
 				for x := range s.symbols {
 					syms = append(syms, x)
 				}
 				m.mu.Unlock()
 				sort.Strings(syms)
-				_ = conn.Write(m.ctx, websocket.MessageText, subMessage("subscribe", id, s.channel, syms, s.params))
+				for _, part := range chunks(syms, per) {
+					if sent > 0 && sent%perS == 0 {
+						_ = sleep(m.ctx, time.Second)
+					}
+					m.mu.Lock()
+					m.nextID++
+					id := m.nextID
+					m.mu.Unlock()
+					_ = conn.Write(m.ctx, websocket.MessageText, subMessage("subscribe", id, s.channel, part, s.params))
+					sent++
+				}
 			}
 			m.mu.Lock()
 			close(m.open)

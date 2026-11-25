@@ -125,9 +125,12 @@ public sealed class MarketRules
     public decimal WorstPrice(string side, string price, string? slippagePct = null) =>
         WorstPrice(side, Decimal(price), slippagePct is null ? null : Decimal(slippagePct));
 
-    // a decimal as the API writes one ("62000.05", "-500"); anything else is refused as the SDK's own error
+    // a decimal as every SDK reads it (BEHAVIOUR.md): a sign, digits with a fraction, an exponent (6.2E+4); nothing else
+    // (no spaces, no +, no 1_000): anything else is refused as the SDK's own error (Q98)
+    private static readonly System.Text.RegularExpressions.Regex DecimalForm = new(@"^-?(\d+\.?\d*|\.\d+)([eE][+-]?\d{1,3})?$", System.Text.RegularExpressions.RegexOptions.CultureInvariant);
+
     private static decimal Decimal(string s) =>
-        decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var d)
+        s is not null && DecimalForm.IsMatch(s) && decimal.TryParse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowExponent, CultureInfo.InvariantCulture, out var d)
             ? d : throw new ValidationException("invalid_parameter", $"\"{s}\" is not a decimal.");
 }
 
@@ -141,6 +144,9 @@ public static class Webhooks
     /// out. raw: the body exactly as received.</summary>
     public static WebhookPayload Verify(string raw, IReadOnlyDictionary<string, string> headers, IEnumerable<string> secrets, TimeSpan? tolerance = null, DateTimeOffset? now = null)
     {
+        // no usable secret (an unset variable read as ""): an error, never a check against an empty key (Q10)
+        var keys = (secrets ?? Array.Empty<string>()).Where(k => !string.IsNullOrEmpty(k)).ToList();
+        if (keys.Count == 0) throw new ValidationException("missing_secret", "No webhook secret: give the endpoint's signing secret (ppwhsec_...).");
         string? Header(string name) => headers.FirstOrDefault(h => string.Equals(h.Key, name, StringComparison.OrdinalIgnoreCase)).Value;
         var ts = Header("X-Phoenix-Timestamp");
         var sig = Header("X-Phoenix-Signature");
@@ -150,7 +156,7 @@ public static class Webhooks
         if (!long.TryParse(ts, NumberStyles.None, CultureInfo.InvariantCulture, out var t) || Math.Abs(at.ToUnixTimeMilliseconds() / 1000m - t) > (decimal)(tolerance ?? TimeSpan.FromSeconds(300)).TotalSeconds)
             throw new WebhookVerificationException("stale", "The delivery is too old (or the clock is off).");
         var given = sig.Split(',').Select(s => Encoding.UTF8.GetBytes(s.Trim())).ToList();
-        foreach (var secret in secrets)
+        foreach (var secret in keys)
         {
             var mac = HMACSHA256.HashData(Encoding.UTF8.GetBytes(secret), Encoding.UTF8.GetBytes(ts + "." + raw));
             var want = Encoding.UTF8.GetBytes("sha256=" + Convert.ToHexString(mac).ToLowerInvariant());

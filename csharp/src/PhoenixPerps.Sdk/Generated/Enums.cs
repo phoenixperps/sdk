@@ -140,6 +140,44 @@ public readonly record struct StatusApi(string Value) : IOpenEnum<StatusApi>
     public static implicit operator StatusApi(string value) => new(value);
 }
 
+/// <summary>Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy to take one (engine_busy). Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<StatusEngineWrites>))]
+public readonly record struct StatusEngineWrites(string Value) : IOpenEnum<StatusEngineWrites>
+{
+    /// <summary>operational</summary>
+    public static readonly StatusEngineWrites Operational = new("operational");
+    /// <summary>degraded</summary>
+    public static readonly StatusEngineWrites Degraded = new("degraded");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static StatusEngineWrites From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator StatusEngineWrites(string value) => new(value);
+}
+
+/// <summary>Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable). Open: a value from a newer API version is kept as is.</summary>
+[JsonConverter(typeof(OpenEnumConverter<StatusAccountDataState>))]
+public readonly record struct StatusAccountDataState(string Value) : IOpenEnum<StatusAccountDataState>
+{
+    /// <summary>operational</summary>
+    public static readonly StatusAccountDataState Operational = new("operational");
+    /// <summary>degraded</summary>
+    public static readonly StatusAccountDataState Degraded = new("degraded");
+
+    /// <summary>The value as the API writes it.</summary>
+    public override string ToString() => Value;
+
+    /// <summary>A value from its wire form.</summary>
+    public static StatusAccountDataState From(string value) => new(value);
+
+    /// <summary>A value from its wire form.</summary>
+    public static implicit operator StatusAccountDataState(string value) => new(value);
+}
+
 /// <summary>Whether the market trades now. Open: a value from a newer API version is kept as is.</summary>
 [JsonConverter(typeof(OpenEnumConverter<MarketStatus>))]
 public readonly record struct MarketStatus(string Value) : IOpenEnum<MarketStatus>

@@ -39,6 +39,17 @@ public final class ChangePriceAlert {
     /** Sets note. */
     public ChangePriceAlert note(String value) {
         this.note = value;
+        if (value != null) {
+            extra.remove("note");
+        }
+        return this;
+    }
+
+    /** Sends note as null (the API: null removes it). */
+    public ChangePriceAlert clearNote() {
+        this.note = null;
+        // a NullNode, written as null (the mapper skips a Java null)
+        extra.put("note", com.fasterxml.jackson.databind.node.NullNode.getInstance());
         return this;
     }
 

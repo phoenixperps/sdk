@@ -72,11 +72,31 @@ def pick(obj, want):
 
 
 # what the runners play (scenarios.json "vocabulary"); anything else fails the scenario, never skipped
-EXPECT = {"ok", "requests", "result", "error", "items", "cursors", "first_body", "min_elapsed_ms", "checks", "page_fields", "paths"}
+EXPECT = {"ok", "requests", "result", "error", "items", "cursors", "first_body", "min_elapsed_ms", "max_elapsed_ms", "logged_deprecation", "checks", "page_fields", "paths"}
+
+
+class Logs(logging.Handler):
+    """The client's logger, kept: logged_deprecation looks for its warning."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.lines: list = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.lines.append(record.getMessage())
+
+
+def logger():
+    log = logging.getLogger(f"phoenixperps.conformance.{id(object())}")
+    log.setLevel(logging.DEBUG)
+    log.propagate = False
+    h = Logs()
+    log.addHandler(h)
+    return log, h
 ERROR = {"class", "code", "status", "retry_after_ms", "order_id", "request_id", "retryable", "doc_url"}
 
 
-def check(url, sc, result, error, items, lang="python"):
+def check(url, sc, result, error, items, lang="python", logs=None):
     got = requests(url)
     x = sc["expect"]
     assert set(x) <= EXPECT, f"expect keys this runner does not play: {set(x) - EXPECT}"
@@ -114,6 +134,10 @@ def check(url, sc, result, error, items, lang="python"):
         assert pick(got[0]["body"], x["first_body"]) == x["first_body"]
     if "min_elapsed_ms" in x:
         assert got[-1]["at"] - got[0]["at"] >= x["min_elapsed_ms"]
+    if "max_elapsed_ms" in x:
+        assert got[-1]["at"] - got[0]["at"] <= x["max_elapsed_ms"], f"waited {got[-1]['at'] - got[0]['at']} ms"
+    if x.get("logged_deprecation"):
+        assert any("deprecated" in line for line in (logs.lines if logs else [])), logs and logs.lines
     for c in x.get("checks", []):
         assert c in ("bearer", "user_agent", "same_idempotency_key"), f"a check this runner does not play: {c}"
         if c == "bearer":
@@ -136,10 +160,15 @@ def base_url(mock, sc):
 @pytest.mark.parametrize("sc", S["scenarios"], ids=[s["name"] for s in S["scenarios"]])
 def test_sync(mock, sc):
     load(mock, sc["exchanges"])
-    client = pp.PhoenixPerps(S["key"], base_url=base_url(mock, sc), max_retries=2)
+    log, logs = logger()
+    client = pp.PhoenixPerps(S["key"], base_url=base_url(mock, sc), max_retries=2, logger=log)
     result = error = items = None
     try:
         for call in sc.get("calls") or [sc["call"]]:
+            if "raw" in call:  # the SDK's raw request
+                r = call["raw"]
+                result = client.request(r["method"], r["path"], body=r.get("body"))
+                continue
             fn = getattr(getattr(client, SNAKE(call["resource"])), SNAKE(call["method"]))
             if call.get("iterate"):
                 page = fn(*args_of(call))
@@ -148,17 +177,23 @@ def test_sync(mock, sc):
                 result = fn(*args_of(call))
     except pp.PhoenixPerpsError as err:
         error = err
-    check(mock, sc, result, error, items)
+    check(mock, sc, result, error, items, logs=logs)
 
 
 @pytest.mark.parametrize("sc", S["scenarios"], ids=[s["name"] for s in S["scenarios"]])
 def test_async(mock, sc):
+    log, logs = logger()
+
     async def run():
         load(mock, sc["exchanges"])
-        async with pp.AsyncPhoenixPerps(S["key"], base_url=base_url(mock, sc), max_retries=2) as client:
+        async with pp.AsyncPhoenixPerps(S["key"], base_url=base_url(mock, sc), max_retries=2, logger=log) as client:
             result = error = items = None
             try:
                 for call in sc.get("calls") or [sc["call"]]:
+                    if "raw" in call:
+                        r = call["raw"]
+                        result = await client.request(r["method"], r["path"], body=r.get("body"))
+                        continue
                     fn = getattr(getattr(client, SNAKE(call["resource"])), SNAKE(call["method"]))
                     if call.get("iterate"):
                         opts = {"max_items": call["max_items"]} if "max_items" in call else {}
@@ -169,7 +204,7 @@ def test_async(mock, sc):
                 error = err
             return result, error, items
     result, error, items = asyncio.run(run())
-    check(mock, sc, result, error, items)
+    check(mock, sc, result, error, items, logs=logs)
 
 
 @pytest.mark.parametrize("l", S["local"], ids=[l["name"] for l in S["local"]])
@@ -193,6 +228,12 @@ def test_local(mock, l, monkeypatch):
         now = v["now_ms"] / 1000
         assert pick(pp.Webhooks.verify(v["body"], at(v["signature"]), v["secret"], 300, now), v["want"]) == v["want"]
         assert pick(pp.Webhooks.verify(v["body"], at(v["rotation"]), [v["secret"]], 300, now), v["want"]) == v["want"]
+        # no usable secret: a ValidationError, never a check against an empty key; empty ones are dropped (Q10)
+        for secrets in v["no_secret"]["secrets"]:
+            with pytest.raises(pp.ValidationError) as e:
+                pp.Webhooks.verify(v["body"], at(v["signature"]), secrets, 300, now)
+            assert e.value.code == v["no_secret"]["error_code"]
+        assert pp.Webhooks.verify(v["body"], at(v["signature"]), v["no_secret"]["with_one"], 300, now)["id"] == "evt_01JAB7Q8XK4M2N5P7R9S3T5V7W"
         for secret, when, body, code in [(v["other"], now, v["body"], "bad_signature"), (v["secret"], now + 1000, v["body"], "stale"), (v["secret"], now, v["body"] + " ", "bad_signature")]:
             with pytest.raises(pp.WebhookVerificationError) as e:
                 pp.Webhooks.verify(body, at(v["signature"]), secret, 300, when)
@@ -240,7 +281,7 @@ def test_market_rules_exact(c):
     assert r.round_price(62000.06) == "62000.1"
 
 
-STREAM_EXPECT = {"events", "connections", "resume", "first_message", "error", "frames", "resubscribe", "unsubscribe_sent", "limits", "gap"}
+STREAM_EXPECT = {"events", "connections", "resume", "first_message", "error", "frames", "resubscribe", "unsubscribe_sent", "limits", "gap", "subscribe_sizes"}
 STREAM_STEPS = {"send", "expect", "reply", "close", "wait_ms", "refuse", "retry_after", "body"}
 
 
@@ -312,6 +353,9 @@ def test_stream(mock, sc):
         assert sent(reqs[-1]["messages"][0]) == x["resubscribe"]
     if "unsubscribe_sent" in x:
         assert sent(next(m for m in reqs[0]["messages"] if m.get("op") == "unsubscribe")) == x["unsubscribe_sent"]
+    if "subscribe_sizes" in x:
+        for r in reqs:
+            assert [len(m["symbols"]) for m in r["messages"] if m.get("op") == "subscribe"] == x["subscribe_sizes"]
 
 
 def test_snippets_compile():
@@ -418,19 +462,19 @@ def test_a_sync_page_iterates_every_page(mock):
 
 
 def test_rate_limits_per_budget(mock, monkeypatch):
-    """Calls: X-RateLimit-* kept per budget (an operation's x-pp-scope): a read budget used up holds the next read until
-    its reset, never a trading call. (The generated operations do not carry their scope yet: set here as the spec has
-    it.)"""
+    """Calls: X-RateLimit-* kept per budget (an operation's x-pp-scope and the bucket that answered): a read budget
+    used up holds the next read until its next request (60 s / Limit: 1 s at 60 a minute, Q15), never a trading call.
+    (The generated operations do not carry their scope yet: set here as the spec has it.)"""
     monkeypatch.setitem(OPS["getMe"], "scope", "read")
     monkeypatch.setitem(OPS["placeOrder"], "scope", "trade")
-    spent = {"x-ratelimit-limit": "10", "x-ratelimit-remaining": "0", "x-ratelimit-reset": "1"}
+    spent = {"x-ratelimit-limit": "60", "x-ratelimit-remaining": "0", "x-ratelimit-reset": "1", "x-ratelimit-scope": "key"}
     load(mock, [{"respond": {"status": 200, "headers": spent, "body": {"data": {"n": 1}}}}, {"respond": {"status": 201, "body": {"data": {"id": "ord_1"}}}},
                 {"respond": {"status": 200, "body": {"data": {"n": 2}}}}])
     with pp.PhoenixPerps(S["key"], base_url=mock) as c:
         c.me.get()
         c.orders.create(ACCOUNT, ORDER)
         c.me.get()
-        assert c.rate_limits["read"]["remaining"] == 0 and "trade" not in c.rate_limits
+        assert c.rate_limits["read:key"]["remaining"] == 0 and not any(k.startswith("trade:") for k in c.rate_limits)
     at = [g["at"] for g in requests(mock)]
     assert at[1] - at[0] < 500 and at[2] - at[0] >= 800
 

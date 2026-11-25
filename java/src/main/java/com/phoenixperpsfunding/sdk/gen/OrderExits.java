@@ -39,6 +39,17 @@ public final class OrderExits {
     /** Sets stop_loss. */
     public OrderExits stopLoss(OrderExitsStopLoss value) {
         this.stopLoss = value;
+        if (value != null) {
+            extra.remove("stop_loss");
+        }
+        return this;
+    }
+
+    /** Sends stop_loss as null (the API: null removes it). */
+    public OrderExits clearStopLoss() {
+        this.stopLoss = null;
+        // a NullNode, written as null (the mapper skips a Java null)
+        extra.put("stop_loss", com.fasterxml.jackson.databind.node.NullNode.getInstance());
         return this;
     }
 

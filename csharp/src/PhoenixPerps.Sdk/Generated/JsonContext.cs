@@ -163,6 +163,8 @@ namespace PhoenixPerps;
 [JsonSerializable(typeof(PlatformStatusMarketData))]
 [JsonSerializable(typeof(PlatformStatusWebhooks))]
 [JsonSerializable(typeof(StatusApi))]
+[JsonSerializable(typeof(StatusEngineWrites))]
+[JsonSerializable(typeof(StatusAccountDataState))]
 [JsonSerializable(typeof(MarketStatus))]
 [JsonSerializable(typeof(TradingHours))]
 [JsonSerializable(typeof(RuleDailyLossBasis))]

@@ -110,8 +110,8 @@ class ConformanceTest {
     }
 
     // what this runner plays (conformance/scenarios.json "vocabulary"): a key it does not know fails, never skipped
-    private static final Set<String> REST_EXPECT = Set.of("ok", "requests", "result", "error", "items", "cursors", "first_body", "min_elapsed_ms", "checks", "page_fields", "paths");
-    private static final Set<String> STREAM_EXPECT = Set.of("events", "connections", "resume", "first_message", "error", "frames", "resubscribe", "unsubscribe_sent", "limits", "gap");
+    private static final Set<String> REST_EXPECT = Set.of("ok", "requests", "result", "error", "items", "cursors", "first_body", "min_elapsed_ms", "max_elapsed_ms", "logged_deprecation", "checks", "page_fields", "paths");
+    private static final Set<String> STREAM_EXPECT = Set.of("events", "connections", "resume", "first_message", "error", "frames", "resubscribe", "unsubscribe_sent", "limits", "gap", "subscribe_sizes");
     private static final Set<String> ERROR_EXPECT = Set.of("class", "code", "status", "retryable", "doc_url", "retry_after_ms", "order_id", "request_id", "account_id");
 
     private static void known(JsonNode expect, Set<String> keys) {
@@ -158,7 +158,8 @@ class ConformanceTest {
             known(sc.get("expect"), REST_EXPECT);
             load(Map.of("exchanges", sc.get("exchanges")));
             // client.base_url_suffix: the mock's URL plus it as the baseUrl
-            PhoenixPerpsClient c = PhoenixPerpsClient.builder().apiKey(key).baseUrl(url + sc.path("client").path("base_url_suffix").asText("")).maxRetries(2).build();
+            List<String> logs = java.util.Collections.synchronizedList(new ArrayList<>());
+            PhoenixPerpsClient c = PhoenixPerpsClient.builder().apiKey(key).baseUrl(url + sc.path("client").path("base_url_suffix").asText("")).maxRetries(2).logger((level, m) -> logs.add(m)).build();
             List<JsonNode> calls = new ArrayList<>();
             if (sc.has("calls")) {
                 sc.get("calls").forEach(calls::add);
@@ -169,6 +170,12 @@ class ConformanceTest {
             PhoenixPerpsException error = null;
             try {
                 for (JsonNode call : calls) {
+                    if (call.has("raw")) {
+                        // the SDK's raw request
+                        JsonNode raw = call.get("raw");
+                        c.request(raw.get("method").asText(), raw.get("path").asText(), null, raw.has("body") ? Json.MAPPER.convertValue(raw.get("body"), Object.class) : null, null);
+                        continue;
+                    }
                     result = Dispatch.run(c, new Call(call), RequestOptions.none());
                 }
             } catch (PhoenixPerpsException e) {
@@ -212,9 +219,15 @@ class ConformanceTest {
             if (x.has("first_body")) {
                 assertEquals(x.get("first_body"), pick(got.get(0).get("body"), x.get("first_body")));
             }
+            long elapsed = got.get(got.size() - 1).get("at").asLong() - got.get(0).get("at").asLong();
             if (x.has("min_elapsed_ms")) {
-                long elapsed = got.get(got.size() - 1).get("at").asLong() - got.get(0).get("at").asLong();
                 assertTrue(elapsed >= x.get("min_elapsed_ms").asLong(), elapsed + " ms");
+            }
+            if (x.has("max_elapsed_ms")) {
+                assertTrue(elapsed <= x.get("max_elapsed_ms").asLong(), elapsed + " ms");
+            }
+            if (x.path("logged_deprecation").asBoolean(false)) {
+                assertTrue(logs.stream().anyMatch(l -> l.contains("deprecated")), "logged: " + logs);
             }
             if (x.has("checks")) {
                 for (JsonNode check : x.get("checks")) {
@@ -316,6 +329,17 @@ class ConformanceTest {
             }
             if (x.has("resubscribe")) {
                 assertEquals(x.get("resubscribe"), pick(reqs.get(reqs.size() - 1).get("messages").get(0), x.get("resubscribe")));
+            }
+            if (x.has("subscribe_sizes")) {
+                for (JsonNode r : reqs) {
+                    List<Integer> sizes = new ArrayList<>();
+                    r.get("messages").forEach(msg -> {
+                        if ("subscribe".equals(msg.path("op").asText())) {
+                            sizes.add(msg.path("symbols").size());
+                        }
+                    });
+                    assertEquals(Json.MAPPER.convertValue(x.get("subscribe_sizes"), List.class), sizes);
+                }
             }
             if (x.has("unsubscribe_sent")) {
                 JsonNode sent = reqs.stream().flatMap(r -> Stream.of(Json.MAPPER.convertValue(r.get("messages"), JsonNode[].class)))
@@ -673,6 +697,16 @@ class ConformanceTest {
         assertEquals("bad_signature", assertThrows(Webhooks.VerificationException.class, () -> Webhooks.verify(body, at.apply(ts, v.get("signature").asText()), List.of(v.get("other").asText()), null, now)).code());
         assertEquals("stale", assertThrows(Webhooks.VerificationException.class, () -> Webhooks.verify(body, at.apply(ts, v.get("signature").asText()), secret, null, now.plusSeconds(1000))).code());
         assertEquals("bad_signature", assertThrows(Webhooks.VerificationException.class, () -> Webhooks.verify(body + " ", at.apply(ts, v.get("signature").asText()), secret, null, now)).code());
+        // no usable secret: a ValidationException, never a check against an empty key; empty ones are dropped (Q10)
+        JsonNode ns = v.get("no_secret");
+        for (JsonNode list : ns.get("secrets")) {
+            List<String> secrets = new ArrayList<>();
+            list.forEach(e -> secrets.add(e.asText()));
+            assertEquals(ns.get("error_code").asText(), assertThrows(PhoenixPerpsException.ValidationException.class, () -> Webhooks.verify(body, at.apply(ts, v.get("signature").asText()), secrets, null, now)).code());
+        }
+        List<String> withOne = new ArrayList<>();
+        ns.get("with_one").forEach(e -> withOne.add(e.asText()));
+        assertEquals("evt_01JAB7Q8XK4M2N5P7R9S3T5V7W", Webhooks.verify(body, at.apply(ts, v.get("signature").asText()), withOne, null, now).id());
         // extra: each with its own signature, body and timestamp, verified with the secret at now_ms
         for (JsonNode x : v.get("extra")) {
             Map<String, String> h = at.apply(x.get("timestamp").asText(), x.get("signature").asText());
@@ -846,5 +880,43 @@ class ConformanceTest {
         List<String> fields = new ArrayList<>();
         names.forEachRemaining(fields::add);
         assertTrue(fields.contains("a_new_field"), "kept when written again");
+    }
+
+    // Q40: a String body is the JSON as given, sent as it is (never a JSON string of it)
+    @Test
+    void rawStringBodyGoesAsIs() throws Exception {
+        load(Map.of("exchanges", Json.MAPPER.readTree("[{\"respond\":{\"status\":200,\"body\":{\"data\":{\"result\":\"would_fill\"}}}}]")));
+        PhoenixPerpsClient.builder().apiKey(key).baseUrl(url).build().request("POST", "/v1/accounts/SANDBOX-00042-001/orders/test", null, "{\"market\":\"BTC-USD\"}", null);
+        assertEquals("BTC-USD", requests().get(0).get("body").get("market").asText());
+    }
+
+    // Q88: a field the API takes as null goes out as null after clear<Field>(), never otherwise; set again, it wins
+    @Test
+    void clearSendsTheNull() throws Exception {
+        assertEquals("{\"note\":null}", Json.MAPPER.writeValueAsString(new com.phoenixperpsfunding.sdk.gen.ChangePriceAlert().clearNote()));
+        assertEquals("{\"price\":\"62000\"}", Json.MAPPER.writeValueAsString(new com.phoenixperpsfunding.sdk.gen.ChangePriceAlert().price(new BigDecimal("62000"))));
+        assertEquals("{\"note\":\"moved\"}", Json.MAPPER.writeValueAsString(new com.phoenixperpsfunding.sdk.gen.ChangePriceAlert().clearNote().note("moved")));
+    }
+
+    // Q100 Q101: an interrupt is cancelled, not retryable; an exception prints its code, status and request id
+    @Test
+    void cancelledAndPrinted() {
+        Thread.currentThread().interrupt();
+        PhoenixPerpsException e = assertThrows(PhoenixPerpsException.class, () -> PhoenixPerpsClient.sleep(Duration.ofSeconds(5)));
+        assertTrue(Thread.interrupted(), "the flag is kept");
+        assertEquals("cancelled", e.code());
+        assertFalse(e.retryable());
+        PhoenixPerpsException x = new PhoenixPerpsException.ServerException("state_unavailable", "Busy.", 503, null);
+        x.requestId = "req_1";
+        assertTrue(x.toString().endsWith("Busy. (state_unavailable, HTTP 503, req_1)"), x.toString());
+    }
+
+    // Q102: a 304 while auto-paging says so (NotModifiedException), never an empty list
+    @Test
+    void autoPagingNotModified() throws Exception {
+        load(Map.of("exchanges", Json.MAPPER.readTree("[{\"respond\":{\"status\":304}}]")));
+        PhoenixPerpsClient c = PhoenixPerpsClient.builder().apiKey(key).baseUrl(url).build();
+        RequestOptions o = RequestOptions.none().withHeaders(Map.of("If-None-Match", "\"e1\""));
+        assertThrows(PhoenixPerpsException.NotModifiedException.class, () -> c.orders().listAutoPaging("SANDBOX-00042-001", null, o).forEach(x -> { }));
     }
 }

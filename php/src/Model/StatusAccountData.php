@@ -11,11 +11,13 @@ use PhoenixPerps\Decimal;
 /** StatusAccountData */
 final class StatusAccountData implements \JsonSerializable
 {
-    private const WIRE = ['synced_at' => true];
+    private const WIRE = ['synced_at' => true, 'state' => true];
 
     public function __construct(
         /** When your keys and accounts were last confirmed with the website. */
         public readonly ?int $syncedAt = null,
+        /** Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable). */
+        public readonly ?string $state = null,
         /** @var array<string, mixed> Fields this SDK version does not know yet (a newer API's), kept as they came. */
         public readonly array $extra = [],
     ) {
@@ -26,6 +28,7 @@ final class StatusAccountData implements \JsonSerializable
     {
         return new self(
             syncedAt: $d['synced_at'] ?? null,
+            state: $d['state'] ?? null,
             extra: array_diff_key($d, self::WIRE),
         );
     }
@@ -36,6 +39,9 @@ final class StatusAccountData implements \JsonSerializable
         $out = [];
         if ($this->syncedAt !== null) {
             $out['synced_at'] = $this->syncedAt;
+        }
+        if ($this->state !== null) {
+            $out['state'] = $this->state;
         }
         return $out + $this->extra;
     }

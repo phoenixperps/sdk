@@ -56,7 +56,7 @@ public final class MarketRules {
     /** x as a multiple of step, at the step's decimals: the BigDecimal an order takes (its toPlainString(), the API's text). */
     public static BigDecimal roundTo(BigDecimal x, BigDecimal step, Mode mode) {
         if (step.signum() <= 0) {
-            throw new IllegalArgumentException("The step is not above zero.");
+            throw new ValidationException("invalid_parameter", "The step is not above zero.", null);
         }
         BigDecimal q = x.divide(step, DIV);
         RoundingMode rm = mode == Mode.DOWN ? RoundingMode.FLOOR : mode == Mode.UP ? RoundingMode.CEILING : RoundingMode.HALF_UP;
@@ -73,10 +73,17 @@ public final class MarketRules {
         return d;
     }
 
+    // a decimal as every SDK reads it (BEHAVIOUR.md): a sign, digits with a fraction, an exponent; nothing else (no
+    // spaces around it, no +, no 1_000: Q98)
+    private static final java.util.regex.Pattern DECIMAL = java.util.regex.Pattern.compile("-?(\\d+\\.?\\d*|\\.\\d+)([eE][+-]?\\d{1,3})?");
+
     /** A decimal string as a BigDecimal (null stays null); one that is no decimal is a ValidationException. */
     static BigDecimal decimal(String name, String v) {
+        if (v != null && !DECIMAL.matcher(v).matches()) {
+            throw new ValidationException("invalid_parameter", name + " is no decimal: " + v + ".", null);
+        }
         try {
-            return v == null ? null : new BigDecimal(v.trim());
+            return v == null ? null : new BigDecimal(v);
         } catch (NumberFormatException e) {
             throw new ValidationException("invalid_parameter", name + " is no decimal: " + v + ".", null);
         }
@@ -148,7 +155,7 @@ public final class MarketRules {
         }
         BigDecimal pct = slippagePct != null ? slippagePct : slippage != null ? slippage.defaultValue() : null;
         if (pct == null) {
-            throw new IllegalStateException("No slippage given and the market has no default.");
+            throw new ValidationException("invalid_parameter", "No slippage given and the market has no default.", null);
         }
         if (slippage != null && ((slippage.min() != null && pct.compareTo(slippage.min()) < 0) || (slippage.max() != null && pct.compareTo(slippage.max()) > 0))) {
             throw new ValidationException("invalid_parameter", "The slippage is " + slippage.min() + " to " + slippage.max() + " % on " + market + ", not " + pct + ".", null);

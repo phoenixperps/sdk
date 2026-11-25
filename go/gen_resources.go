@@ -32,7 +32,7 @@ var (
 	opListOrders              = &operation{id: "listOrders", method: "GET", path: "/v1/accounts/{account_id}/orders", idempotent: false, retrySafe: true, cursor: "cursor", scope: "read"}
 	opPlaceOrder              = &operation{id: "placeOrder", method: "POST", path: "/v1/accounts/{account_id}/orders", idempotent: true, retrySafe: false, cursor: "", scope: "trade"}
 	opGetOrder                = &operation{id: "getOrder", method: "GET", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
-	opModifyOrder             = &operation{id: "modifyOrder", method: "PATCH", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: false, retrySafe: false, cursor: "", scope: "trade"}
+	opModifyOrder             = &operation{id: "modifyOrder", method: "PATCH", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: true, retrySafe: false, cursor: "", scope: "trade"}
 	opCancelOrder             = &operation{id: "cancelOrder", method: "DELETE", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: false, retrySafe: true, cursor: "", scope: "trade"}
 	opTestOrder               = &operation{id: "testOrder", method: "POST", path: "/v1/accounts/{account_id}/orders/test", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
 	opCancelAllOrders         = &operation{id: "cancelAllOrders", method: "POST", path: "/v1/accounts/{account_id}/orders/cancel-all", idempotent: true, retrySafe: false, cursor: "", scope: "trade"}
@@ -41,7 +41,7 @@ var (
 	opSetMargin               = &operation{id: "setMargin", method: "PUT", path: "/v1/accounts/{account_id}/margin/{market}", idempotent: false, retrySafe: true, cursor: "", scope: "trade"}
 	opListEvents              = &operation{id: "listEvents", method: "GET", path: "/v1/events", idempotent: false, retrySafe: true, cursor: "after", scope: "read"}
 	opGetExits                = &operation{id: "getExits", method: "GET", path: "/v1/accounts/{account_id}/positions/{market}/exits", idempotent: false, retrySafe: true, cursor: "", scope: "read"}
-	opSetExits                = &operation{id: "setExits", method: "PUT", path: "/v1/accounts/{account_id}/positions/{market}/exits", idempotent: false, retrySafe: true, cursor: "", scope: "trade"}
+	opSetExits                = &operation{id: "setExits", method: "PUT", path: "/v1/accounts/{account_id}/positions/{market}/exits", idempotent: true, retrySafe: true, cursor: "", scope: "trade"}
 	opSetOrderExits           = &operation{id: "setOrderExits", method: "PUT", path: "/v1/accounts/{account_id}/orders/{order_id}/exits", idempotent: false, retrySafe: true, cursor: "", scope: "trade"}
 	opCreateStrategy          = &operation{id: "createStrategy", method: "POST", path: "/v1/accounts/{account_id}/strategies", idempotent: true, retrySafe: false, cursor: "", scope: "trade"}
 	opListStrategies          = &operation{id: "listStrategies", method: "GET", path: "/v1/accounts/{account_id}/strategies", idempotent: false, retrySafe: true, cursor: "cursor", scope: "read"}

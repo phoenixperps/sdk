@@ -20,6 +20,9 @@ public final class AccountRisk {
     @JsonProperty("stale")
     private Boolean stale;
 
+    @JsonProperty("paused")
+    private Boolean paused;
+
     @JsonProperty("balance")
     private BigDecimal balance;
 
@@ -90,6 +93,17 @@ public final class AccountRisk {
     /** Sets stale. */
     public AccountRisk stale(Boolean value) {
         this.stale = value;
+        return this;
+    }
+
+    /** The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York. */
+    public Boolean paused() {
+        return paused;
+    }
+
+    /** Sets paused. */
+    public AccountRisk paused(Boolean value) {
+        this.paused = value;
         return this;
     }
 
@@ -302,6 +316,7 @@ public final class AccountRisk {
         AccountRisk o = (AccountRisk) other;
         return Objects.equals(asOf, o.asOf)
             && Objects.equals(stale, o.stale)
+            && Objects.equals(paused, o.paused)
             && Objects.equals(balance, o.balance)
             && Objects.equals(equity, o.equity)
             && Objects.equals(unrealizedPnl, o.unrealizedPnl)
@@ -323,11 +338,11 @@ public final class AccountRisk {
 
     @Override
     public int hashCode() {
-        return Objects.hash(asOf, stale, balance, equity, unrealizedPnl, pnlToday, realizedToday, feesToday, tradesToday, marginUsed, marginAvailable, exposure, dailyLoss, maxDrawdown, profitTarget, tradingDays, nearestLiquidation, tradingDayEndsAt, warnings);
+        return Objects.hash(asOf, stale, paused, balance, equity, unrealizedPnl, pnlToday, realizedToday, feesToday, tradesToday, marginUsed, marginAvailable, exposure, dailyLoss, maxDrawdown, profitTarget, tradingDays, nearestLiquidation, tradingDayEndsAt, warnings);
     }
 
     @Override
     public String toString() {
-        return "AccountRisk{" + "as_of=" + asOf + ", stale=" + stale + ", balance=" + balance + ", equity=" + equity + ", unrealized_pnl=" + unrealizedPnl + ", pnl_today=" + pnlToday + ", realized_today=" + realizedToday + ", fees_today=" + feesToday + ", trades_today=" + tradesToday + ", margin_used=" + marginUsed + ", margin_available=" + marginAvailable + ", exposure=" + exposure + ", daily_loss=" + dailyLoss + ", max_drawdown=" + maxDrawdown + ", profit_target=" + profitTarget + ", trading_days=" + tradingDays + ", nearest_liquidation=" + nearestLiquidation + ", trading_day_ends_at=" + tradingDayEndsAt + ", warnings=" + warnings + "}";
+        return "AccountRisk{" + "as_of=" + asOf + ", stale=" + stale + ", paused=" + paused + ", balance=" + balance + ", equity=" + equity + ", unrealized_pnl=" + unrealizedPnl + ", pnl_today=" + pnlToday + ", realized_today=" + realizedToday + ", fees_today=" + feesToday + ", trades_today=" + tradesToday + ", margin_used=" + marginUsed + ", margin_available=" + marginAvailable + ", exposure=" + exposure + ", daily_loss=" + dailyLoss + ", max_drawdown=" + maxDrawdown + ", profit_target=" + profitTarget + ", trading_days=" + tradingDays + ", nearest_liquidation=" + nearestLiquidation + ", trading_day_ends_at=" + tradingDayEndsAt + ", warnings=" + warnings + "}";
     }
 }

@@ -139,19 +139,19 @@ test('the raw request: the answer as it came, with the transport\'s key, retries
   assert.deepEqual((await requests()).map((x) => x.headers['idempotency-key']), ['raw-1', 'raw-1']);
 });
 
-test('the rate limit is kept per budget (the operation\'s x-pp-scope): one used up does not hold the other', async () => {
+test("the rate limit is kept per budget (the operation's x-pp-scope): one used up does not hold the other; the next request comes 60 s / Limit later", async () => {
   const { OPS } = require('../src/gen/resources');
   const c = client();
   const read = { ...OPS.getMe, scope: 'read' };
   const trade = { ...OPS.getMe, scope: 'trade' };
-  const spent = { 'x-ratelimit-limit': '10', 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1' };
+  const spent = { 'x-ratelimit-limit': '60', 'x-ratelimit-remaining': '0', 'x-ratelimit-reset': '1' };
   await script({ status: 200, headers: spent, body: { data: {} } }, { status: 200, body: { data: {} } }, { status: 200, body: { data: {} } });
   await c._one(trade, {});
   const t0 = Date.now();
   await c._one(read, {});
   assert.ok(Date.now() - t0 < 500, 'the read budget is not the trade one');
   await c._one(trade, {});
-  assert.ok(Date.now() - t0 >= 800, 'the trade budget waited for its reset');
+  assert.ok(Date.now() - t0 >= 800, 'the trade budget waited for its next request (1 s at 60 a minute)');
 });
 
 test('a success whose body is not JSON (a proxy page) is a PhoenixPerpsError http_<status>', async () => {
@@ -198,4 +198,16 @@ test('a signature with a non-ASCII character is bad_signature, never a RangeErro
     assert.throws(() => sdk.Webhooks.verify(v.body, at(forged), v.secret, 300, v.now_ms), (e) => e instanceof sdk.WebhookVerificationError && e.code === 'bad_signature');
     assert.equal(sdk.Webhooks.verify(v.body, at(`${forged}, ${good}`), v.secret, 300, v.now_ms).type, v.want.type);
   }
+});
+
+test('request(): a path with its own query and a query object make one query (Q93)', async () => {
+  await script({ status: 200, body: { data: [], has_more: false, next_cursor: null } });
+  await client().request('GET', '/v1/events?limit=1', { account_id: ACCOUNT });
+  assert.deepEqual((await requests())[0].query, { limit: '1', account_id: ACCOUNT });
+});
+
+test('a header the runtime refuses is a ValidationError at once, never sent or tried again (Q96)', async () => {
+  await script();
+  await assert.rejects(client().orders.create(ACCOUNT, { market: 'BTC-USD', side: 'buy', type: 'market', size: '0.001' }, { idempotencyKey: 'a\nb' }), (e) => e instanceof sdk.ValidationError && e.retryable === false);
+  assert.equal((await requests()).length, 0);
 });

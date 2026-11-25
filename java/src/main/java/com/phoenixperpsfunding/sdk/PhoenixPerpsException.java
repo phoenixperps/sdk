@@ -34,6 +34,15 @@ public class PhoenixPerpsException extends RuntimeException {
         this.status = status;
     }
 
+    /**
+     * As every exception's, with the code, the HTTP status and the request id after the message: a crash log carries what
+     * support asks for (as C#'s, Q101).
+     */
+    @Override
+    public String toString() {
+        return super.toString() + " (" + code + (status == null ? "" : ", HTTP " + status) + (requestId == null ? "" : ", " + requestId) + ")";
+    }
+
     /** The API's error code (gen.ErrorCodes), or http_&lt;status&gt; for an answer that is not the API's. */
     public String code() {
         return code;
@@ -188,6 +197,17 @@ public class PhoenixPerpsException extends RuntimeException {
         public ApiTimeoutException(String code, String message, Throwable cause) {
             super(code, message, null, cause);
             retryable = true;
+        }
+    }
+
+    /** 304 while auto-paging: nothing changed since the If-None-Match given (a plain list call answers null for it; an
+     * iteration says so instead of yielding nothing, Q102). */
+    public static final class NotModifiedException extends PhoenixPerpsException {
+        private static final long serialVersionUID = 1L;
+
+        /** The 304. */
+        public NotModifiedException() {
+            super("not_modified", "Nothing changed since the If-None-Match given (304).", 304, null);
         }
     }
 

@@ -160,14 +160,21 @@ final class ConformanceTest extends TestCase
     {
         self::post(['exchanges' => $sc['exchanges']]);
         $x = $sc['expect'];
-        $this->assertPlays(array_keys($x), ['ok', 'requests', 'result', 'error', 'items', 'cursors', 'first_body', 'min_elapsed_ms', 'checks', 'page_fields', 'paths'], 'expect keys');
+        $this->assertPlays(array_keys($x), ['ok', 'requests', 'result', 'error', 'items', 'cursors', 'first_body', 'min_elapsed_ms', 'max_elapsed_ms', 'logged_deprecation', 'checks', 'page_fields', 'paths'], 'expect keys');
         $this->assertPlays(array_keys($sc['client'] ?? []), ['base_url_suffix'], 'client keys');
-        $c = new Client(apiKey: self::suite()['key'], baseUrl: self::$url . ($sc['client']['base_url_suffix'] ?? ''), maxRetries: 2);
+        $logs = [];
+        $c = new Client(apiKey: self::suite()['key'], baseUrl: self::$url . ($sc['client']['base_url_suffix'] ?? ''), maxRetries: 2, logger: function (string $level, string $message) use (&$logs) {
+            $logs[] = $message;
+        });
         $answer = null;
         $page = null;
         $error = null;
         try {
             foreach ($sc['calls'] ?? [$sc['call']] as $call) {
+                if (isset($call['raw'])) { // the SDK's raw request
+                    $c->request($call['raw']['method'], $call['raw']['path'], null, $call['raw']['body'] ?? null);
+                    continue;
+                }
                 $options = new RequestOptions(maxItems: $call['max_items'] ?? null);
                 if (isset($x['page_fields'])) { // the page itself: its path parameters, its query, the options
                     $page = $c->{$call['resource']}->{$call['method']}(...[...array_values($call['path'] ?? []), $call['query'] ?? null, $options]);
@@ -203,6 +210,12 @@ final class ConformanceTest extends TestCase
         if (isset($x['first_body'])) {
             $this->assertSame($x['first_body'], self::pick($got[0]['body'], $x['first_body']));
         }
+        if (isset($x['max_elapsed_ms'])) {
+            $this->assertLessThanOrEqual($x['max_elapsed_ms'], end($got)['at'] - $got[0]['at']);
+        }
+        if (!empty($x['logged_deprecation'])) {
+            $this->assertNotEmpty(array_filter($logs, fn ($l) => str_contains($l, 'deprecated')), implode(' | ', $logs));
+        }
         if (isset($x['min_elapsed_ms'])) {
             $this->assertGreaterThanOrEqual($x['min_elapsed_ms'], end($got)['at'] - $got[0]['at']);
         }
@@ -229,7 +242,7 @@ final class ConformanceTest extends TestCase
     {
         self::post(['connections' => $sc['connections']]);
         $x = $sc['expect'];
-        $this->assertPlays(array_keys($x), ['events', 'connections', 'resume', 'first_message', 'error', 'frames', 'resubscribe', 'unsubscribe_sent', 'limits', 'gap'], 'expect keys');
+        $this->assertPlays(array_keys($x), ['events', 'connections', 'resume', 'first_message', 'error', 'frames', 'resubscribe', 'unsubscribe_sent', 'limits', 'gap', 'subscribe_sizes'], 'expect keys');
         foreach (array_merge(...$sc['connections']) as $step) {
             $this->assertPlays(array_keys($step), ['send', 'expect', 'reply', 'close', 'wait_ms', 'refuse', 'retry_after', 'body'], 'steps');
         }
@@ -298,6 +311,12 @@ final class ConformanceTest extends TestCase
         $this->assertSame('Bearer ' . self::suite()['key'], $reqs[0]['headers']['authorization']);
         if (isset($x['first_message'])) {
             $this->assertSame($x['first_message'], self::pick($reqs[0]['messages'][0], $x['first_message']));
+        }
+        if (isset($x['subscribe_sizes'])) {
+            foreach ($reqs as $i => $r) {
+                $sizes = array_values(array_map(fn ($m) => count($m['symbols'] ?? []), array_filter($r['messages'], fn ($m) => ($m['op'] ?? null) === 'subscribe')));
+                $this->assertSame($x['subscribe_sizes'], $sizes, "subscribe sizes on connection {$i}");
+            }
         }
         if (isset($x['unsubscribe_sent'])) {
             $sent = array_values(array_filter($reqs[0]['messages'], fn ($m) => ($m['op'] ?? null) === 'unsubscribe'));
@@ -401,7 +420,7 @@ final class ConformanceTest extends TestCase
     private function webhookVectors(): void
     {
         $v = self::suite()['webhook_vectors'];
-        $this->assertPlays(array_keys($v), ['secret', 'other', 'timestamp', 'body', 'signature', 'now_ms', 'rotation', 'want', 'extra'], 'webhook vector keys');
+        $this->assertPlays(array_keys($v), ['secret', 'other', 'timestamp', 'body', 'signature', 'now_ms', 'rotation', 'want', 'extra', 'no_secret'], 'webhook vector keys');
         $at = fn (string $sig, ?string $ts = null) => ['X-Phoenix-Timestamp' => $ts ?? $v['timestamp'], 'X-Phoenix-Signature' => $sig];
         $now = $v['now_ms'] / 1000;
         $e = Webhooks::verify($v['body'], $at($v['signature']), $v['secret'], 300, $now);
@@ -415,6 +434,16 @@ final class ConformanceTest extends TestCase
                 $this->assertSame($code, $e->errorCode);
             }
         }
+        // no usable secret: a ValidationException, never a check against an empty key; empty ones are dropped (Q10)
+        foreach ($v['no_secret']['secrets'] as $secrets) {
+            try {
+                Webhooks::verify($v['body'], $at($v['signature']), $secrets, 300, $now);
+                $this->fail('an empty secret was taken');
+            } catch (\PhoenixPerps\Exception\ValidationException $e) {
+                $this->assertSame($v['no_secret']['error_code'], $e->errorCode);
+            }
+        }
+        $this->assertSame('evt_01JAB7Q8XK4M2N5P7R9S3T5V7W', Webhooks::verify($v['body'], $at($v['signature']), $v['no_secret']['with_one'], 300, $now)->id);
         foreach ($v['extra'] as $x) {
             $this->assertPlays(array_keys($x), ['name', 'signature', 'body', 'timestamp', 'want', 'error'], 'extra vector keys');
             try {
@@ -647,7 +676,8 @@ final class ConformanceTest extends TestCase
     {
         $r = new MarketRules(Market::fromArray(self::suite()['rules_vectors']['market']));
         $calls = [
-            fn () => $r->roundSize('1e-3'), fn () => $r->roundPrice(' 62000.05'), fn () => $r->sizeForNotional('', '62000'),
+            // an exponent is a decimal (as in every SDK, Q98); 1/3, 1_000 and a space are not
+            fn () => $r->roundSize('1/3'), fn () => $r->roundSize('1_000'), fn () => $r->roundPrice(' 62000.05'), fn () => $r->sizeForNotional('', '62000'),
             fn () => $r->sizeForNotional('100', '0'), fn () => $r->sizeForRisk('100', '-0.00'),
         ];
         foreach ($calls as $call) {
@@ -660,6 +690,23 @@ final class ConformanceTest extends TestCase
         }
     }
 
+    // Q41: no dump of the client shows the key, var_export included
+    public function testNoDumpShowsTheKey(): void
+    {
+        $c = new Client(apiKey: self::suite()['key'], baseUrl: 'http://127.0.0.1:9');
+        foreach ([@var_export($c, true), print_r($c, true), (string) json_encode($c), (string) $c] as $text) {
+            $this->assertStringNotContainsString(substr(self::suite()['key'], 9), $text);
+        }
+    }
+
+    // Q106: cancel-all takes no body (every field of it optional): {} goes out
+    public function testCancelAllWithoutABody(): void
+    {
+        self::post(['exchanges' => [['respond' => ['status' => 200, 'body' => ['data' => ['canceled' => 0]]]]]]);
+        self::client()->orders->cancelAll('SANDBOX-00042-001');
+        $this->assertSame([], self::requests()[0]['body']);
+    }
+
     public function testWebhookWithoutASecret(): void
     {
         $v = self::suite()['webhook_vectors'];
@@ -667,7 +714,8 @@ final class ConformanceTest extends TestCase
             try {
                 Webhooks::verify($v['body'], ['X-Phoenix-Timestamp' => $v['timestamp'], 'X-Phoenix-Signature' => $v['signature']], $secret, 300, $v['now_ms'] / 1000);
                 $this->fail('verified without a secret');
-            } catch (\InvalidArgumentException $e) {
+            } catch (\PhoenixPerps\Exception\ValidationException $e) { // the SDK's own, as in every SDK (Q10)
+                $this->assertSame('missing_secret', $e->errorCode);
                 $this->assertStringContainsString('secret', $e->getMessage());
             }
         }

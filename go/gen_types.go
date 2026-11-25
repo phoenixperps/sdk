@@ -73,6 +73,25 @@ const (
 	StatusApiDisabled    StatusApi = "disabled"
 )
 
+// StatusEngineWrites: Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the
+// engine was too busy to take one (engine_busy). Open: a value from a newer API version is kept as is.
+type StatusEngineWrites string
+
+const (
+	StatusEngineWritesOperational StatusEngineWrites = "operational"
+	StatusEngineWritesDegraded    StatusEngineWrites = "degraded"
+)
+
+// StatusAccountDataState: Account figures over the last minute: degraded when more than 5% of them were older
+// than usual (stale) or could not be read (state_unavailable). Open: a value from a newer API version is kept as
+// is.
+type StatusAccountDataState string
+
+const (
+	StatusAccountDataStateOperational StatusAccountDataState = "operational"
+	StatusAccountDataStateDegraded    StatusAccountDataState = "degraded"
+)
+
 // MarketStatus: Whether the market trades now. Open: a value from a newer API version is kept as is.
 type MarketStatus string
 
@@ -864,12 +883,18 @@ type StatusEngine struct {
 	Connected bool `json:"connected"`
 	// When the trading engine last started.
 	StartedAt *int64 `json:"started_at"`
+	// Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy
+	// to take one (engine_busy).
+	Writes StatusEngineWrites `json:"writes"`
 }
 
 // StatusAccountData: see the API reference.
 type StatusAccountData struct {
 	// When your keys and accounts were last confirmed with the website.
 	SyncedAt *int64 `json:"synced_at"`
+	// Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or
+	// could not be read (state_unavailable).
+	State StatusAccountDataState `json:"state"`
 }
 
 // StatusMarketData: see the API reference.
@@ -1017,6 +1042,10 @@ type LimitsOrders struct {
 	GtdMinSeconds int64 `json:"gtd_min_seconds"`
 	// The farthest, in days from now.
 	GtdMaxDays int64 `json:"gtd_max_days"`
+	// The least time between two orders that can open a position on one account, in ms: the engine takes one about
+	// this often, so the next waits its turn (reduce-only orders and cancels never wait). A call that would wait
+	// past its reply time is refused 429 rate_limited, scope order_spacing.
+	OpenSpacingMs int64 `json:"open_spacing_ms"`
 }
 
 // LimitsSandbox: see the API reference.
@@ -1294,6 +1323,9 @@ type AccountRisk struct {
 	AsOf int64 `json:"as_of"`
 	// Some figures are older than usual (the engine was busy).
 	Stale bool `json:"stale"`
+	// The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight
+	// New York.
+	Paused bool `json:"paused"`
 	// The balance.
 	Balance Decimal `json:"balance"`
 	// The balance plus the open P&L at the market price.
@@ -2001,6 +2033,18 @@ type OrderExits struct {
 	// A stop on the loss side, at price, or at distance or percent from the fill; it may trail and move to
 	// break-even (as in a position's exits).
 	StopLoss *OrderExitsStopLoss `json:"stop_loss,omitempty"`
+	// StopLossNull sends stop_loss as null (the API: null removes it); a StopLoss set is sent instead.
+	StopLossNull bool `json:"-"`
+}
+
+// MarshalJSON sends a field marked <Field>Null as null.
+func (x OrderExits) MarshalJSON() ([]byte, error) {
+	type plain OrderExits
+	b, err := json.Marshal(plain(x))
+	if err != nil {
+		return nil, err
+	}
+	return withNulls(b, map[string]bool{"stop_loss": x.StopLossNull && x.StopLoss == nil})
 }
 
 // OrderExitsTakeProfit: see the API reference.
@@ -2844,6 +2888,18 @@ type ChangePriceAlert struct {
 	Price *Decimal `json:"price,omitempty"`
 	// A new note; null removes it.
 	Note *string `json:"note,omitempty"`
+	// NoteNull sends note as null (the API: null removes it); a Note set is sent instead.
+	NoteNull bool `json:"-"`
+}
+
+// MarshalJSON sends a field marked <Field>Null as null.
+func (x ChangePriceAlert) MarshalJSON() ([]byte, error) {
+	type plain ChangePriceAlert
+	b, err := json.Marshal(plain(x))
+	if err != nil {
+		return nil, err
+	}
+	return withNulls(b, map[string]bool{"note": x.NoteNull && x.Note == nil})
 }
 
 // DeletedAlert: see the API reference.
@@ -2898,6 +2954,9 @@ type AccountRiskOrNull struct {
 	AsOf int64 `json:"as_of"`
 	// Some figures are older than usual (the engine was busy).
 	Stale bool `json:"stale"`
+	// The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight
+	// New York.
+	Paused bool `json:"paused"`
 	// The balance.
 	Balance Decimal `json:"balance"`
 	// The balance plus the open P&L at the market price.

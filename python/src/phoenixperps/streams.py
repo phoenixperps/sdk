@@ -30,7 +30,7 @@ import json
 import logging
 import random
 from collections import OrderedDict, deque
-from typing import Any, Deque, Dict, List, Optional, Tuple
+from typing import Any, Deque, Dict, List, Optional, Set, Tuple
 from urllib.parse import quote
 
 from . import _errors as E
@@ -40,7 +40,7 @@ LOG = logging.getLogger("phoenixperps")
 
 
 def _backoff(n: int) -> float:
-    return random.random() * min(30.0, 0.5 * 2 ** n)
+    return float(random.random() * min(30.0, 0.5 * 2 ** n))
 
 
 def _connect(url: str, client: Any) -> Any:
@@ -73,10 +73,10 @@ class AccountStream:
         self.risks: Dict[str, Any] = {}
         self._seen: "OrderedDict[str, None]" = OrderedDict()
         self._queue: "asyncio.Queue[Any]" = asyncio.Queue()
-        self._task: Optional[asyncio.Task] = None
+        self._task: "Optional[asyncio.Task[None]]" = None
         self._closed = False
         self._ws: Any = None
-        self._dropped: set = set()  # accounts unsubscribed: no later subscribe names them
+        self._dropped: Set[str] = set()  # accounts unsubscribed: no later subscribe names them
         # the asks waiting, by the answer's type: the account stream's carry no id, their answers come in order
         self._asks: Dict[str, Deque[Tuple[Any, Dict[str, Any]]]] = {"pong": deque(), "unsubscribed": deque()}
         self.ready = asyncio.Event()
@@ -265,7 +265,7 @@ class MarketStream:
         self._open = asyncio.Event()
         self._pending: Dict[int, Any] = {}  # id -> (future, message): sent again on the next connection until answered
         self._id = 0
-        self._task: Optional[asyncio.Task] = None
+        self._task: "Optional[asyncio.Task[None]]" = None
         self._closed = False
         self.limits: Any = None
 
@@ -312,11 +312,17 @@ class MarketStream:
                             attempt = 0
                             heartbeat = (f.get("heartbeat_ms") or 15000) / 1000
                             self.limits = f.get("limits")
-                            # every subscription the server took, again, as it was; then the asks still waiting
+                            # every subscription the server took, again, as it was, at most symbols_per_subscribe a
+                            # message (Q16); then the asks still waiting; at most messages_per_s a second
+                            again: List[Dict[str, Any]] = []
                             for s in self._subs.values():
-                                self._id += 1
-                                await ws.send(json.dumps({"op": "subscribe", "id": self._id, "channel": s["channel"], **({} if s["channel"] == "status" else {"symbols": sorted(s["symbols"])}), **s["params"]}))
-                            for _, msg in list(self._pending.values()):
+                                for part in ([None] if s["channel"] == "status" else self._parts(sorted(s["symbols"]))):
+                                    self._id += 1
+                                    again.append({"op": "subscribe", "id": self._id, "channel": s["channel"], **({} if part is None else {"symbols": part}), **s["params"]})
+                            per_s = int((self.limits or {}).get("messages_per_s") or 20)
+                            for i, msg in enumerate(again + [m for _, m in list(self._pending.values())]):
+                                if i and i % per_s == 0:
+                                    await asyncio.sleep(1.0)
                                 await ws.send(json.dumps(msg))
                             self._open.set()
                         elif t in ("subscribed", "unsubscribed", "error", "list", "pong"):
@@ -326,6 +332,10 @@ class MarketStream:
                                     fut.set_exception(E.ValidationError(f.get("message") or f.get("code"), code=f.get("code") or "stream_refused", details=f.get("details")))
                                 else:
                                     fut.set_result(f)
+                            elif fut is None and t == "error":
+                                # an error no ask is waiting for (a subscribe made again, refused): told to the reader as
+                                # a frame, never dropped (Q16)
+                                await self._put(f)
                         elif t != "heartbeat":
                             await self._put(f)
             except asyncio.CancelledError:
@@ -377,6 +387,11 @@ class MarketStream:
                 pass
         return await fut
 
+    def _parts(self, symbols: List[str]) -> List[List[str]]:
+        """The symbols in messages of at most the hello's symbols_per_subscribe (50 before the hello)."""
+        per = int((self.limits or {}).get("symbols_per_subscribe") or 50)
+        return [symbols[i:i + per] for i in range(0, len(symbols), per)] or [[]]
+
     def _drop(self, channel: str, symbols: Optional[List[str]], interval: Any) -> None:
         """The symbols (none: all) leave every subscription of the channel (candles: of that interval, none: of every
         interval; status: it goes whole), whatever its other options: the server knows a subscription by channel and
@@ -389,7 +404,13 @@ class MarketStream:
                     del self._subs[key]
 
     async def subscribe(self, channel: str, symbols: Optional[List[str]] = None, **params: Any) -> Any:
-        reply = await self._ask({"op": "subscribe", "channel": channel, **({} if channel == "status" else {"symbols": symbols or []}), **params})
+        # more symbols than one message holds go in parts (Q16), answered as one: every part's symbols and refusals
+        if channel == "status":
+            reply = await self._ask({"op": "subscribe", "channel": channel, **params})
+        else:
+            replies = await asyncio.gather(*(self._ask({"op": "subscribe", "channel": channel, "symbols": part, **params}) for part in self._parts(list(symbols or []))))
+            reply = replies[0] if len(replies) == 1 else {**replies[0], "symbols": [x for r in replies for x in (r.get("symbols") or [])],
+                                                          "rejected": [x for r in replies for x in (r.get("rejected") or [])]}
         # what the server took (its reply's symbols) is made again after a reconnect, with these options (the latest
         # ones, as on the server); what it refused (rejected) is not
         got = reply.get("symbols") if isinstance(reply, dict) else None

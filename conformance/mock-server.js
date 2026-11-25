@@ -5,7 +5,7 @@ const http = require('node:http');
 /*
  * The conformance mock (docs/BEHAVIOUR.md): it plays one scenario's exchanges in order and keeps every request it got,
  * so each SDK's runner can be held to the same answers. Control (any language's runner):
- *   POST /__scenario  { exchanges: [{ respond: { status, headers, body, delay_ms } }],
+ *   POST /__scenario  { exchanges: [{ respond: { status, headers, body, delay_ms } | { drop: true } }],
  *                       connections: [[ step, ... ], ...] }      load one, forget the requests
  *   GET  /__requests  [{ method, path, query, headers, body, at, ws, messages }]
  * Every other request takes the next exchange (or 599 when none is left: the SDK sent one too many). A WebSocket
@@ -115,6 +115,8 @@ function start({ port = 0 } = {}) {
         return res.end(JSON.stringify({ error: { code: 'unexpected_request', message: 'no exchange left' } }));
       }
       const r = x.respond;
+      // the API took the call and its answer was lost: the connection closes with nothing written
+      if (r.drop) return req.socket.destroy();
       const send = () => {
         const isText = typeof r.body === 'string';
         res.writeHead(r.status, { 'content-type': isText ? 'text/html' : 'application/json', 'x-request-id': 'req_conformance', ...(r.headers || {}) });

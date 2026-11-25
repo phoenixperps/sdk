@@ -10,7 +10,7 @@ namespace PhoenixPerps;
 public static partial class SdkInfo
 {
     /// <summary>The version of the API spec.</summary>
-    public const string SpecVersion = "1.0.0";
+    public const string SpecVersion = "1.1.0";
 
     internal static readonly IReadOnlyDictionary<string, string> Servers = new Dictionary<string, string>
     {

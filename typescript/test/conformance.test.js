@@ -19,6 +19,7 @@ test.after(() => server.stop());
 
 /** The SDK call a scenario names, its arguments in the generated method's order (path parameters, body, query, options). */
 function invoke(client, call) {
+  if (call.raw) return client.request(call.raw.method, call.raw.path, undefined, call.raw.body);
   const seen = {};
   const recorder = { _one: (o, c) => Object.assign(seen, { o, c }), _page: (o, c) => Object.assign(seen, { o, c }) };
   resources(recorder)[call.resource][call.method]();
@@ -39,7 +40,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 for (const sc of S.scenarios) {
   test(sc.name, async () => {
     await fetch(`${server.url}/__scenario`, { method: 'POST', body: JSON.stringify({ exchanges: sc.exchanges }) });
-    const c = new sdk.PhoenixPerps({ apiKey: S.key, baseUrl: `${server.url}${(sc.client && sc.client.base_url_suffix) || ''}`, maxRetries: 2 });
+    const logs = [];
+    const logger = { warn: (m, d) => logs.push(`${m} ${JSON.stringify(d || {})}`), info() {}, debug() {}, error() {} };
+    const c = new sdk.PhoenixPerps({ apiKey: S.key, baseUrl: `${server.url}${(sc.client && sc.client.base_url_suffix) || ''}`, maxRetries: 2, logger });
     let result;
     let error = null;
     let items = null;
@@ -72,6 +75,8 @@ for (const sc of S.scenarios) {
     if (x.cursors) assert.deepEqual(got.map((r) => r.query.cursor ?? null), x.cursors);
     if (x.first_body) assert.deepEqual(pick(got[0].body, x.first_body), x.first_body);
     if (x.min_elapsed_ms) assert.ok(got.at(-1).at - got[0].at >= x.min_elapsed_ms, `waited ${got.at(-1).at - got[0].at} ms`);
+    if (x.max_elapsed_ms) assert.ok(got.at(-1).at - got[0].at <= x.max_elapsed_ms, `waited ${got.at(-1).at - got[0].at} ms`);
+    if (x.logged_deprecation) assert.ok(logs.some((l) => /deprecated/.test(l)), `logged: ${logs.join(' | ')}`);
     for (const check of x.checks || []) {
       if (check === 'bearer') assert.equal(got[0].headers.authorization, `Bearer ${S.key}`);
       if (check === 'user_agent') assert.match(got[0].headers['user-agent'], /^phoenixperps-typescript\/\d+\.\d+\.\d+ \(.+\) spec\//);
@@ -105,6 +110,9 @@ const LOCAL = {
     assert.throws(() => sdk.Webhooks.verify(v.body, at(v.signature), v.secret, 300, v.now_ms + 1000000), refused('stale'));
     assert.throws(() => sdk.Webhooks.verify(`${v.body} `, at(v.signature), v.secret, 300, v.now_ms), refused('bad_signature'));
     assert.throws(() => sdk.Webhooks.verify(v.body, {}, v.secret, 300, v.now_ms), refused('missing_headers'));
+    // no usable secret: a ValidationError, never a check against an empty key; empty ones are dropped
+    for (const secrets of v.no_secret.secrets) assert.throws(() => sdk.Webhooks.verify(v.body, at(v.signature), secrets, 300, v.now_ms), (e) => e instanceof sdk.ValidationError && e.code === v.no_secret.error_code, JSON.stringify(secrets));
+    assert.equal(sdk.Webhooks.verify(v.body, at(v.signature), v.no_secret.with_one, 300, v.now_ms).id, 'evt_01JAB7Q8XK4M2N5P7R9S3T5V7W');
     for (const x of v.extra) {
       const verify = () => sdk.Webhooks.verify(x.body, at(x.signature, x.timestamp), v.secret, 300, v.now_ms);
       if (x.error) assert.throws(verify, refused(x.error), x.name);
@@ -212,6 +220,7 @@ for (const sc of S.streams) {
     };
     if (x.first_message) assert.deepEqual(shallow(reqs[0].messages[0], x.first_message), x.first_message);
     if (x.resubscribe) assert.deepEqual(sent(reqs.at(-1).messages[0]), x.resubscribe);
+    if (x.subscribe_sizes) for (const r of reqs) assert.deepEqual(r.messages.filter((msg) => msg.op === 'subscribe').map((msg) => msg.symbols.length), x.subscribe_sizes);
     if (x.unsubscribe_sent) assert.deepEqual(sent(reqs.flatMap((r) => r.messages).find((msg) => msg.op === 'unsubscribe')), x.unsubscribe_sent);
   });
 }

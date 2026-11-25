@@ -9,7 +9,7 @@
     "runtime": "Python 3.10+",
     "source": "python",
     "version": "1.2.0",
-    "spec": "1.0.0"
+    "spec": "1.1.0"
   },
   {
     "id": "typescript",
@@ -21,7 +21,7 @@
     "runtime": "Node 22+",
     "source": "typescript",
     "version": "1.2.0",
-    "spec": "1.0.0"
+    "spec": "1.1.0"
   },
   {
     "id": "go",
@@ -33,7 +33,7 @@
     "runtime": "Go 1.23+",
     "source": "go",
     "version": "1.2.0",
-    "spec": "1.0.0"
+    "spec": "1.1.0"
   },
   {
     "id": "csharp",
@@ -45,7 +45,7 @@
     "runtime": ".NET 8+",
     "source": "csharp",
     "version": "1.2.0",
-    "spec": "1.0.0"
+    "spec": "1.1.0"
   },
   {
     "id": "java",
@@ -57,7 +57,7 @@
     "runtime": "Java 17+",
     "source": "java",
     "version": "1.2.0",
-    "spec": "1.0.0"
+    "spec": "1.1.0"
   },
   {
     "id": "rust",
@@ -69,7 +69,7 @@
     "runtime": "Rust 1.85+",
     "source": "rust",
     "version": "1.2.0",
-    "spec": "1.0.0"
+    "spec": "1.1.0"
   },
   {
     "id": "php",
@@ -81,6 +81,6 @@
     "runtime": "PHP 8.2+",
     "source": "php",
     "version": "1.2.0",
-    "spec": "1.0.0"
+    "spec": "1.1.0"
   }
 ]

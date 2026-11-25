@@ -74,6 +74,9 @@ jobs:
         env:
           MYPYPATH: src
         run: python -m mypy src/phoenixperps tests/snippets_check.py examples
+      - name: the package under mypy --strict (Q90)
+        working-directory: python/src
+        run: python -m mypy --strict -p phoenixperps
 
   go:
     runs-on: ubuntu-latest

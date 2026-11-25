@@ -45,8 +45,10 @@ function print(ir) {
     for (const r of ir.resources) {
       const name = `${asyncFlavour ? 'Async' : ''}${pascal(r.name)}Resource`;
       const methods = r.operations.map((o) => {
-        // a body is any mapping in the API's words: a plain dict, or the TypedDict of phoenixperps.types
-        const params = ['self', ...o.pathParams.map((p) => `${arg(p.name)}: str`), ...(o.body ? [`body: ${o.bodyRequired ? '' : 'Optional['}Mapping[str, Any]${o.bodyRequired ? '' : '] = None'}`] : []), ...(o.query.length ? ['query: Optional[Dict[str, Any]] = None'] : []), '**opts: Any'];
+        // a body is its TypedDict of phoenixperps.types (its required fields Required: Q90) or any mapping, as a
+        // program builds it (a dict of its own type-checks, as before)
+        const bodyType = o.body && typedNames.has(o.body) ? `Union[types.${o.body}, Mapping[str, Any]]` : 'Mapping[str, Any]';
+        const params = ['self', ...o.pathParams.map((p) => `${arg(p.name)}: str`), ...(o.body ? [`body: ${o.bodyRequired ? bodyType : `Optional[${bodyType}] = None`}`] : []), ...(o.query.length ? ['query: Optional[Dict[str, Any]] = None'] : []), '**opts: Any'];
         const call = [`OPS[${pyStr(o.id)}]`, o.pathParams.length ? `path={${o.pathParams.map((p) => `${pyStr(p.name)}: ${arg(p.name)}`).join(', ')}}` : null, o.body ? 'body=body' : null, o.query.length ? 'query=query' : null, 'opts=opts'].filter(Boolean).join(', ');
         const kind = o.list ? '_page' : '_one';
         // the answer's TypedDict (phoenixperps.types); an async list answers its call (awaited: the AsyncPage; async for:
@@ -54,8 +56,9 @@ function print(ir) {
         // the answer, as every SDK types it (the plain call sends none)
         const item = o.response && typedNames.has(o.response) ? `types.${o.response}` : 'Any';
         const ret = o.list ? (asyncFlavour ? `_AsyncPageCall[${item}]` : `Page[${item}]`) : item;
-        if (asyncFlavour && !o.list) return `    async def ${snake(o.method)}(${params.join(', ')}) -> ${ret}:\n${pyDoc(o.summary, '        ')}        return await self._c.${kind}(${call})\n`;
-        return `    def ${snake(o.method)}(${params.join(', ')}) -> ${ret}:\n${pyDoc(o.summary, '        ')}        return self._c.${kind}(${call})\n`;
+        // the transport answers Any: each method says what it is (mypy --strict: no Any returned, Q90)
+        if (asyncFlavour && !o.list) return `    async def ${snake(o.method)}(${params.join(', ')}) -> ${ret}:\n${pyDoc(o.summary, '        ')}        return cast(${pyStr(ret)}, await self._c.${kind}(${call}))\n`;
+        return `    def ${snake(o.method)}(${params.join(', ')}) -> ${ret}:\n${pyDoc(o.summary, '        ')}        return cast(${pyStr(ret)}, self._c.${kind}(${call}))\n`;
       });
       classes.push(`class ${name}:\n    def __init__(self, client: Any) -> None:\n        self._c = client\n\n${methods.join('\n')}`);
     }
@@ -65,7 +68,7 @@ function print(ir) {
   const declared = (prefix) => ir.resources.map((r) => `    ${snake(r.name)}: ${prefix}${pascal(r.name)}Resource`).join('\n');
   files['python/src/phoenixperps/_gen.py'] = `${HEAD}from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Union, cast
 
 if TYPE_CHECKING:
     from . import types
@@ -96,14 +99,22 @@ class AsyncResources:
 ${declared('Async')}
 `;
   const typed = Object.entries(ir.schemas).filter(([, s]) => s.properties).map(([name, s]) => {
-    const fields = Object.entries(s.properties).filter(([k]) => /^[a-z_][a-z0-9_]*$/i.test(k) && !PY_KEYWORDS.has(k)).map(([k, v]) => `    ${k}: ${pyType(v)}`);
+    // the spec's required fields are Required (a body without them is refused by the type checker too: Q90)
+    const required = new Set(s.required || []);
+    const fields = Object.entries(s.properties).filter(([k]) => /^[a-z_][a-z0-9_]*$/i.test(k) && !PY_KEYWORDS.has(k)).map(([k, v]) => `    ${k}: ${required.has(k) ? `Required[${pyType(v)}]` : pyType(v)}`);
     return `class ${name}(TypedDict, total=False):\n${pyDoc(s.description, '    ')}${fields.length ? fields.join('\n') : '    pass'}\n`;
   });
   // public: from phoenixperps.types import Order (what each call answers, and the bodies it takes)
   files['python/src/phoenixperps/types.py'] = `${HEAD}from __future__ import annotations
 
+import sys
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, TypedDict, Union
+
+if sys.version_info >= (3, 11):
+    from typing import Required
+else:  # 3.10
+    from typing_extensions import Required
 
 __all__ = [${[...typedNames].map(pyStr).join(', ')}]
 

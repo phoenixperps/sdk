@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.phoenixperpsfunding.sdk.PhoenixPerpsException.ApiConnectionException;
 import com.phoenixperpsfunding.sdk.PhoenixPerpsException.ApiTimeoutException;
 import com.phoenixperpsfunding.sdk.PhoenixPerpsException.AuthenticationException;
+import com.phoenixperpsfunding.sdk.PhoenixPerpsException.NotModifiedException;
 import com.phoenixperpsfunding.sdk.PhoenixPerpsException.ServerException;
 import com.phoenixperpsfunding.sdk.PhoenixPerpsException.ValidationException;
 import com.phoenixperpsfunding.sdk.gen.Meta;
@@ -56,7 +57,7 @@ import java.util.regex.Pattern;
  */
 public final class PhoenixPerpsClient implements Resources.Access {
     /** This SDK's version (lockstep with every other Phoenix Perpetuals SDK). */
-    public static final String SDK_VERSION = "1.2.0";
+    public static final String SDK_VERSION = "1.3.0";
 
     private static final Pattern PREFIX = Pattern.compile("^(ppk|ppo)_(live|test)_");
     static final Set<Integer> RETRY_STATUS = Set.of(429, 500, 502, 503, 504);
@@ -75,11 +76,20 @@ public final class PhoenixPerpsClient implements Resources.Access {
     private final Core core;
     private final Resources.All resources;
     private final Set<String> warned = new HashSet<>();
-    private final Map<String, RateLimitState> windows = new HashMap<>(); // per budget: an operation's x-pp-scope
+    // per budget: the operation's scope and the bucket that answered ("trade:bulk"); the budgets each operation met
+    private final Map<String, RateLimitState> windows = new HashMap<>();
+    private final Map<String, Set<String>> met = new HashMap<>();
     private RateLimitState rateLimit; // the last answer's
 
-    /** What the last answer of a budget said of its rate-limit window. */
-    private record RateLimitState(int limit, int remaining, Instant resetAt) {
+    /** What the last answer of a budget said of its rate-limit window; nextAt: when its next request comes back. */
+    private record RateLimitState(int limit, int remaining, Instant resetAt, String scope, Instant nextAt) {
+    }
+
+    /**
+     * What the last answer said of its rate-limit window: limit (a minute), remaining, resetAt (when it is full again)
+     * and scope (the bucket that answered: key, bulk, account_orders...), as C#'s RateLimit (Q103).
+     */
+    public record RateLimit(int limit, int remaining, Instant resetAt, String scope) {
     }
 
     private PhoenixPerpsClient(Builder b) {
@@ -224,12 +234,27 @@ public final class PhoenixPerpsClient implements Resources.Access {
         return mask(key);
     }
 
-    /** The requests the last answer said were left in the window (null before the first answer). */
+    /** What the last answer said of its rate-limit window (null before the first answer). */
+    public synchronized RateLimit rateLimit() {
+        return rateLimit == null ? null : new RateLimit(rateLimit.limit(), rateLimit.remaining(), rateLimit.resetAt(), rateLimit.scope());
+    }
+
+    /**
+     * The requests the last answer said were left in the window (null before the first answer).
+     *
+     * @deprecated rateLimit().remaining()
+     */
+    @Deprecated
     public synchronized Integer rateLimitRemaining() {
         return rateLimit == null ? null : rateLimit.remaining();
     }
 
-    /** When the rate-limit window starts again (null when unknown). */
+    /**
+     * When the rate-limit window is full again (null when unknown).
+     *
+     * @deprecated rateLimit().resetAt()
+     */
+    @Deprecated
     public synchronized Instant rateLimitResetAt() {
         return rateLimit == null ? null : rateLimit.resetAt();
     }
@@ -266,9 +291,13 @@ public final class PhoenixPerpsClient implements Resources.Access {
             throw new ValidationException("invalid_request", "The path starts with /.", null);
         }
         String m = method.toUpperCase(Locale.ROOT);
-        Transport.Operation known = route(m, path);
+        // a known route keeps its Idempotency-Key (the same on every attempt), its retries and its budget (Q39)
+        Transport.Operation known = route(m, path.split("\\?", 2)[0]);
         boolean retrySafe = "GET".equals(m) || (known != null && known.retrySafe());
-        return core.send(new Transport.Operation("request", m, path, options != null && options.idempotencyKey != null, retrySafe, null, known == null ? null : known.scope()), null, query, body, options);
+        boolean idempotent = (options != null && options.idempotencyKey != null) || (known != null && known.idempotent());
+        // a String body is the JSON as given, sent as it is (Q40), never encoded again as a JSON string
+        Object sent = body instanceof String text ? new RawJson(text) : body;
+        return core.send(new Transport.Operation(known == null ? "request" : known.id(), m, path, idempotent, retrySafe, null, known == null ? null : known.scope()), null, query, sent, options);
     }
 
     /** The operation of the spec for this method and path (the most literal segments win), or null. */
@@ -427,20 +456,26 @@ public final class PhoenixPerpsClient implements Resources.Access {
 
     /** The transport of the resources, kept off the client's own surface. */
     private final class Core implements Transport {
-        // the window an operation draws from: its budget (one for every operation whose budget is not known)
-        private String budget(Operation op) {
-            return op.scope() == null ? "" : op.scope();
+        private String who(Operation op) {
+            return (op.scope() == null ? "" : op.scope()) + "|" + op.id();
         }
 
+        // the next request of a budget this operation met with nothing left in it, when under a minute (Q15): never the
+        // whole window, never a bucket only other operations draw on
         private void preWait(Operation op) {
-            RateLimitState r;
+            Instant until = null;
             synchronized (PhoenixPerpsClient.this) {
-                r = windows.get(budget(op));
+                for (String b : met.getOrDefault(who(op), Set.of())) {
+                    RateLimitState r = windows.get(b);
+                    if (r != null && r.nextAt() != null && (until == null || r.nextAt().isAfter(until))) {
+                        until = r.nextAt();
+                    }
+                }
             }
-            if (r == null || r.remaining() > 0 || r.resetAt() == null) {
+            if (until == null) {
                 return;
             }
-            Duration wait = Duration.between(Instant.now(), r.resetAt());
+            Duration wait = Duration.between(Instant.now(), until);
             if (!wait.isNegative() && wait.compareTo(Duration.ofMinutes(1)) < 0) {
                 sleep(wait);
             }
@@ -470,19 +505,28 @@ public final class PhoenixPerpsClient implements Resources.Access {
             }
             int remaining = 0;
             try {
-                remaining = Integer.parseInt(h.firstValue("x-ratelimit-remaining").orElse("0"));
+                remaining = (int) Double.parseDouble(h.firstValue("x-ratelimit-remaining").orElse("0"));
             } catch (NumberFormatException e) {
                 remaining = 0;
             }
+            double perMin;
+            try {
+                perMin = Double.parseDouble(limit);
+            } catch (NumberFormatException e) {
+                perMin = 0;
+            }
+            String scope = h.firstValue("x-ratelimit-scope").orElse(null);
+            // with nothing left, its next request comes back after a 429's Retry-After, else 60 s / the per-minute limit
+            Instant nextAt = null;
+            if (remaining <= 0) {
+                Duration after = retryAfterOf(h);
+                nextAt = Instant.now().plus(after != null ? after : perMin > 0 ? Duration.ofMillis((long) (60000 / perMin)) : Duration.ZERO);
+            }
+            String budget = (op.scope() == null ? "" : op.scope()) + ":" + (scope == null ? "" : scope);
             synchronized (PhoenixPerpsClient.this) {
-                int lim;
-                try {
-                    lim = Integer.parseInt(limit);
-                } catch (NumberFormatException e) {
-                    lim = 0;
-                }
-                rateLimit = new RateLimitState(lim, remaining, resetAt);
-                windows.put(budget(op), rateLimit);
+                rateLimit = new RateLimitState((int) perMin, remaining, resetAt, scope, nextAt);
+                windows.put(budget, rateLimit);
+                met.computeIfAbsent(who(op), k -> new HashSet<>()).add(budget);
             }
         }
 
@@ -573,6 +617,11 @@ public final class PhoenixPerpsClient implements Resources.Access {
                 PhoenixPerpsException failure = null;
                 try {
                     res = exchange(rb.build(), t);
+                } catch (java.net.http.HttpConnectTimeoutException e) {
+                    // the HttpClient's own connect timeout fired, not this call's: named as it is (Q99)
+                    String within = http.connectTimeout().map(d -> d.toMillis() + " ms").orElse("its connect timeout");
+                    failure = new ApiTimeoutException("timeout", "No connection within the HttpClient's connect timeout (" + within + ").", e);
+                    failure.idempotencyKey = idem;
                 } catch (HttpTimeoutException e) {
                     failure = new ApiTimeoutException("timeout", "No answer within " + t.toMillis() + " ms.", e);
                     failure.idempotencyKey = idem;
@@ -581,7 +630,7 @@ public final class PhoenixPerpsClient implements Resources.Access {
                     failure.idempotencyKey = idem;
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    throw new ApiConnectionException("interrupted", "The call was interrupted.", e);
+                    throw cancelled(e);
                 }
                 if (res != null) {
                     remember(op, res.headers());
@@ -594,6 +643,13 @@ public final class PhoenixPerpsClient implements Resources.Access {
                         return raw;
                     }
                     PhoenixPerpsException err = errorFrom(res.statusCode(), res.headers(), res.body(), idem);
+                    // a cancel answered as already canceled or expired: the order no longer works, as asked (its own
+                    // lost answer asked again, or a cancel made elsewhere), and the answer is that order (Q14); filled
+                    // still fails
+                    if ("cancelOrder".equals(op.id()) && "order_not_working".equals(err.code()) && err.details() != null
+                            && err.details().has("status") && ("canceled".equals(err.details().get("status").asText()) || "expired".equals(err.details().get("status").asText()))) {
+                        return send(GET_ORDER, path, null, null, o.withIdempotencyKey(null));
+                    }
                     Duration ra = err.retryAfter();
                     if (!(safe && attempt < max && err.retryable()) || (ra != null && ra.compareTo(RETRY_AFTER_MAX) > 0)) {
                         throw err;
@@ -682,6 +738,11 @@ public final class PhoenixPerpsClient implements Resources.Access {
                     if (!started) {
                         started = true;
                         page = first.get();
+                        // a 304 to the caller's If-None-Match: no page at all, said so rather than read as an empty list
+                        // (Q102)
+                        if (page == null) {
+                            throw new NotModifiedException();
+                        }
                     }
                     while (page != null && index >= page.data().size()) {
                         page = page.nextPage();
@@ -702,6 +763,9 @@ public final class PhoenixPerpsClient implements Resources.Access {
         }
     }
 
+    // the order read a cancel answered as already canceled reads back (the generated constants are the gen package's)
+    private static final Transport.Operation GET_ORDER = Resources.Ops.ALL.stream().filter(op -> "getOrder".equals(op.id())).findFirst().orElseThrow();
+
     private static Duration jitter(int attempt) {
         return Duration.ofMillis((long) (ThreadLocalRandom.current().nextDouble() * Math.min(8000, 500 * Math.pow(2, attempt))));
     }
@@ -711,7 +775,30 @@ public final class PhoenixPerpsClient implements Resources.Access {
             Thread.sleep(d.toMillis());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new ApiConnectionException("interrupted", "The call was interrupted.", e);
+            throw cancelled(e);
         }
+    }
+
+    // a deliberate stop (the thread interrupted): cancelled, never retryable, the interrupt flag kept (Q100)
+    static ApiConnectionException cancelled(InterruptedException e) {
+        ApiConnectionException x = new ApiConnectionException("cancelled", "The call was interrupted (the thread was asked to stop).", e);
+        x.retryable = false;
+        return x;
+    }
+
+    private static Duration retryAfterOf(HttpHeaders h) {
+        String v = h.firstValue("retry-after").orElse(null);
+        if (v == null || v.isEmpty()) {
+            return null;
+        }
+        try {
+            return Duration.ofMillis((long) (Double.parseDouble(v) * 1000));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /** JSON text given as a request's body, written as it is. */
+    record RawJson(@com.fasterxml.jackson.annotation.JsonRawValue @com.fasterxml.jackson.annotation.JsonValue String json) {
     }
 }

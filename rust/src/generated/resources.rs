@@ -33,7 +33,7 @@ pub(crate) mod ops {
     pub(crate) const LIST_ORDERS: Operation = Operation { id: "listOrders", method: "GET", path: "/v1/accounts/{account_id}/orders", idempotent: false, retry_safe: true, cursor: Some("cursor"), scope: "read" };
     pub(crate) const PLACE_ORDER: Operation = Operation { id: "placeOrder", method: "POST", path: "/v1/accounts/{account_id}/orders", idempotent: true, retry_safe: false, cursor: None, scope: "trade" };
     pub(crate) const GET_ORDER: Operation = Operation { id: "getOrder", method: "GET", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
-    pub(crate) const MODIFY_ORDER: Operation = Operation { id: "modifyOrder", method: "PATCH", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: false, retry_safe: false, cursor: None, scope: "trade" };
+    pub(crate) const MODIFY_ORDER: Operation = Operation { id: "modifyOrder", method: "PATCH", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: true, retry_safe: false, cursor: None, scope: "trade" };
     pub(crate) const CANCEL_ORDER: Operation = Operation { id: "cancelOrder", method: "DELETE", path: "/v1/accounts/{account_id}/orders/{order_id}", idempotent: false, retry_safe: true, cursor: None, scope: "trade" };
     pub(crate) const TEST_ORDER: Operation = Operation { id: "testOrder", method: "POST", path: "/v1/accounts/{account_id}/orders/test", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
     pub(crate) const CANCEL_ALL_ORDERS: Operation = Operation { id: "cancelAllOrders", method: "POST", path: "/v1/accounts/{account_id}/orders/cancel-all", idempotent: true, retry_safe: false, cursor: None, scope: "trade" };
@@ -42,7 +42,7 @@ pub(crate) mod ops {
     pub(crate) const SET_MARGIN: Operation = Operation { id: "setMargin", method: "PUT", path: "/v1/accounts/{account_id}/margin/{market}", idempotent: false, retry_safe: true, cursor: None, scope: "trade" };
     pub(crate) const LIST_EVENTS: Operation = Operation { id: "listEvents", method: "GET", path: "/v1/events", idempotent: false, retry_safe: true, cursor: Some("after"), scope: "read" };
     pub(crate) const GET_EXITS: Operation = Operation { id: "getExits", method: "GET", path: "/v1/accounts/{account_id}/positions/{market}/exits", idempotent: false, retry_safe: true, cursor: None, scope: "read" };
-    pub(crate) const SET_EXITS: Operation = Operation { id: "setExits", method: "PUT", path: "/v1/accounts/{account_id}/positions/{market}/exits", idempotent: false, retry_safe: true, cursor: None, scope: "trade" };
+    pub(crate) const SET_EXITS: Operation = Operation { id: "setExits", method: "PUT", path: "/v1/accounts/{account_id}/positions/{market}/exits", idempotent: true, retry_safe: true, cursor: None, scope: "trade" };
     pub(crate) const SET_ORDER_EXITS: Operation = Operation { id: "setOrderExits", method: "PUT", path: "/v1/accounts/{account_id}/orders/{order_id}/exits", idempotent: false, retry_safe: true, cursor: None, scope: "trade" };
     pub(crate) const CREATE_STRATEGY: Operation = Operation { id: "createStrategy", method: "POST", path: "/v1/accounts/{account_id}/strategies", idempotent: true, retry_safe: false, cursor: None, scope: "trade" };
     pub(crate) const LIST_STRATEGIES: Operation = Operation { id: "listStrategies", method: "GET", path: "/v1/accounts/{account_id}/strategies", idempotent: false, retry_safe: true, cursor: Some("cursor"), scope: "read" };

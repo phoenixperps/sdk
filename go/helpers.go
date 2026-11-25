@@ -236,6 +236,16 @@ func VerifyWebhookAt(raw []byte, header http.Header, secrets []string, tolerance
 	refused := func(code, message string) (*WebhookPayload, error) {
 		return nil, &Error{Kind: KindWebhookVerification, Code: code, Message: message}
 	}
+	// no usable secret (an unset variable read as ""): an error, never a check against an empty key (Q10)
+	keys := make([]string, 0, len(secrets))
+	for _, k := range secrets {
+		if k != "" {
+			keys = append(keys, k)
+		}
+	}
+	if len(keys) == 0 {
+		return nil, &Error{Kind: KindValidation, Code: "missing_secret", Message: "No webhook secret: give the endpoint's signing secret (ppwhsec_...)."}
+	}
 	if tolerance <= 0 {
 		tolerance = 300 * time.Second
 	}
@@ -248,7 +258,7 @@ func VerifyWebhookAt(raw []byte, header http.Header, secrets []string, tolerance
 		return refused("stale", "The delivery is too old (or the clock is off).")
 	}
 	given := strings.Split(sig, ",")
-	for _, secret := range secrets {
+	for _, secret := range keys {
 		mac := hmac.New(sha256.New, []byte(secret))
 		mac.Write([]byte(ts + "." + string(raw)))
 		want := []byte("sha256=" + hex.EncodeToString(mac.Sum(nil)))

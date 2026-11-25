@@ -17,6 +17,9 @@ public final class StatusAccountData {
     @JsonProperty("synced_at")
     private Long syncedAt;
 
+    @JsonProperty("state")
+    private StatusAccountDataState state;
+
     /** When your keys and accounts were last confirmed with the website. */
     public Long syncedAt() {
         return syncedAt;
@@ -25,6 +28,17 @@ public final class StatusAccountData {
     /** Sets synced_at. */
     public StatusAccountData syncedAt(Long value) {
         this.syncedAt = value;
+        return this;
+    }
+
+    /** Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable). */
+    public StatusAccountDataState state() {
+        return state;
+    }
+
+    /** Sets state. */
+    public StatusAccountData state(StatusAccountDataState value) {
+        this.state = value;
         return this;
     }
 
@@ -48,16 +62,17 @@ public final class StatusAccountData {
             return false;
         }
         StatusAccountData o = (StatusAccountData) other;
-        return Objects.equals(syncedAt, o.syncedAt);
+        return Objects.equals(syncedAt, o.syncedAt)
+            && Objects.equals(state, o.state);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(syncedAt);
+        return Objects.hash(syncedAt, state);
     }
 
     @Override
     public String toString() {
-        return "StatusAccountData{" + "synced_at=" + syncedAt + "}";
+        return "StatusAccountData{" + "synced_at=" + syncedAt + ", state=" + state + "}";
     }
 }

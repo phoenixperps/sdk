@@ -112,14 +112,24 @@ async fn scenario(url: String, sc: Value) {
     let name = sc["name"].as_str().unwrap();
     load(&url, json!({ "exchanges": sc["exchanges"] })).await;
     let base = format!("{url}{}", sc["client"]["base_url_suffix"].as_str().unwrap_or(""));
-    let c = Client::builder().api_key(key()).base_url(base).max_retries(2).build().unwrap();
+    let logs: Arc<Mutex<Vec<String>>> = Arc::default();
+    let sink = logs.clone();
+    let c = Client::builder().api_key(key()).base_url(base).max_retries(2).logger(move |_, m| sink.lock().unwrap().push(m.to_string())).build().unwrap();
     let x = &sc["expect"];
     let calls: Vec<Value> = sc.get("calls").and_then(Value::as_array).cloned().unwrap_or_else(|| vec![sc["call"].clone()]);
     let mut answer = None;
     let mut error = None;
     for call in &calls {
         // page_fields: the page itself (the dispatch table answers its data)
-        let r = if x.get("page_fields").is_some() { page(&c, call).await.map(Answer::Value) } else { dispatch(&c, &Call::new(call)).await };
+        let r = if let Some(raw) = call.get("raw") {
+            // the SDK's raw request
+            let body = raw.get("body").cloned();
+            c.request(raw["method"].as_str().unwrap(), raw["path"].as_str().unwrap(), &[], body.as_ref(), &RequestOptions::default()).await.map(|r| Answer::Value(serde_json::from_slice(&r.body).unwrap_or(Value::Null)))
+        } else if x.get("page_fields").is_some() {
+            page(&c, call).await.map(Answer::Value)
+        } else {
+            dispatch(&c, &Call::new(call)).await
+        };
         match r {
             Ok(a) => answer = Some(a),
             Err(e) => {
@@ -181,8 +191,15 @@ async fn scenario(url: String, sc: Value) {
     if let Some(fb) = x.get("first_body") {
         assert_eq!(fb, &pick(&got[0]["body"], fb), "{name}");
     }
+    let elapsed = got[got.len() - 1]["at"].as_i64().unwrap() - got[0]["at"].as_i64().unwrap();
     if let Some(me) = x.get("min_elapsed_ms").and_then(Value::as_i64) {
-        assert!(got[got.len() - 1]["at"].as_i64().unwrap() - got[0]["at"].as_i64().unwrap() >= me, "{name}: elapsed");
+        assert!(elapsed >= me, "{name}: elapsed {elapsed} ms");
+    }
+    if let Some(most) = x.get("max_elapsed_ms").and_then(Value::as_i64) {
+        assert!(elapsed <= most, "{name}: elapsed {elapsed} ms, at most {most}");
+    }
+    if x.get("logged_deprecation").and_then(Value::as_bool) == Some(true) {
+        assert!(logs.lock().unwrap().iter().any(|l| l.contains("deprecated")), "{name}: logged {:?}", logs.lock().unwrap());
     }
     for check in x.get("checks").and_then(Value::as_array).cloned().unwrap_or_default() {
         let h = &got[0]["headers"];
@@ -288,6 +305,12 @@ async fn stream(url: String, sc: Value) {
     if let Some(rs) = x.get("resubscribe") {
         assert_eq!(rs, &pick(&reqs[reqs.len() - 1]["messages"][0], rs), "{name}: the subscribe made again");
     }
+    if let Some(sizes) = x.get("subscribe_sizes") {
+        for (i, r) in reqs.iter().enumerate() {
+            let got: Vec<Value> = r["messages"].as_array().unwrap().iter().filter(|m| m["op"] == "subscribe").map(|m| json!(m["symbols"].as_array().map_or(0, Vec::len))).collect();
+            assert_eq!(sizes.as_array().unwrap(), &got, "{name}: subscribe sizes on connection {i}");
+        }
+    }
     if let Some(us) = x.get("unsubscribe_sent") {
         let sent = reqs[0]["messages"].as_array().unwrap().iter().find(|m| m["op"] == "unsubscribe").unwrap_or_else(|| panic!("{name}: an unsubscribe"));
         assert_eq!(us, &pick(sent, us), "{name}: the unsubscribe");
@@ -379,6 +402,15 @@ fn webhook_vectors() {
     assert_eq!("stale", fails(verify(s("body"), s("timestamp"), s("signature"), s("secret"), now + Duration::from_secs(1000))).1);
     assert_eq!("bad_signature", fails(verify(&format!("{} ", s("body")), s("timestamp"), s("signature"), s("secret"), now)).1);
     assert_eq!("missing_headers", fails(verify_webhook(s("body"), [("X-Phoenix-Signature", s("signature"))], &[s("secret")], None, Some(now))).1);
+    // no usable secret: a ValidationError, never a check against an empty key; empty ones are dropped (Q10)
+    let ns = &v["no_secret"];
+    for secrets in ns["secrets"].as_array().unwrap() {
+        let list: Vec<&str> = secrets.as_array().unwrap().iter().map(|x| x.as_str().unwrap()).collect();
+        let r = verify_webhook(s("body"), [("X-Phoenix-Timestamp", s("timestamp")), ("X-Phoenix-Signature", s("signature"))], &list, None, Some(now));
+        assert_eq!(("ValidationError", ns["error_code"].as_str().unwrap().to_string()), fails(r), "{secrets}");
+    }
+    let one: Vec<&str> = ns["with_one"].as_array().unwrap().iter().map(|x| x.as_str().unwrap()).collect();
+    assert_eq!("evt_01JAB7Q8XK4M2N5P7R9S3T5V7W", verify_webhook(s("body"), [("X-Phoenix-Timestamp", s("timestamp")), ("X-Phoenix-Signature", s("signature"))], &one, None, Some(now)).unwrap().id);
     for x in v["extra"].as_array().unwrap() {
         let r = verify(x["body"].as_str().unwrap(), x["timestamp"].as_str().unwrap(), x["signature"].as_str().unwrap(), s("secret"), now);
         match x.get("error") {

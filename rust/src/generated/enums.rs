@@ -378,6 +378,118 @@ impl<'de> Deserialize<'de> for StatusApi {
     }
 }
 
+/// Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy to take one (engine_busy). Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum StatusEngineWrites {
+    /// `operational`
+    Operational,
+    /// `degraded`
+    Degraded,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl StatusEngineWrites {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Operational => "operational",
+            Self::Degraded => "degraded",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for StatusEngineWrites {
+    fn from(s: &str) -> Self {
+        match s {
+            "operational" => Self::Operational,
+            "degraded" => Self::Degraded,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for StatusEngineWrites {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for StatusEngineWrites {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for StatusEngineWrites {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for StatusEngineWrites {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
+/// Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable). Open: a value from a newer API version is kept in `Other`.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum StatusAccountDataState {
+    /// `operational`
+    Operational,
+    /// `degraded`
+    Degraded,
+    /// A value this SDK version does not know yet.
+    Other(String),
+}
+
+impl StatusAccountDataState {
+    /// The value as the API writes it.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Operational => "operational",
+            Self::Degraded => "degraded",
+            Self::Other(s) => s,
+        }
+    }
+}
+
+impl From<&str> for StatusAccountDataState {
+    fn from(s: &str) -> Self {
+        match s {
+            "operational" => Self::Operational,
+            "degraded" => Self::Degraded,
+            other => Self::Other(other.to_string()),
+        }
+    }
+}
+
+impl Default for StatusAccountDataState {
+    fn default() -> Self {
+        Self::Other(String::new())
+    }
+}
+
+impl std::fmt::Display for StatusAccountDataState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+impl Serialize for StatusAccountDataState {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for StatusAccountDataState {
+    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        Ok(Self::from(String::deserialize(d)?.as_str()))
+    }
+}
+
 /// Whether the market trades now. Open: a value from a newer API version is kept in `Other`.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum MarketStatus {

@@ -114,6 +114,8 @@ pub struct StatusEngine {
     /// When the trading engine last started.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub started_at: Option<i64>,
+    /// Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy to take one (engine_busy).
+    pub writes: StatusEngineWrites,
     /// Fields this SDK version does not know yet (a newer API's), kept as they came.
     #[serde(flatten)]
     pub extra: Map<String, Value>,
@@ -126,6 +128,8 @@ pub struct StatusAccountData {
     /// When your keys and accounts were last confirmed with the website.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub synced_at: Option<i64>,
+    /// Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable).
+    pub state: StatusAccountDataState,
     /// Fields this SDK version does not know yet (a newer API's), kept as they came.
     #[serde(flatten)]
     pub extra: Map<String, Value>,
@@ -358,6 +362,8 @@ pub struct LimitsOrders {
     pub gtd_min_seconds: i64,
     /// The farthest, in days from now.
     pub gtd_max_days: i64,
+    /// The least time between two orders that can open a position on one account, in ms: the engine takes one about this often, so the next waits its turn (reduce-only orders and cancels never wait). A call that would wait past its reply time is refused 429 rate_limited, scope order_spacing.
+    pub open_spacing_ms: i64,
     /// Fields this SDK version does not know yet (a newer API's), kept as they came.
     #[serde(flatten)]
     pub extra: Map<String, Value>,
@@ -783,6 +789,8 @@ pub struct AccountRisk {
     pub as_of: i64,
     /// Some figures are older than usual (the engine was busy).
     pub stale: bool,
+    /// The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York.
+    pub paused: bool,
     /// The balance.
     pub balance: Decimal,
     /// The balance plus the open P&L at the market price.
@@ -2916,6 +2924,8 @@ pub struct AccountRiskOrNull {
     pub as_of: i64,
     /// Some figures are older than usual (the engine was busy).
     pub stale: bool,
+    /// The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York.
+    pub paused: bool,
     /// The balance.
     pub balance: Decimal,
     /// The balance plus the open P&L at the market price.

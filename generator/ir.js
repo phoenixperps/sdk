@@ -35,7 +35,9 @@ function build(spec) {
         response: itemRef ? refName(itemRef) : null,
         list,
         paging: o['x-pp-pagination'] || null,
-        idempotent: Boolean(o['x-pp-idempotent']),
+        // a write that takes an Idempotency-Key gets one, required or not: asked again after a lost answer, the API
+        // replays it instead of refusing the change it already made (QA 11-25: Q14)
+        idempotent: Boolean(o['x-pp-idempotent']) || params.some((p) => p.in === 'header' && p.name === 'Idempotency-Key'),
         retrySafe: Boolean(o['x-pp-retry-safe']) || http === 'get',
         scope: o['x-pp-scope'],
         summary: o.summary || '',

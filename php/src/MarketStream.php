@@ -78,7 +78,23 @@ final class MarketStream implements \IteratorAggregate
      */
     public function subscribe(string $channel, array $symbols = [], array $params = [], ?float $wait = null): array
     {
-        $reply = $this->ask(self::message('subscribe', $channel, $symbols, $params), $wait);
+        // at most the hello's symbols_per_subscribe a message (Q16), answered as one: every part's symbols and refusals
+        $per = max(1, (int) ($this->limits['symbols_per_subscribe'] ?? 50));
+        if (count($symbols) <= $per) {
+            $reply = $this->ask(self::message('subscribe', $channel, $symbols, $params), $wait);
+        } else {
+            $reply = null;
+            foreach (array_chunk($symbols, $per) as $part) {
+                $r = $this->ask(self::message('subscribe', $channel, $part, $params), $wait);
+                if ($reply === null) {
+                    $reply = $r;
+                    unset($reply['id']);
+                    $reply['symbols'] = $reply['rejected'] = [];
+                }
+                $reply['symbols'] = array_merge($reply['symbols'], $r['symbols'] ?? []);
+                $reply['rejected'] = array_merge($reply['rejected'], $r['rejected'] ?? []);
+            }
+        }
         $rejected = array_map(fn ($r) => strtoupper((string) ($r['symbol'] ?? '')), $reply['rejected'] ?? []);
         foreach ($channel === 'status' ? [''] : $symbols as $s) {
             if (!in_array(strtoupper($s), $rejected, true)) { // taken: made again after a reconnect, with these settings
@@ -158,9 +174,16 @@ final class MarketStream implements \IteratorAggregate
                 $again[$g] ??= ['channel' => $sub['channel'], 'params' => $sub['params'], 'symbols' => []];
                 $again[$g]['symbols'][] = $sub['symbol'];
             }
+            // at most messages_per_s a second: a replay of many never trips the server's 4009 (Q104)
+            $perSecond = max(1, (int) ($this->limits['messages_per_s'] ?? 20));
+            $sent = 0;
             foreach ($again as $a) {
                 foreach (array_chunk($a['symbols'], max(1, (int) ($this->limits['symbols_per_subscribe'] ?? 50))) as $symbols) {
+                    if ($sent > 0 && $sent % $perSecond === 0) {
+                        usleep(1000000);
+                    }
                     $s->send(self::message('subscribe', $a['channel'], $symbols, $a['params']) + ['id' => ++$this->id]);
+                    $sent++;
                 }
             }
             $this->socket = $s;

@@ -19,7 +19,8 @@ const invalid = (message) => new E.ValidationError({ code: 'invalid_parameter', 
 // (a number's own String, 1e-7, or '2.3e-2') is read exactly too, never through a float.
 const MAX_EXPONENT = 400; // past any double (1.8e308): a longer one is no price or size
 function frac(x) {
-  const s = typeof x === 'number' ? (Number.isFinite(x) ? String(x) : '') : String(x).trim();
+  // as written: a space around it is no decimal, as in every SDK (BEHAVIOUR.md, Q98)
+  const s = typeof x === 'number' ? (Number.isFinite(x) ? String(x) : '') : String(x);
   const m = /^(-?)(\d*)(?:\.(\d*))?(?:e([+-]?\d+))?$/i.exec(s);
   if (!m || (m[2] === '' && !m[3]) || (m[4] !== undefined && Math.abs(Number(m[4])) > MAX_EXPONENT)) throw invalid(`not a decimal: ${x}`);
   const digits = `${m[2] || '0'}${m[3] || ''}`;
@@ -34,7 +35,7 @@ const placesOf = (step) => {
 /** The fraction n/d as a multiple of `step` (down, up or nearest: a tie goes away from zero), as a decimal string. */
 function roundFrac({ n, d }, step, mode) {
   const st = frac(step);
-  if (st.n <= 0n) throw new RangeError(`the step ${step} is not above zero`);
+  if (st.n <= 0n) throw invalid(`the step ${step} is not above zero`);
   const num = n * st.d;
   const den = d * st.n; // x / step = num / den, den > 0
   let q = num / den; // truncated toward zero
@@ -117,6 +118,9 @@ const header = (headers, name) => {
 const Webhooks = {
   /** The WebhookPayload of a delivery, once its signature and time check out. `raw`: the body exactly as received. */
   verify(raw, headers, secrets, toleranceSeconds = 300, nowMs = Date.now()) {
+    // no usable secret (an unset variable read as ''): an error, never a check against an empty key (Q10)
+    const keys = [].concat(secrets ?? []).filter((x) => typeof x === 'string' && x !== '');
+    if (!keys.length) throw new E.ValidationError({ code: 'missing_secret', message: "No webhook secret: give the endpoint's signing secret (ppwhsec_...)." });
     const body = Buffer.isBuffer(raw) ? raw.toString('utf8') : String(raw);
     const ts = header(headers, 'x-phoenix-timestamp');
     const sig = header(headers, 'x-phoenix-signature');
@@ -124,7 +128,7 @@ const Webhooks = {
     if (!/^\d+$/.test(ts) || Math.abs(nowMs / 1000 - Number(ts)) > toleranceSeconds) throw new WebhookVerificationError('stale', 'The delivery is too old (or the clock is off).');
     // bytes against bytes: a non-ASCII character makes a value longer in bytes than in characters
     const given = sig.split(',').map((s) => Buffer.from(s.trim()));
-    const ok = [].concat(secrets).some((secret) => {
+    const ok = keys.some((secret) => {
       const want = Buffer.from(`sha256=${crypto.createHmac('sha256', secret).update(`${ts}.${body}`).digest('hex')}`);
       return given.some((g) => g.length === want.length && crypto.timingSafeEqual(g, want));
     });

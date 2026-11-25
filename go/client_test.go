@@ -111,13 +111,14 @@ func TestNotModified(t *testing.T) {
 }
 
 // The rate-limit wait is per budget (x-pp-scope): a trade window used up holds the next trade, never a read.
+// The next request of a used-up budget comes 60 s / Limit later (1 s at 60 a minute: Q15), and holds that budget only.
 func TestRateLimitPerBudget(t *testing.T) {
 	c, _ := NewClient(WithAPIKey(S.Key), WithBaseURL(mockURL))
 	ctx := context.Background()
 	trade := &operation{id: "trade", method: "POST", path: "/v1/t", scope: "trade"}
 	read := &operation{id: "read", method: "GET", path: "/v1/r", retrySafe: true, scope: "read"}
 	ok := json.RawMessage(`{"respond":{"status":200,"body":{"data":{}}}}`)
-	load(t, []json.RawMessage{json.RawMessage(`{"respond":{"status":200,"headers":{"x-ratelimit-limit":"10","x-ratelimit-remaining":"0","x-ratelimit-reset":"1"},"body":{"data":{}}}}`), ok, ok})
+	load(t, []json.RawMessage{json.RawMessage(`{"respond":{"status":200,"headers":{"x-ratelimit-limit":"60","x-ratelimit-remaining":"0","x-ratelimit-reset":"1"},"body":{"data":{}}}}`), ok, ok})
 	for _, call := range []struct {
 		op          *operation
 		least, most time.Duration
@@ -147,9 +148,14 @@ func TestDoRetrySafeRoute(t *testing.T) {
 	if _, err := c.Do(context.Background(), "DELETE", "/v1/accounts/A/orders/ord_1", nil, nil); err != nil || len(requests(t)) != 2 {
 		t.Fatalf("DELETE: %v after %d requests", err, len(requests(t)))
 	}
-	load(t, []json.RawMessage{unavailable, unavailable})
-	if _, err := c.Do(context.Background(), "POST", "/v1/accounts/A/orders", nil, map[string]string{"market": "BTC-USD"}); !errors.Is(err, ErrServer) || len(requests(t)) != 1 {
-		t.Fatalf("POST: %v after %d requests", err, len(requests(t)))
+	// a POST to a route that takes an Idempotency-Key carries one, the same when asked again (Q39)
+	load(t, []json.RawMessage{unavailable, json.RawMessage(`{"respond":{"status":201,"body":{"data":{"id":"ord_1"}}}}`)})
+	if _, err := c.Do(context.Background(), "POST", "/v1/accounts/A/orders", nil, map[string]string{"market": "BTC-USD"}); err != nil {
+		t.Fatalf("POST: %v", err)
+	}
+	got := requests(t)
+	if len(got) != 2 || got[0].Headers["idempotency-key"] == "" || got[0].Headers["idempotency-key"] != got[1].Headers["idempotency-key"] {
+		t.Fatalf("POST: %d requests, keys %q %q", len(got), got[0].Headers["idempotency-key"], got[len(got)-1].Headers["idempotency-key"])
 	}
 }
 
@@ -180,4 +186,38 @@ func TestPageHistoryComplete(t *testing.T) {
 	if err != nil || fills.HistoryComplete != nil {
 		t.Fatalf("fills: %+v %v", fills, err)
 	}
+}
+
+// Q88: a field the API takes as null ("null removes it") is sent as null when its Null flag is set, never otherwise.
+func TestExplicitNull(t *testing.T) {
+	b, _ := json.Marshal(ChangePriceAlert{NoteNull: true})
+	if string(b) != `{"note":null}` {
+		t.Fatalf("null: %s", b)
+	}
+	b, _ = json.Marshal(ChangePriceAlert{Price: Dec("62000")})
+	if string(b) != `{"price":"62000"}` {
+		t.Fatalf("absent: %s", b)
+	}
+	b, _ = json.Marshal(ChangePriceAlert{Note: Ptr("moved"), NoteNull: true})
+	if string(b) != `{"note":"moved"}` {
+		t.Fatalf("set wins: %s", b)
+	}
+}
+
+// Q63: Frames yields market data only; snapshot_end comes through Next.
+func TestFramesDataOnly(t *testing.T) {
+	m := &MarketStream{frames: make(chan MarketFrame, 4), done: make(chan struct{})}
+	m.frames <- MarketFrame{Type: "snapshot_end"}
+	m.frames <- MarketFrame{Type: "ticker", Symbol: "BTC-USD"}
+	close(m.frames)
+	for f, err := range m.Frames() {
+		if err != nil {
+			break
+		}
+		if f.Type != "ticker" {
+			t.Fatalf("frame %s", f.Type)
+		}
+		return
+	}
+	t.Fatal("no frame")
 }

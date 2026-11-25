@@ -49,7 +49,8 @@ type Client struct {
 
 	mu         sync.Mutex
 	rateLimit  *RateLimit
-	rateLimits map[string]*RateLimit // per budget (an operation's x-pp-scope: read, trade, public)
+	rateLimits map[string]*RateLimit      // per budget: an operation's x-pp-scope and the bucket that answered ("trade:bulk")
+	met        map[string]map[string]bool // per operation ("scope|id"): the budgets it met
 	warned     map[string]bool
 }
 
@@ -57,7 +58,9 @@ type Client struct {
 type RateLimit struct {
 	Limit     int
 	Remaining int
-	ResetAt   time.Time
+	ResetAt   time.Time // when the window is full again
+	Scope     string    // the bucket that answered (X-RateLimit-Scope: key, bulk, account_orders...), "" when none
+	nextAt    time.Time // with nothing left: when its next request comes back (60 s / Limit, or a 429's Retry-After)
 }
 
 type clientConfig struct {
@@ -146,7 +149,7 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	}
 	c := &Client{
 		key: cfg.key, environment: env, baseURL: base, timeout: cfg.timeout, maxRetries: cfg.maxRetries,
-		appInfo: cfg.appInfo, http: h, logger: cfg.logger, warned: map[string]bool{}, rateLimits: map[string]*RateLimit{},
+		appInfo: cfg.appInfo, http: h, logger: cfg.logger, warned: map[string]bool{}, rateLimits: map[string]*RateLimit{}, met: map[string]map[string]bool{},
 		streams: map[string]string{"account": firstOf(cfg.accountStreamURL, accountStreamURLs[env]), "market": firstOf(cfg.marketStreamURL, marketStreamURL)},
 	}
 	c.initResources()
@@ -312,39 +315,27 @@ func (c *Client) log(level slog.Level, msg string, args ...any) {
 	}
 }
 
-// preWait waits out the budget's exhausted rate-limit window when it ends soon (its last answer said none were left).
-func (c *Client) preWait(ctx context.Context, scope string) error {
+// preWait waits for the next request of a budget this operation met with nothing left in it, when under a minute
+// (Q15): never for the whole window, never for a bucket only other operations draw on.
+func (c *Client) preWait(ctx context.Context, op *operation) error {
+	var until time.Time
 	c.mu.Lock()
-	r := c.rateLimits[scope]
-	c.mu.Unlock()
-	if r == nil || r.Remaining > 0 || r.ResetAt.IsZero() {
-		return nil
+	for b := range c.met[op.scope+"|"+op.id] {
+		if r := c.rateLimits[b]; r != nil && r.nextAt.After(until) {
+			until = r.nextAt
+		}
 	}
-	if d := time.Until(r.ResetAt); d > 0 && d < time.Minute {
+	c.mu.Unlock()
+	if d := time.Until(until); d > 0 && d < time.Minute {
 		return sleep(ctx, d)
 	}
 	return nil
 }
 
-func (c *Client) remember(scope string, h http.Header) {
-	limit := h.Get("X-RateLimit-Limit")
-	if limit == "" {
-		return
-	}
-	r := &RateLimit{}
-	r.Limit, _ = strconv.Atoi(limit)
-	r.Remaining, _ = strconv.Atoi(h.Get("X-RateLimit-Remaining"))
-	if reset, err := strconv.ParseFloat(h.Get("X-RateLimit-Reset"), 64); err == nil {
-		// Reset as epoch seconds (above a year in seconds) or as seconds from now
-		if reset > 31536000 {
-			r.ResetAt = time.UnixMilli(int64(reset * 1000))
-		} else {
-			r.ResetAt = time.Now().Add(time.Duration(reset * float64(time.Second)))
-		}
-	}
-	c.mu.Lock()
-	c.rateLimit, c.rateLimits[scope] = r, r
+func (c *Client) remember(op *operation, h http.Header) {
+	// any answer may say its version is deprecated, with or without the rate-limit headers (Q87)
 	dep := h.Get("Deprecation")
+	c.mu.Lock()
 	first := dep != "" && !c.warned[dep]
 	if first {
 		c.warned[dep] = true
@@ -353,6 +344,38 @@ func (c *Client) remember(scope string, h http.Header) {
 	if first {
 		c.log(slog.LevelWarn, "phoenixperps: this API version is deprecated", "deprecation", dep, "sunset", h.Get("Sunset"))
 	}
+	limit := h.Get("X-RateLimit-Limit")
+	if limit == "" {
+		return
+	}
+	r := &RateLimit{Scope: h.Get("X-RateLimit-Scope")}
+	perMin, _ := strconv.ParseFloat(limit, 64)
+	r.Limit = int(perMin)
+	remaining, _ := strconv.ParseFloat(h.Get("X-RateLimit-Remaining"), 64)
+	r.Remaining = int(remaining)
+	if r.Remaining <= 0 {
+		if wait, given := retryAfter(h, time.Now()); given {
+			r.nextAt = time.Now().Add(wait)
+		} else if perMin > 0 {
+			r.nextAt = time.Now().Add(time.Duration(float64(time.Minute) / perMin))
+		}
+	}
+	if reset, err := strconv.ParseFloat(h.Get("X-RateLimit-Reset"), 64); err == nil {
+		// Reset as epoch seconds (above a year in seconds) or as seconds from now
+		if reset > 31536000 {
+			r.ResetAt = time.UnixMilli(int64(reset * 1000))
+		} else {
+			r.ResetAt = time.Now().Add(time.Duration(reset * float64(time.Second)))
+		}
+	}
+	budget, who := op.scope+":"+r.Scope, op.scope+"|"+op.id
+	c.mu.Lock()
+	c.rateLimit, c.rateLimits[budget] = r, r
+	if c.met[who] == nil {
+		c.met[who] = map[string]bool{}
+	}
+	c.met[who][budget] = true
+	c.mu.Unlock()
 }
 
 func sleep(ctx context.Context, d time.Duration) error {
@@ -387,6 +410,14 @@ func (c *Client) url(op *operation, path []string, query url.Values) (string, er
 		}
 		p = p[:i] + url.PathEscape(v) + p[j+1:]
 	}
+	// a raw path may carry its own query: the call's query is merged into it
+	if i := strings.IndexByte(p, '?'); i >= 0 {
+		own, _ := url.ParseQuery(p[i+1:])
+		for k, v := range query {
+			own[k] = v
+		}
+		p, query = p[:i], own
+	}
 	u := c.baseURL + p
 	if len(query) > 0 {
 		u += "?" + query.Encode()
@@ -416,7 +447,7 @@ func (c *Client) send(ctx context.Context, op *operation, path []string, query u
 		}
 	}
 	for attempt := 0; ; attempt++ {
-		if err := c.preWait(ctx, op.scope); err != nil {
+		if err := c.preWait(ctx, op); err != nil {
 			return nil, err
 		}
 		res, failure := c.attempt(ctx, op, u, payload, key, cfg)
@@ -424,7 +455,7 @@ func (c *Client) send(ctx context.Context, op *operation, path []string, query u
 			return nil, ctx.Err()
 		}
 		if res != nil {
-			c.remember(op.scope, res.Header)
+			c.remember(op, res.Header)
 			if cfg.raw != nil {
 				*cfg.raw = *res
 			}
@@ -441,6 +472,11 @@ func (c *Client) send(ctx context.Context, op *operation, path []string, query u
 				return res, nil
 			}
 			failure = errorFrom(res.StatusCode, res.Header, res.Body, key)
+		}
+		// a cancel answered as already canceled or expired: the order no longer works, as asked (its own lost answer
+		// asked again, or a cancel made elsewhere), and the answer is that order (Q14); filled still fails
+		if op.id == "cancelOrder" && failure.Code == "order_not_working" && lostCancel(failure) {
+			return c.send(ctx, opGetOrder, path, nil, nil, append(opts, WithIdempotencyKey("")))
 		}
 		if !retryable || attempt >= cfg.maxRetries || !failure.Retryable {
 			return nil, failure
@@ -532,10 +568,22 @@ func (c *Client) Do(ctx context.Context, method, path string, query url.Values, 
 	}
 	m := strings.ToUpper(method)
 	op := &operation{id: "do", method: m, path: path, retrySafe: m == http.MethodGet}
-	if r := route(m, path); r != nil {
-		op.retrySafe, op.scope = op.retrySafe || r.retrySafe, r.scope
+	// a known route keeps its Idempotency-Key (the same on every attempt), its retries and its budget (Q39)
+	if r := route(m, strings.SplitN(path, "?", 2)[0]); r != nil {
+		op.id, op.retrySafe, op.scope, op.idempotent = r.id, op.retrySafe || r.retrySafe, r.scope, r.idempotent
 	}
 	return c.send(ctx, op, nil, query, body, opts)
+}
+
+// lostCancel: the refusal says the order is already canceled or expired (details.status).
+func lostCancel(e *Error) bool {
+	var d struct {
+		Status string `json:"status"`
+	}
+	if len(e.Details) == 0 || json.Unmarshal(e.Details, &d) != nil {
+		return false
+	}
+	return d.Status == "canceled" || d.Status == "expired"
 }
 
 func decodeData(res *RawResponse, out any) error {

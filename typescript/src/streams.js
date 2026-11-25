@@ -107,6 +107,12 @@ class AccountStream extends Stream {
     this._queue = [];
     this._waiters = [];
     this._watch = null;
+    // listened to (once(stream, 'ready'), on('event')...), asked (ping) or iterated: it starts by itself (Q92)
+    this.on('newListener', (name) => {
+      if (!this.ws && !this._closed && !['error', 'close', 'newListener', 'removeListener'].includes(name)) queueMicrotask(() => {
+        if (!this.ws && !this._closed) this.start();
+      });
+    });
   }
 
   start() {
@@ -139,6 +145,7 @@ class AccountStream extends Stream {
 
   _ask(msg, answer) {
     if (this._closed) return Promise.reject(closed());
+    if (!this.ws) this.start();
     return new Promise((resolve, reject) => {
       this._asks.push({ msg, answer, resolve, reject });
       if (this._open) this.ws.send(JSON.stringify(msg));
@@ -387,21 +394,18 @@ class MarketStream extends Stream {
     const interval = channel === 'candles' ? params.interval ?? null : null;
     const names = channel === 'status' ? ['*'] : symbols.map((x) => String(x).toUpperCase());
     const key = (name) => `${channel}|${name}|${interval ?? ''}`;
-    for (const name of names) this._subs.set(key(name), { ...(this._subs.get(key(name)) || { channel, symbol: name, interval, live: false }), params });
-    // what the server took is made again after a reconnect; what it refused is forgotten
+    // what the server took is made again after a reconnect, with these params; what it refused is forgotten, and a
+    // refused change leaves a live subscription as the server holds it (Q38)
     const settle = (took) => {
-      for (const name of names) {
-        const s = this._subs.get(key(name));
-        if (s && took.has(name)) s.live = true;
-        else if (s && !s.live) this._subs.delete(key(name));
-      }
+      for (const name of names) if (took.has(name)) this._subs.set(key(name), { channel, symbol: name, interval, live: true, params });
     };
-    return this._ask({ op: 'subscribe', channel, ...(channel === 'status' ? {} : { symbols }), ...params }).then((reply) => {
+    // at most the hello's symbols_per_subscribe a message (Q16): one answer, every part's symbols and refusals
+    const per = (this.limits && this.limits.symbols_per_subscribe) || 50;
+    const parts = channel === 'status' ? [null] : Array.from({ length: Math.max(1, Math.ceil(symbols.length / per)) }, (_, i) => symbols.slice(i * per, (i + 1) * per));
+    return Promise.all(parts.map((part) => this._ask({ op: 'subscribe', channel, ...(part === null ? {} : { symbols: part }), ...params }))).then((replies) => {
+      const reply = parts.length === 1 ? replies[0] : { ...replies[0], symbols: replies.flatMap((r) => r.symbols || []), rejected: replies.flatMap((r) => r.rejected || []) };
       settle(new Set((reply.symbols || names).map((x) => String(x).toUpperCase())));
       return reply;
-    }, (err) => {
-      settle(new Set());
-      throw err;
     });
   }
 

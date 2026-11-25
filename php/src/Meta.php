@@ -10,7 +10,7 @@ namespace PhoenixPerps;
 final class Meta
 {
     /** The version of the API spec. */
-    public const SPEC_VERSION = '1.0.0';
+    public const SPEC_VERSION = '1.1.0';
 
     /** The API host of each environment. */
     public const SERVERS = [

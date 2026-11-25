@@ -129,11 +129,19 @@ ${aligned(e.values.map((v) => row('\t', `${e.name}${goName(v)}`, e.name, `= ${JS
 )
 `);
   }
+  // a request body's optional field the API takes as null ("null removes it"): a nil pointer is no field, so a
+  // <Field>Null flag sends the null (Q88)
+  const bodies = new Set(ir.operations.map((o) => o.body).filter(Boolean));
   for (const s of m.structs) {
     const rows = [];
+    const nulls = bodies.has(s.name) ? s.fields.filter((f) => !f.required && f.type.nullable) : [];
     for (const f of s.fields) {
       rows.push(...commentLines(f.description, '\t'));
       rows.push(row('\t', goName(f.wire), goType(f.type, !f.required), `\`json:"${f.wire}${f.required ? '' : ',omitempty'}"\``));
+    }
+    for (const f of nulls) {
+      rows.push(...commentLines(`${goName(f.wire)}Null sends ${f.wire} as null (the API: null removes it); a ${goName(f.wire)} set is sent instead.`, '\t'));
+      rows.push(row('\t', `${goName(f.wire)}Null`, 'bool', '`json:"-"`'));
     }
     out.push(`${comment(`${s.name}: ${s.description || 'see the API reference.'}`)}type ${s.name} struct {
 ${aligned(rows)}
@@ -141,6 +149,19 @@ ${aligned(rows)}
 `);
     // a required list left nil goes out as [] (the API wants a list there, never null)
     const lists = s.fields.filter((f) => f.required && f.type.kind === 'array' && !f.type.nullable);
+    if (lists.length && nulls.length) throw new Error(`${s.name}: required lists and nullable fields: one MarshalJSON for both is not written yet`);
+    if (nulls.length) {
+      out.push(`// MarshalJSON sends a field marked <Field>Null as null.
+func (x ${s.name}) MarshalJSON() ([]byte, error) {
+\ttype plain ${s.name}
+\tb, err := json.Marshal(plain(x))
+\tif err != nil {
+\t\treturn nil, err
+\t}
+\treturn withNulls(b, map[string]bool{${nulls.map((f) => `${JSON.stringify(f.wire)}: x.${goName(f.wire)}Null && x.${goName(f.wire)} == nil`).join(', ')}})
+}
+`);
+    }
     if (lists.length) {
       out.push(`// MarshalJSON sends a required list left nil as [], never null.
 func (x ${s.name}) MarshalJSON() ([]byte, error) {

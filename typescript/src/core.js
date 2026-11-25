@@ -21,9 +21,11 @@ const SDK_VERSION = require('../package.json').version;
  *             a Retry-After over 60 s is not slept: RateLimitError with retryAfter
  *   keys      one Idempotency-Key per logical call (UUID v4 unless given), the same on every attempt, on the result
  *   decimals  as given: strings as they are, numbers in their decimal form (never an exponent)
- *   limits    X-RateLimit-Limit / Remaining / Reset kept per budget (the operation's scope, its x-pp-scope; operations
- *             without one share a single budget; client.rateLimit: the last seen); with nothing left and the reset
- *             under 60 s away, the budget's next call waits for it instead of drawing a 429
+ *   limits    X-RateLimit-* kept per budget: the operation's x-pp-scope and the bucket the answer names
+ *             (X-RateLimit-Scope), so a bucket bulk calls emptied holds bulk calls only; client.rateLimit: the last seen.
+ *             With nothing left, the next call of an operation that met that bucket waits for the request it gives back
+ *             (60 s / its per-minute Limit, or a 429's Retry-After), never for the whole window (Reset: until full)
+ *   notices   a Deprecation header is told once per value, on any answer
  *   answers   a 304 (the caller's If-None-Match matched) answers null, a list too; opts.onMeta(meta) is told every
  *             answer's status, headers, request id and Idempotency-Key
  *   paging    a list answers a Page (every field of the list kept); the call itself is also an async iterable over every
@@ -131,7 +133,8 @@ class Core {
     this.maxRetries = opts.maxRetries ?? 2;
     this.appInfo = opts.appInfo ?? null;
     this.rateLimit = null;
-    Object.defineProperty(this, '_budgets', { value: new Map(), enumerable: false }); // x-pp-scope -> the last RateLimit
+    Object.defineProperty(this, '_budgets', { value: new Map(), enumerable: false }); // 'scope:bucket' -> { nextAt }
+    Object.defineProperty(this, '_met', { value: new Map(), enumerable: false }); // operation id -> the budgets it met
     Object.defineProperty(this, '_fetch', { value: opts.fetch ?? globalThis.fetch, enumerable: false });
     Object.defineProperty(this, '_logger', { value: opts.logger ?? null, enumerable: false });
     Object.defineProperty(this, '_warned', { value: new Set(), enumerable: false });
@@ -157,28 +160,40 @@ class Core {
     if (this._logger && typeof this._logger[level] === 'function') this._logger[level](msg, data);
   }
 
-  /** Waits out the budget's exhausted rate-limit window when it ends soon (its last answer said none were left). */
+  /** Waits for the next request of a budget this operation met with nothing left in it (Q15), when that is under 60 s. */
   async _preWait(op) {
-    const r = this._budgets.get(op.scope ?? null);
-    if (!r || r.remaining > 0 || r.resetAt === null) return;
-    const wait = r.resetAt - Date.now();
+    const met = this._met.get(`${op.scope ?? ''}|${op.id}`);
+    if (!met) return;
+    let until = 0;
+    for (const b of met) until = Math.max(until, (this._budgets.get(b) || {}).nextAt || 0);
+    const wait = until - Date.now();
     if (wait > 0 && wait < 60000) await sleep(wait);
   }
 
   _remember(headers, op) {
-    const limit = headers.get('x-ratelimit-limit');
-    if (limit === null) return;
-    const reset = Number(headers.get('x-ratelimit-reset'));
-    // Reset as epoch seconds (above a year in seconds) or as seconds from now
-    const resetAt = Number.isFinite(reset) ? (reset > 31536000 ? reset * 1000 : Date.now() + reset * 1000) : null;
-    this.rateLimit = { limit: Number(limit), remaining: Number(headers.get('x-ratelimit-remaining')), resetAt };
-    // per budget: an operation's x-pp-scope (read, trade, public); one budget for an operation without it
-    this._budgets.set(op.scope ?? null, this.rateLimit);
+    // any answer may say its version is deprecated, with or without the rate-limit headers (Q87)
     const dep = headers.get('deprecation');
     if (dep && !this._warned.has(dep)) {
       this._warned.add(dep);
       this._log('warn', 'phoenixperps: this API version is deprecated', { deprecation: dep, sunset: headers.get('sunset') });
     }
+    const limit = headers.get('x-ratelimit-limit');
+    if (limit === null) return;
+    const reset = Number(headers.get('x-ratelimit-reset'));
+    // Reset as epoch seconds (above a year in seconds) or as seconds from now
+    const resetAt = Number.isFinite(reset) ? (reset > 31536000 ? reset * 1000 : Date.now() + reset * 1000) : null;
+    const scope = headers.get('x-ratelimit-scope');
+    this.rateLimit = { limit: Number(limit), remaining: Number(headers.get('x-ratelimit-remaining')), resetAt, scope };
+    // the budget: the operation's own and the bucket that answered; with nothing left, its next request comes back
+    // after a 429's Retry-After, else 60 s / the per-minute limit
+    const budget = `${op.scope ?? ''}:${scope ?? ''}`;
+    const after = E.retryAfterMs(headers);
+    const perToken = Number(limit) > 0 ? 60000 / Number(limit) : null;
+    const nextAt = this.rateLimit.remaining > 0 ? null : Date.now() + (after ?? perToken ?? 0);
+    this._budgets.set(budget, { nextAt });
+    const who = `${op.scope ?? ''}|${op.id}`;
+    if (!this._met.has(who)) this._met.set(who, new Set());
+    this._met.get(who).add(budget);
   }
 
   _url(op, call) {
@@ -187,10 +202,12 @@ class Core {
       if (v === undefined || v === null || v === '') throw new E.ValidationError({ code: 'invalid_request', message: `${name} is required.` });
       return encodeURIComponent(String(v));
     });
-    const q = new URLSearchParams();
+    // a raw path may carry its own query: the call's query is merged into it (Q93)
+    const [bare, own] = path.split('?');
+    const q = new URLSearchParams(own || '');
     for (const [k, v] of Object.entries(call.query || {})) if (v !== undefined && v !== null) q.set(k, String(v));
     const qs = q.toString();
-    return `${this.baseUrl}${path}${qs ? `?${qs}` : ''}`;
+    return `${this.baseUrl}${bare}${qs ? `?${qs}` : ''}`;
   }
 
   /** One logical call: its attempts, its result { data, status, headers, requestId, idempotencyKey }. */
@@ -225,6 +242,8 @@ class Core {
         if (res.ok || res.status === 304) text = await res.text();
       } catch (err) {
         if (opts.signal && opts.signal.aborted) throw err;
+        // a header the runtime refuses (a newline in a key): nothing was sent, nothing to try again (Q96)
+        if (err instanceof TypeError && /header/i.test(String(err.message))) throw new E.ValidationError({ code: 'invalid_header', message: String(err.message).slice(0, 200), idempotencyKey: key });
         res = null;
         failure = err && err.name === 'TimeoutError'
           ? new E.TimeoutError({ code: 'timeout', message: `No answer within ${opts.timeout ?? this.timeout} ms.`, retryable: true, idempotencyKey: key })
@@ -245,6 +264,12 @@ class Core {
         return { data, ...meta };
       }
       const err = failure || (await E.fromResponse(res, key));
+      // a cancel answered as already canceled or expired: the order no longer works, as asked (its own lost answer
+      // asked again, a client resending it, or a cancel made elsewhere), and the answer is that order (Q14); filled
+      // still fails (the order was not canceled)
+      if (op.id === 'cancelOrder' && err.code === 'order_not_working' && ['canceled', 'expired'].includes(err.details && err.details.status)) {
+        return this._send(OPS.getOrder, { path: call.path }, { ...opts, idempotencyKey: undefined });
+      }
       // tried again only when safe to send twice, and only after what the API marks retryable
       if (!retryable || attempt >= max || !err.retryable) throw err;
       if (err.retryAfter !== null && err.retryAfter > RETRY_AFTER_MAX_MS) throw err;

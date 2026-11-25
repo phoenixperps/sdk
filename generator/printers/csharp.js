@@ -135,10 +135,37 @@ ${members.join('\n')}
 `;
   }).join('')}`;
 
+  // a request body's optional field the API takes as null ("null removes it"): a null property is no field (the
+  // options skip nulls), so Clear<Field>() sends the null through Extra (Q88); setting the field again drops it
+  const bodies = new Set(ir.operations.map((o) => o.body).filter(Boolean));
   const classes = m.structs.map((s) => {
+    const nullable = (f) => !s.query && bodies.has(s.name) && !f.required && f.type.nullable;
     const props = s.fields.map((f) => {
       const t = csType(f.type, !f.required);
-      return `${summary(f.description || `The ${f.wire.replace(/_/g, ' ')}.`, '    ')}    [JsonPropertyName(${str(f.wire)})]\n    public ${t} ${propName(s.name, f.wire)} { get; set; }${initFor(f.type, !f.required)}`;
+      const n = propName(s.name, f.wire);
+      if (nullable(f)) {
+        const field = `_${n.charAt(0).toLowerCase()}${n.slice(1)}`;
+        return `${summary(`${f.description || `The ${f.wire.replace(/_/g, ' ')}.`} Clear${n}() sends the null.`, '    ')}    [JsonPropertyName(${str(f.wire)})]
+    public ${t} ${n}
+    {
+        get => ${field};
+        set
+        {
+            ${field} = value;
+            if (value is not null) Extra?.Remove(${str(f.wire)});
+        }
+    }
+
+    private ${t} ${field};
+
+${summary(`Sends ${f.wire} as null (the API: null removes it).`, '    ')}    public ${s.name} Clear${n}()
+    {
+        ${field} = null;
+        (Extra ??= new())[${str(f.wire)}] = JsonNull.Value;
+        return this;
+    }`;
+      }
+      return `${summary(f.description || `The ${f.wire.replace(/_/g, ' ')}.`, '    ')}    [JsonPropertyName(${str(f.wire)})]\n    public ${t} ${n} { get; set; }${initFor(f.type, !f.required)}`;
     });
     let extra = '';
     if (s.query) {

@@ -11,7 +11,7 @@ use PhoenixPerps\Decimal;
 /** LimitsOrders */
 final class LimitsOrders implements \JsonSerializable
 {
-    private const WIRE = ['max_working_per_account' => true, 'max_working_per_customer' => true, 'new_per_min_account' => true, 'new_per_day_account' => true, 'price_band_pct' => true, 'quote_max_age_s' => true, 'quote_max_age_slow_s' => true, 'gtd_min_seconds' => true, 'gtd_max_days' => true];
+    private const WIRE = ['max_working_per_account' => true, 'max_working_per_customer' => true, 'new_per_min_account' => true, 'new_per_day_account' => true, 'price_band_pct' => true, 'quote_max_age_s' => true, 'quote_max_age_slow_s' => true, 'gtd_min_seconds' => true, 'gtd_max_days' => true, 'open_spacing_ms' => true];
 
     public function __construct(
         /** Working orders an account may hold. */
@@ -32,6 +32,8 @@ final class LimitsOrders implements \JsonSerializable
         public readonly ?int $gtdMinSeconds = null,
         /** The farthest, in days from now. */
         public readonly ?int $gtdMaxDays = null,
+        /** The least time between two orders that can open a position on one account, in ms: the engine takes one about this often, so the next waits its turn (reduce-only orders and cancels never wait). A call that would wait past its reply time is refused 429 rate_limited, scope order_spacing. */
+        public readonly ?int $openSpacingMs = null,
         /** @var array<string, mixed> Fields this SDK version does not know yet (a newer API's), kept as they came. */
         public readonly array $extra = [],
     ) {
@@ -50,6 +52,7 @@ final class LimitsOrders implements \JsonSerializable
             quoteMaxAgeSlowS: $d['quote_max_age_slow_s'] ?? null,
             gtdMinSeconds: $d['gtd_min_seconds'] ?? null,
             gtdMaxDays: $d['gtd_max_days'] ?? null,
+            openSpacingMs: $d['open_spacing_ms'] ?? null,
             extra: array_diff_key($d, self::WIRE),
         );
     }
@@ -84,6 +87,9 @@ final class LimitsOrders implements \JsonSerializable
         }
         if ($this->gtdMaxDays !== null) {
             $out['gtd_max_days'] = $this->gtdMaxDays;
+        }
+        if ($this->openSpacingMs !== null) {
+            $out['open_spacing_ms'] = $this->openSpacingMs;
         }
         return $out + $this->extra;
     }

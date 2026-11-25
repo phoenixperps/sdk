@@ -1,3 +1,12 @@
+/** Headers as fetch gives them: these types name no DOM or Node global, so they need nothing else installed (Q94). */
+export interface HeaderBag {
+  get(name: string): string | null;
+}
+/** An AbortSignal (any object with aborted, as AbortController gives). */
+export interface AbortSignalLike {
+  readonly aborted: boolean;
+}
+
 /** Options of one call. */
 export interface RequestOptions {
   /** The Idempotency-Key of a call that takes one (made for you otherwise, the same on every retry). */
@@ -5,7 +14,7 @@ export interface RequestOptions {
   /** Per attempt, in ms (default: the client's). */
   timeout?: number;
   maxRetries?: number;
-  signal?: AbortSignal;
+  signal?: AbortSignalLike;
   /** With If-None-Match, a 304 (nothing changed) answers null, a list call too (the return types do not say so). */
   headers?: Record<string, string>;
   /** Told every answer's meta (status, headers, request id, Idempotency-Key), a 304's included. */
@@ -19,7 +28,7 @@ export interface ListOptions extends RequestOptions {
 
 export interface ResponseMeta {
   status: number;
-  headers: Headers;
+  headers: HeaderBag;
   requestId: string | null;
   idempotencyKey?: string | null;
 }
@@ -27,7 +36,7 @@ export interface ResponseMeta {
 /** The raw request's answer, as it came: the body is the JSON (null for none, a 304). */
 export interface RawResponse<T = unknown> {
   status: number;
-  headers: Headers;
+  headers: HeaderBag;
   body: T | null;
   requestId: string | null;
   idempotencyKey: string | null;
@@ -55,8 +64,10 @@ export interface PagePromise<T> extends PromiseLike<Page<T>>, AsyncIterable<T> {
 export interface RateLimit {
   limit: number;
   remaining: number;
-  /** When the window resets (ms since the epoch), or null. */
+  /** When the window is full again (ms since the epoch), or null. */
   resetAt: number | null;
+  /** The bucket that answered (X-RateLimit-Scope: key, bulk, account_orders...), or null. */
+  scope?: string | null;
 }
 
 export interface ClientOptions {
@@ -73,7 +84,7 @@ export interface ClientOptions {
   /** Added to the User-Agent, e.g. "my-bot/1.2". */
   appInfo?: string;
   logger?: { debug?(msg: string, data?: unknown): void; warn?(msg: string, data?: unknown): void };
-  fetch?: typeof fetch;
+  fetch?: (input: string, init?: any) => Promise<any>;
   accountStreamUrl?: string;
   marketStreamUrl?: string;
 }

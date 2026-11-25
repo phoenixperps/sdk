@@ -149,7 +149,11 @@ ${e.values.map((v) => `            case ${str(v)}:\n                return ${con
 `;
   }
 
+  // a request body's optional field the API takes as null ("null removes it"): a null field is no field (the mapper
+  // skips nulls), so clear<Field>() sends the null through extra (Q88); setting the field again drops it
+  const bodies = new Set(ir.operations.map((o) => o.body).filter(Boolean));
   for (const s of m.structs) {
+    const nullable = (f) => !s.query && bodies.has(s.name) && !f.required && f.type.nullable;
     const fields = s.fields.map((f) => `    @JsonProperty(${str(f.wire)})\n    private ${jType(f.type)} ${camel(f.wire)};`);
     const accessors = s.fields.map((f) => {
       const n = camel(f.wire);
@@ -160,9 +164,20 @@ ${e.values.map((v) => `            case ${str(v)}:\n                return ${con
 
     /** Sets ${esc(f.wire)}. */
     public ${s.name} ${n}(${t} value) {
-        this.${n} = value;
+        this.${n} = value;${nullable(f) ? `
+        if (value != null) {
+            extra.remove(${str(f.wire)});
+        }` : ''}
         return this;
-    }`;
+    }${nullable(f) ? `
+
+    /** Sends ${esc(f.wire)} as null (the API: null removes it). */
+    public ${s.name} clear${n.charAt(0).toUpperCase()}${n.slice(1)}() {
+        this.${n} = null;
+        // a NullNode, written as null (the mapper skips a Java null)
+        extra.put(${str(f.wire)}, com.fasterxml.jackson.databind.node.NullNode.getInstance());
+        return this;
+    }` : ''}`;
     });
     let tail;
     if (s.query) {

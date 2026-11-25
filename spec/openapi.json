@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Phoenix Perpetuals API",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "description": "Your Phoenix Perpetuals accounts from your own code: accounts, live risk, positions, orders, fills and history."
   },
   "servers": [
@@ -97,7 +97,8 @@
         "x-pp-resource": "platform",
         "x-pp-method": "info",
         "x-pp-errors": [
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "security": [],
         "parameters": [],
@@ -162,7 +163,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -170,12 +171,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -197,7 +198,8 @@
         "x-pp-resource": "platform",
         "x-pp-method": "spec",
         "x-pp-errors": [
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "security": [],
         "parameters": [],
@@ -254,7 +256,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -262,12 +264,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -289,7 +291,8 @@
         "x-pp-resource": "platform",
         "x-pp-method": "status",
         "x-pp-errors": [
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "security": [],
         "parameters": [],
@@ -354,7 +357,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -362,12 +365,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -389,7 +392,8 @@
         "x-pp-resource": "platform",
         "x-pp-method": "limits",
         "x-pp-errors": [
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "security": [],
         "parameters": [],
@@ -454,7 +458,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -462,12 +466,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -489,7 +493,8 @@
         "x-pp-resource": "platform",
         "x-pp-method": "restrictedCountries",
         "x-pp-errors": [
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "security": [],
         "parameters": [],
@@ -526,6 +531,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -580,7 +590,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -588,12 +598,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -626,7 +636,8 @@
           "wrong_environment",
           "ip_not_allowed",
           "api_disabled",
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "parameters": [],
         "responses": {
@@ -730,7 +741,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -738,12 +749,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -765,7 +776,8 @@
         "x-pp-resource": "markets",
         "x-pp-method": "list",
         "x-pp-errors": [
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "security": [],
         "parameters": [],
@@ -802,6 +814,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -856,7 +873,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -864,12 +881,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -892,8 +909,8 @@
         "x-pp-method": "stats",
         "x-pp-errors": [
           "rate_limited",
-          "state_unavailable",
-          "temporarily_unavailable"
+          "temporarily_unavailable",
+          "state_unavailable"
         ],
         "security": [],
         "parameters": [],
@@ -930,6 +947,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -984,7 +1006,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -992,12 +1014,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -1019,6 +1041,7 @@
         "x-pp-method": "get",
         "x-pp-errors": [
           "rate_limited",
+          "temporarily_unavailable",
           "market_not_found"
         ],
         "security": [],
@@ -1115,7 +1138,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1123,12 +1146,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -1162,6 +1185,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "state_unavailable"
         ],
         "parameters": [],
@@ -1198,6 +1222,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -1292,7 +1321,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1300,12 +1329,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -1341,12 +1370,12 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "sandbox_limit_reached",
           "sandbox_disabled",
           "idempotency_key_required",
           "invalid_idempotency_key",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -1501,7 +1530,7 @@
             }
           },
           "503": {
-            "description": "Sandbox accounts are not being opened.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1509,12 +1538,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "sandbox_disabled",
-                    "message": "The sandbox is closed for now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
-                    "retryable": false,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#sandbox_disabled"
+                    "retryable": true,
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -1548,6 +1577,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable"
         ],
@@ -1684,7 +1714,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1692,12 +1722,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -1731,6 +1761,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready"
@@ -1888,7 +1919,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1896,12 +1927,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -1935,6 +1966,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready"
@@ -2092,7 +2124,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2100,12 +2132,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -2139,6 +2171,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready"
@@ -2296,7 +2329,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2304,12 +2337,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -2342,6 +2375,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready",
@@ -2534,7 +2568,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2542,12 +2576,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -2581,6 +2615,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready"
@@ -2630,6 +2665,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -2764,7 +2804,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2772,12 +2812,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -2811,6 +2851,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready"
@@ -2860,6 +2901,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -2994,7 +3040,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3002,12 +3048,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -3041,6 +3087,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready",
@@ -3100,6 +3147,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -3254,7 +3306,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3262,12 +3314,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -3300,6 +3352,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready",
@@ -3489,7 +3542,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3497,12 +3550,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -3543,6 +3596,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "account_not_ready",
@@ -3624,6 +3678,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -3778,7 +3837,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3786,12 +3845,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -3832,6 +3891,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "invalid_parameter",
@@ -3936,6 +3996,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     },
                     "history_complete": {
                       "type": "boolean",
@@ -4075,7 +4140,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4083,12 +4148,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -4121,6 +4186,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -4415,7 +4481,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4423,12 +4489,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -4461,6 +4527,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "order_not_found"
@@ -4608,7 +4675,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4616,12 +4683,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -4653,6 +4720,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -4904,7 +4972,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -4912,12 +4980,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -4950,6 +5018,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -5171,7 +5240,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5179,12 +5248,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -5219,6 +5288,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "state_unavailable",
@@ -5419,7 +5489,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5427,12 +5497,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -5467,6 +5537,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -5700,7 +5771,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5708,12 +5779,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -5748,6 +5819,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -6036,7 +6108,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6044,12 +6116,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -6084,6 +6156,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -6304,7 +6377,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6312,12 +6385,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -6352,6 +6425,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -6592,7 +6666,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6600,12 +6674,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -6646,6 +6720,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "invalid_parameter"
         ],
@@ -6714,6 +6789,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -6848,7 +6928,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -6856,12 +6936,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -6895,6 +6975,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "market_not_found"
@@ -7042,7 +7123,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7050,12 +7131,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -7066,7 +7147,7 @@
       "put": {
         "operationId": "setExits",
         "summary": "Change a position's exits",
-        "description": "Places, changes and cancels take-profit and stop-loss legs together, against the state you read: when the position or a leg changed since, nothing is done (409 exits_changed, with the state now). The legs are reduce-only and never larger than the position.",
+        "description": "Places, changes and cancels take-profit and stop-loss legs together, against the state you read: when the position or a leg changed since, nothing is done (409 exits_changed, with the state now). The legs are reduce-only and never larger than the position. With an Idempotency-Key, the same batch sent again under it (an answer lost) answers the first result and is never applied twice.",
         "tags": [
           "Exits and strategies"
         ],
@@ -7088,6 +7169,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -7135,6 +7217,16 @@
             "schema": {
               "type": "string",
               "example": "BTC-USD"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Optional: give one to send the change again safely; the same value never applies it twice.",
+            "schema": {
+              "type": "string",
+              "example": "sandbox-open-0001"
             }
           }
         ],
@@ -7356,7 +7448,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7364,12 +7456,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -7404,6 +7496,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -7655,7 +7748,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7663,12 +7756,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -7703,6 +7796,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -7979,7 +8073,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -7987,12 +8081,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -8031,6 +8125,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "invalid_parameter",
           "invalid_cursor"
@@ -8134,6 +8229,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -8268,7 +8368,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8276,12 +8376,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -8314,6 +8414,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "strategy_not_found"
         ],
@@ -8460,7 +8561,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8468,12 +8569,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -8506,6 +8607,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "account_not_ready",
           "account_not_tradable",
@@ -8727,7 +8829,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -8735,12 +8837,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -8775,6 +8877,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "invalid_request",
@@ -9007,7 +9110,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9015,12 +9118,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -9059,6 +9162,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "invalid_parameter",
           "invalid_cursor"
@@ -9154,6 +9258,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -9288,7 +9397,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9296,12 +9405,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -9334,6 +9443,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "alert_not_found"
         ],
@@ -9480,7 +9590,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9488,12 +9598,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -9525,6 +9635,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "alert_not_found",
           "alert_not_armed",
@@ -9751,7 +9862,7 @@
             }
           },
           "503": {
-            "description": "The latest price is too old to trade against.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9759,12 +9870,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "stale_quote",
-                    "message": "The market's price is not current.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#stale_quote"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -9796,6 +9907,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "alert_not_found"
         ],
@@ -9942,7 +10054,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -9950,12 +10062,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -9989,6 +10101,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "alert_not_found",
           "stale_quote",
@@ -10160,7 +10273,7 @@
             }
           },
           "503": {
-            "description": "The latest price is too old to trade against.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10168,12 +10281,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "stale_quote",
-                    "message": "The market's price is not current.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#stale_quote"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -10206,7 +10319,8 @@
           "wrong_environment",
           "ip_not_allowed",
           "api_disabled",
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "parameters": [],
         "responses": {
@@ -10242,6 +10356,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -10336,7 +10455,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10344,12 +10463,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -10382,6 +10501,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found"
         ],
         "parameters": [
@@ -10517,7 +10637,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -10525,12 +10645,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -10562,9 +10682,9 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -10746,10 +10866,10 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found",
           "webhook_endpoint_not_active",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -10958,10 +11078,10 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found",
           "invalid_parameter",
-          "invalid_cursor",
-          "temporarily_unavailable"
+          "invalid_cursor"
         ],
         "parameters": [
           {
@@ -11029,6 +11149,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -11209,9 +11334,9 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found",
-          "delivery_not_found",
-          "temporarily_unavailable"
+          "delivery_not_found"
         ],
         "parameters": [
           {
@@ -11403,11 +11528,11 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found",
           "webhook_endpoint_not_active",
           "delivery_not_found",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -11620,9 +11745,9 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -11804,9 +11929,9 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "webhook_endpoint_not_found",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -11987,7 +12112,8 @@
           "wrong_environment",
           "ip_not_allowed",
           "api_disabled",
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "parameters": [],
         "responses": {
@@ -12023,6 +12149,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -12117,7 +12248,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12125,12 +12256,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -12163,6 +12294,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "tradingview_hook_not_found"
         ],
         "parameters": [
@@ -12298,7 +12430,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12306,12 +12438,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -12343,9 +12475,9 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "tradingview_hook_not_found",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -12534,6 +12666,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "tradingview_hook_not_found",
           "invalid_parameter",
           "invalid_cursor"
@@ -12613,6 +12746,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -12747,7 +12885,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12755,12 +12893,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -12793,6 +12931,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "tradingview_hook_not_found",
           "tradingview_alert_not_found"
         ],
@@ -12939,7 +13078,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -12947,12 +13086,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -12987,9 +13126,9 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "tradingview_hook_not_found",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -13171,9 +13310,9 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "tradingview_hook_not_found",
-          "insufficient_permission",
-          "temporarily_unavailable"
+          "insufficient_permission"
         ],
         "parameters": [
           {
@@ -13356,6 +13495,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "invalid_request",
           "unknown_field",
           "tradingview_hook_not_found"
@@ -13515,7 +13655,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13523,12 +13663,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -13561,7 +13701,8 @@
           "wrong_environment",
           "ip_not_allowed",
           "api_disabled",
-          "rate_limited"
+          "rate_limited",
+          "temporarily_unavailable"
         ],
         "parameters": [],
         "responses": {
@@ -13597,6 +13738,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -13691,7 +13837,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13699,12 +13845,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -13738,6 +13884,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "event_not_found"
         ],
         "parameters": [
@@ -13873,7 +14020,7 @@
             }
           },
           "503": {
-            "description": "The API is starting and has not loaded your keys yet.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -13881,12 +14028,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "not_ready",
-                    "message": "The API is starting. Try again in a moment.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#not_ready"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -13927,6 +14074,7 @@
           "ip_not_allowed",
           "api_disabled",
           "rate_limited",
+          "temporarily_unavailable",
           "account_not_found",
           "state_unavailable",
           "invalid_parameter",
@@ -14007,6 +14155,11 @@
                       "x-pp-unit": "ms",
                       "description": "When the oldest figure in the list was read.",
                       "example": 1791460800000
+                    },
+                    "stale": {
+                      "type": "boolean",
+                      "description": "An account list only: some figures are older than usual (the engine was busy; at most a minute, then 503 state_unavailable).",
+                      "example": false
                     }
                   },
                   "required": [
@@ -14141,7 +14294,7 @@
             }
           },
           "503": {
-            "description": "The trading engine did not give a complete answer in time; nothing partial is returned.",
+            "description": "A service this call needs did not answer.",
             "content": {
               "application/json": {
                 "schema": {
@@ -14149,12 +14302,12 @@
                 },
                 "example": {
                   "error": {
-                    "type": "engine",
-                    "code": "state_unavailable",
-                    "message": "The account's figures cannot be read right now.",
+                    "type": "server",
+                    "code": "temporarily_unavailable",
+                    "message": "This cannot be done right now. Try again in a moment.",
                     "request_id": "req_0f9c2a7d8e1b4c6a9f3e5d7b1a2c4e6f",
                     "retryable": true,
-                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#state_unavailable"
+                    "doc_url": "https://docs.phoenixperpsfunding.com/reference/errors#temporarily_unavailable"
                   }
                 }
               }
@@ -15122,11 +15275,21 @@
                 "x-pp-unit": "ms",
                 "description": "When the trading engine last started.",
                 "example": 1791460800000
+              },
+              "writes": {
+                "type": "string",
+                "enum": [
+                  "operational",
+                  "degraded"
+                ],
+                "description": "Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy to take one (engine_busy).",
+                "example": "operational"
               }
             },
             "required": [
               "connected",
-              "started_at"
+              "started_at",
+              "writes"
             ],
             "additionalProperties": false
           },
@@ -15142,10 +15305,20 @@
                 "x-pp-unit": "ms",
                 "description": "When your keys and accounts were last confirmed with the website.",
                 "example": 1791460800000
+              },
+              "state": {
+                "type": "string",
+                "enum": [
+                  "operational",
+                  "degraded"
+                ],
+                "description": "Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable).",
+                "example": "operational"
               }
             },
             "required": [
-              "synced_at"
+              "synced_at",
+              "state"
             ],
             "additionalProperties": false
           },
@@ -15494,6 +15667,11 @@
                 "type": "integer",
                 "description": "The farthest, in days from now.",
                 "example": 30
+              },
+              "open_spacing_ms": {
+                "type": "integer",
+                "description": "The least time between two orders that can open a position on one account, in ms: the engine takes one about this often, so the next waits its turn (reduce-only orders and cancels never wait). A call that would wait past its reply time is refused 429 rate_limited, scope order_spacing.",
+                "example": 600
               }
             },
             "required": [
@@ -15505,7 +15683,8 @@
               "quote_max_age_s",
               "quote_max_age_slow_s",
               "gtd_min_seconds",
-              "gtd_max_days"
+              "gtd_max_days",
+              "open_spacing_ms"
             ],
             "additionalProperties": false
           },
@@ -16499,6 +16678,11 @@
             "description": "Some figures are older than usual (the engine was busy).",
             "example": false
           },
+          "paused": {
+            "type": "boolean",
+            "description": "The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York.",
+            "example": false
+          },
           "balance": {
             "type": "string",
             "format": "decimal",
@@ -16772,6 +16956,7 @@
         "required": [
           "as_of",
           "stale",
+          "paused",
           "balance",
           "equity",
           "unrealized_pnl",
@@ -21474,6 +21659,11 @@
             "description": "Some figures are older than usual (the engine was busy).",
             "example": false
           },
+          "paused": {
+            "type": "boolean",
+            "description": "The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York.",
+            "example": false
+          },
           "balance": {
             "type": "string",
             "format": "decimal",
@@ -21747,6 +21937,7 @@
         "required": [
           "as_of",
           "stale",
+          "paused",
           "balance",
           "equity",
           "unrealized_pnl",

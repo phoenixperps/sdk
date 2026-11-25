@@ -549,7 +549,28 @@ public sealed class MarketStream : IAsyncDisposable
     {
         var p = parameters ?? new Dictionary<string, object?>();
         var syms = symbols?.ToList() ?? new List<string>();
-        var reply = await AskAsync(Message("subscribe", channel, syms, p), cancellationToken).ConfigureAwait(false);
+        // at most the hello's symbols_per_subscribe a message (Q16), answered as one: every part's symbols and refusals
+        var per = PerSubscribe(Limits);
+        JsonElement reply;
+        if (syms.Count <= per) reply = await AskAsync(Message("subscribe", channel, syms, p), cancellationToken).ConfigureAwait(false);
+        else
+        {
+            var took = new List<JsonElement>();
+            var rejected = new List<JsonElement>();
+            JsonElement first = default;
+            foreach (var part in syms.Chunk(per))
+            {
+                var r = await AskAsync(Message("subscribe", channel, part.ToList(), p), cancellationToken).ConfigureAwait(false);
+                if (first.ValueKind == JsonValueKind.Undefined) first = r;
+                if (r.TryGetProperty("symbols", out var ts) && ts.ValueKind == JsonValueKind.Array) took.AddRange(ts.EnumerateArray().Select(x => x.Clone()));
+                if (r.TryGetProperty("rejected", out var rs) && rs.ValueKind == JsonValueKind.Array) rejected.AddRange(rs.EnumerateArray().Select(x => x.Clone()));
+            }
+            var merged = new Dictionary<string, object?>();
+            foreach (var prop in first.EnumerateObject()) if (prop.Name != "id") merged[prop.Name] = prop.Value.Clone();
+            merged["symbols"] = took;
+            merged["rejected"] = rejected;
+            reply = JsonDocument.Parse(StreamCommon.Serialize(merged)).RootElement.Clone();
+        }
         // what the server took (never the markets it rejected), now under these options only
         var taken = channel == "status" ? new List<string> { "*" }
             : reply.TryGetProperty("symbols", out var t) && t.ValueKind == JsonValueKind.Array ? t.EnumerateArray().Select(x => x.GetString() ?? "").ToList() : syms;
@@ -611,6 +632,10 @@ public sealed class MarketStream : IAsyncDisposable
         _upgrade.Dispose();
         _cts.Dispose();
     }
+
+    // the hello's symbols_per_subscribe (50 before a hello)
+    private static int PerSubscribe(JsonElement? limits) =>
+        limits is { } l && l.TryGetProperty("symbols_per_subscribe", out var v) && v.TryGetInt32(out var n) && n > 0 ? n : 50;
 
     private static string Key(string channel, IReadOnlyDictionary<string, object?> p) =>
         channel + "|" + string.Join("|", p.OrderBy(kv => kv.Key, StringComparer.Ordinal).Select(kv => kv.Key + "=" + Value(kv.Value)));
@@ -765,17 +790,29 @@ public sealed class MarketStream : IAsyncDisposable
                     List<Dictionary<string, object?>> again;
                     lock (_lock)
                     {
-                        // every subscription the server took, again, as it was; then the asks still unanswered
-                        again = _subs.Values.Select(s =>
+                        // every subscription the server took, again, as it was, at most symbols_per_subscribe a message
+                        // (Q16); then the asks still unanswered
+                        var per = PerSubscribe(Limits);
+                        again = _subs.Values.SelectMany(s =>
                         {
-                            var m = Message("subscribe", s.Channel, s.Symbols.OrderBy(x => x, StringComparer.Ordinal).ToList(), s.Params);
-                            m["id"] = ++_id;
-                            return m;
+                            var all = s.Symbols.OrderBy(x => x, StringComparer.Ordinal).ToList();
+                            return (all.Count == 0 ? new[] { all.ToArray() } : all.Chunk(per)).Select(part =>
+                            {
+                                var m = Message("subscribe", s.Channel, part.ToList(), s.Params);
+                                m["id"] = ++_id;
+                                return m;
+                            });
                         }).ToList();
                         again.AddRange(_pending.Values.Select(p => p.Message));
                         _ws = ws;
                     }
-                    foreach (var m in again) await StreamCommon.SendAsync(ws, m, ct).ConfigureAwait(false);
+                    // at most messages_per_s a second: a replay of many asks never trips the server's 4009 (Q104)
+                    var perSecond = Limits is { } lim && lim.TryGetProperty("messages_per_s", out var mps) && mps.TryGetInt32(out var mpsN) && mpsN > 0 ? mpsN : 20;
+                    for (var i = 0; i < again.Count; i++)
+                    {
+                        if (i > 0 && i % perSecond == 0) await Task.Delay(TimeSpan.FromSeconds(1), ct).ConfigureAwait(false);
+                        await StreamCommon.SendAsync(ws, again[i], ct).ConfigureAwait(false);
+                    }
                     break;
                 case "subscribed" or "unsubscribed" or "error" or "list" or "pong":
                     TaskCompletionSource<JsonElement>? reply = null;

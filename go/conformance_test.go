@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/exec"
@@ -34,6 +35,11 @@ type confCall struct {
 	Query    json.RawMessage   `json:"query"`
 	Iterate  bool              `json:"iterate"`
 	MaxItems int               `json:"max_items"`
+	Raw      *struct {
+		Method string          `json:"method"`
+		Path   string          `json:"path"`
+		Body   json.RawMessage `json:"body"`
+	} `json:"raw"` // the SDK's raw request (Client.Do)
 }
 
 type scenario struct {
@@ -62,6 +68,8 @@ type scenario struct {
 		Cursors      []*string       `json:"cursors"`
 		FirstBody    map[string]any  `json:"first_body"`
 		MinElapsedMs int64           `json:"min_elapsed_ms"`
+		MaxElapsedMs int64           `json:"max_elapsed_ms"`
+		LoggedDepr   bool            `json:"logged_deprecation"`
 		Checks       []string        `json:"checks"`
 		PageFields   map[string]any  `json:"page_fields"`
 		Paths        []string        `json:"paths"`
@@ -92,6 +100,11 @@ type suite struct {
 		NowMs                                               int64           `json:"now_ms"`
 		Want                                                map[string]any  `json:"want"`
 		Extra                                               []webhookVector `json:"extra"`
+		NoSecret                                            struct {
+			Secrets   [][]string `json:"secrets"`
+			ErrorCode string     `json:"error_code"`
+			WithOne   []string   `json:"with_one"`
+		} `json:"no_secret"`
 	} `json:"webhook_vectors"`
 	Rules struct {
 		Market Market `json:"market"`
@@ -142,6 +155,24 @@ func TestMain(m *testing.M) {
 	code := m.Run()
 	_ = cmd.Process.Kill()
 	os.Exit(code)
+}
+
+// safeBuffer is a log the client writes from its goroutines.
+type safeBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (s *safeBuffer) Write(p []byte) (int, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.Write(p)
+}
+
+func (s *safeBuffer) String() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.b.String()
 }
 
 func into(raw json.RawMessage, v any) error {
@@ -211,7 +242,8 @@ func TestConformance(t *testing.T) {
 			if sc.Client != nil {
 				base += sc.Client.BaseURLSuffix
 			}
-			c, err := NewClient(WithAPIKey(S.Key), WithBaseURL(base), WithMaxRetries(2))
+			var logs safeBuffer
+			c, err := NewClient(WithAPIKey(S.Key), WithBaseURL(base), WithMaxRetries(2), WithLogger(slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -222,7 +254,15 @@ func TestConformance(t *testing.T) {
 			var raw *RawResponse
 			var items []string
 			for _, call := range calls {
-				raw, items, err = dispatch(context.Background(), c, call)
+				if call.Raw != nil {
+					var body any
+					if len(call.Raw.Body) > 0 {
+						body = call.Raw.Body
+					}
+					raw, err = c.Do(context.Background(), call.Raw.Method, call.Raw.Path, nil, body)
+				} else {
+					raw, items, err = dispatch(context.Background(), c, call)
+				}
 				if err != nil {
 					break
 				}
@@ -314,6 +354,12 @@ func TestConformance(t *testing.T) {
 			}
 			if x.MinElapsedMs > 0 && got[len(got)-1].At-got[0].At < x.MinElapsedMs {
 				t.Fatalf("elapsed %d ms, want %d", got[len(got)-1].At-got[0].At, x.MinElapsedMs)
+			}
+			if x.MaxElapsedMs > 0 && got[len(got)-1].At-got[0].At > x.MaxElapsedMs {
+				t.Fatalf("elapsed %d ms, want at most %d", got[len(got)-1].At-got[0].At, x.MaxElapsedMs)
+			}
+			if x.LoggedDepr && !strings.Contains(logs.String(), "deprecated") {
+				t.Fatalf("no deprecation logged: %q", logs.String())
 			}
 			for _, check := range x.Checks {
 				switch check {
@@ -428,6 +474,17 @@ func localWebhooks(t *testing.T) {
 		t.Fatal(err)
 	}
 	wants(p, v.Want)
+	// no usable secret: a ValidationError, never a check against an empty key; empty ones are dropped (Q10)
+	for _, secrets := range v.NoSecret.Secrets {
+		_, err := VerifyWebhookAt([]byte(v.Body), at(v.Timestamp, v.Signature), secrets, 0, now)
+		var e *Error
+		if !errors.Is(err, ErrValidation) || !errors.As(err, &e) || e.Code != v.NoSecret.ErrorCode {
+			t.Fatalf("secrets %q: %v", secrets, err)
+		}
+	}
+	if p, err := VerifyWebhookAt([]byte(v.Body), at(v.Timestamp, v.Signature), v.NoSecret.WithOne, 0, now); err != nil || p.ID != "evt_01JAB7Q8XK4M2N5P7R9S3T5V7W" {
+		t.Fatalf("an empty secret beside the real one: %v", err)
+	}
 	if p, err := VerifyWebhookAt([]byte(v.Body), at(v.Timestamp, v.Rotation), []string{v.Secret}, 0, now); err != nil {
 		t.Fatal(err)
 	} else {
@@ -528,6 +585,7 @@ type streamScenario struct {
 		Resubscribe     map[string]any `json:"resubscribe"`
 		UnsubscribeSent map[string]any `json:"unsubscribe_sent"`
 		Limits          map[string]any `json:"limits"`
+		SubscribeSizes  []int          `json:"subscribe_sizes"`
 		Gap             *string        `json:"gap"`
 		Error           *struct {
 			Class     string `json:"class"`
@@ -665,6 +723,20 @@ func TestStreams(t *testing.T) {
 				last := reqs[len(reqs)-1]
 				if len(last.Messages) == 0 || !reflect.DeepEqual(pick(last.Messages[0], x.Resubscribe), any(x.Resubscribe)) {
 					t.Fatalf("resubscribe %v, want %v", last.Messages, x.Resubscribe)
+				}
+			}
+			if x.SubscribeSizes != nil {
+				for i, r := range reqs {
+					sizes := []int{}
+					for _, msg := range r.Messages {
+						if msg["op"] == "subscribe" {
+							syms, _ := msg["symbols"].([]any)
+							sizes = append(sizes, len(syms))
+						}
+					}
+					if !reflect.DeepEqual(sizes, x.SubscribeSizes) {
+						t.Fatalf("connection %d: subscribe sizes %v, want %v", i, sizes, x.SubscribeSizes)
+					}
 				}
 			}
 			if x.UnsubscribeSent != nil {

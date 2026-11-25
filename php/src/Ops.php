@@ -33,7 +33,7 @@ final class Ops
     public const LIST_ORDERS = ['id' => 'listOrders', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/orders', 'idempotent' => false, 'retrySafe' => true, 'cursor' => 'cursor', 'scope' => 'read'];
     public const PLACE_ORDER = ['id' => 'placeOrder', 'method' => 'POST', 'path' => '/v1/accounts/{account_id}/orders', 'idempotent' => true, 'retrySafe' => false, 'cursor' => null, 'scope' => 'trade'];
     public const GET_ORDER = ['id' => 'getOrder', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/orders/{order_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
-    public const MODIFY_ORDER = ['id' => 'modifyOrder', 'method' => 'PATCH', 'path' => '/v1/accounts/{account_id}/orders/{order_id}', 'idempotent' => false, 'retrySafe' => false, 'cursor' => null, 'scope' => 'trade'];
+    public const MODIFY_ORDER = ['id' => 'modifyOrder', 'method' => 'PATCH', 'path' => '/v1/accounts/{account_id}/orders/{order_id}', 'idempotent' => true, 'retrySafe' => false, 'cursor' => null, 'scope' => 'trade'];
     public const CANCEL_ORDER = ['id' => 'cancelOrder', 'method' => 'DELETE', 'path' => '/v1/accounts/{account_id}/orders/{order_id}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'trade'];
     public const TEST_ORDER = ['id' => 'testOrder', 'method' => 'POST', 'path' => '/v1/accounts/{account_id}/orders/test', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
     public const CANCEL_ALL_ORDERS = ['id' => 'cancelAllOrders', 'method' => 'POST', 'path' => '/v1/accounts/{account_id}/orders/cancel-all', 'idempotent' => true, 'retrySafe' => false, 'cursor' => null, 'scope' => 'trade'];
@@ -42,7 +42,7 @@ final class Ops
     public const SET_MARGIN = ['id' => 'setMargin', 'method' => 'PUT', 'path' => '/v1/accounts/{account_id}/margin/{market}', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'trade'];
     public const LIST_EVENTS = ['id' => 'listEvents', 'method' => 'GET', 'path' => '/v1/events', 'idempotent' => false, 'retrySafe' => true, 'cursor' => 'after', 'scope' => 'read'];
     public const GET_EXITS = ['id' => 'getExits', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/positions/{market}/exits', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'read'];
-    public const SET_EXITS = ['id' => 'setExits', 'method' => 'PUT', 'path' => '/v1/accounts/{account_id}/positions/{market}/exits', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'trade'];
+    public const SET_EXITS = ['id' => 'setExits', 'method' => 'PUT', 'path' => '/v1/accounts/{account_id}/positions/{market}/exits', 'idempotent' => true, 'retrySafe' => true, 'cursor' => null, 'scope' => 'trade'];
     public const SET_ORDER_EXITS = ['id' => 'setOrderExits', 'method' => 'PUT', 'path' => '/v1/accounts/{account_id}/orders/{order_id}/exits', 'idempotent' => false, 'retrySafe' => true, 'cursor' => null, 'scope' => 'trade'];
     public const CREATE_STRATEGY = ['id' => 'createStrategy', 'method' => 'POST', 'path' => '/v1/accounts/{account_id}/strategies', 'idempotent' => true, 'retrySafe' => false, 'cursor' => null, 'scope' => 'trade'];
     public const LIST_STRATEGIES = ['id' => 'listStrategies', 'method' => 'GET', 'path' => '/v1/accounts/{account_id}/strategies', 'idempotent' => false, 'retrySafe' => true, 'cursor' => 'cursor', 'scope' => 'read'];

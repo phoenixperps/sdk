@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
+import re
 import time
 from decimal import ROUND_CEILING, ROUND_FLOOR, ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import Any, Iterable, Mapping, Optional, Union
@@ -29,7 +30,13 @@ class _InvalidValue(ValidationError, ValueError):
     """A value a helper cannot take: the SDK's ValidationError, and the ValueError it always was."""
 
 
+# a decimal string as every SDK reads it: a sign, digits with a fraction, an exponent; nothing else (no spaces, no 1_000)
+_DECIMAL = re.compile(r"-?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?")
+
+
 def _d(x: Num) -> Decimal:
+    if isinstance(x, str) and not _DECIMAL.fullmatch(x):
+        raise _InvalidValue(f"{x!r} is not a decimal.", code="invalid_parameter")
     try:
         d = x if isinstance(x, Decimal) else Decimal(repr(x)) if isinstance(x, float) else Decimal(str(x))
         if d.is_finite():
@@ -63,10 +70,16 @@ class MarketRules:
         return round_to(size, self.size_step, "down")
 
     def size_for_notional(self, usd: Num, price: Num) -> str:
-        return self.round_size(_d(usd) / _d(price))
+        p = _d(price)
+        if p <= 0:  # a ValidationError, never the language's DivisionByZero (Q89)
+            raise _InvalidValue(f"size_for_notional: the price is above zero, not {price!r}", code="invalid_parameter")
+        return self.round_size(_d(usd) / p)
 
     def size_for_risk(self, risk_usd: Num, stop_distance: Num) -> str:
-        return self.round_size(_d(risk_usd) / abs(_d(stop_distance)))
+        d = abs(_d(stop_distance))
+        if d == 0:
+            raise _InvalidValue("size_for_risk: the stop distance is not zero", code="invalid_parameter")
+        return self.round_size(_d(risk_usd) / d)
 
     def worst_price(self, side: str, price: Num, slippage_pct: Optional[Num] = None) -> str:
         bounds = self.slippage or {}
@@ -91,7 +104,7 @@ class WebhookVerificationError(PhoenixPerpsError):
 def _header(headers: Mapping[str, Any], name: str) -> Optional[str]:
     for k, v in headers.items():
         if k.lower() == name:
-            return v[0] if isinstance(v, (list, tuple)) else v
+            return str(v[0]) if isinstance(v, (list, tuple)) else (None if v is None else str(v))
     return None
 
 
@@ -101,6 +114,10 @@ class Webhooks:
         """The WebhookPayload of a delivery (the event, with api_version, environment and test), once its signature and
         time check out. `raw`: the body exactly as received (its bytes are signed: one that is not UTF-8 fails the
         signature, never the decoding)."""
+        # no usable secret (an unset variable read as ""): an error, never a check against an empty key (Q10)
+        keys = [x for x in ([secrets] if isinstance(secrets, str) else list(secrets or [])) if isinstance(x, str) and x]
+        if not keys:
+            raise _InvalidValue("No webhook secret: give the endpoint's signing secret (ppwhsec_...).", code="missing_secret")
         body = raw if isinstance(raw, bytes) else raw.encode()
         ts = _header(headers, "x-phoenix-timestamp")
         sig = _header(headers, "x-phoenix-signature")
@@ -109,7 +126,7 @@ class Webhooks:
         if not ts.isdigit() or abs((time.time() if now is None else now) - int(ts)) > tolerance_seconds:
             raise WebhookVerificationError("stale", "The delivery is too old (or the clock is off).")
         given = [s.strip().encode() for s in sig.split(",")]  # bytes: a value of any alphabet compares, never raises
-        for secret in [secrets] if isinstance(secrets, str) else list(secrets):
+        for secret in keys:
             want = b"sha256=" + hmac.new(secret.encode(), ts.encode() + b"." + body, hashlib.sha256).hexdigest().encode()
             if any(hmac.compare_digest(g, want) for g in given):
                 try:

@@ -25,20 +25,26 @@ use PhoenixPerps\Exception\ValidationException;
  */
 final class Client extends BaseClient
 {
-    public const SDK_VERSION = '1.2.0';
+    public const SDK_VERSION = '1.3.0';
     private const RETRY_AFTER_MAX = 60.0;
     private const PAGE = ['data' => true, 'has_more' => true, 'next_cursor' => true, 'as_of' => true]; // a list's own fields
 
-    private readonly ?string $key;
+    /** @var \Closure(): ?string the key, inside a closure: var_export and every dump of the client leave it out (Q41) */
+    private readonly \Closure $key;
     public readonly string $environment;
     public readonly string $baseUrl;
     public readonly string $accountStreamUrl;
     public readonly string $marketStreamUrl;
     private readonly ClientInterface $http;
-    /** @var array{limit: int, remaining: int, resetAt: float|null}|null */
+    /** @var array{limit: int, remaining: int, resetAt: float|null, scope: string|null}|null */
     private ?array $rateLimit = null;
-    /** @var array<string, array{limit: int, remaining: int, resetAt: float|null}> the window of each budget (an operation's x-pp-scope) */
+    /**
+     * @var array<string, array{limit: int, remaining: int, resetAt: float|null, scope: string|null, nextAt: float|null}>
+     *     per budget: the operation's scope and the bucket that answered ("trade:bulk"), with when its next request comes
+     */
     private array $budgets = [];
+    /** @var array<string, array<string, true>> the budgets each operation ("scope|id") met */
+    private array $met = [];
     /** @var array<string, true> */
     private array $warned = [];
 
@@ -80,7 +86,7 @@ final class Client extends BaseClient
         if ($inferred !== null && $inferred !== $env) {
             throw new AuthenticationException('wrong_environment', "This key is a {$inferred} key, not a {$env} one.", details: ['key_environment' => $inferred]);
         }
-        $this->key = $key;
+        $this->key = static fn (): ?string => $key;
         $this->environment = $env;
         // the host: every path starts with /v1, so the REST address as the docs write it (host/v1) loses it here
         $this->baseUrl = preg_replace('#/v1$#', '', rtrim($baseUrl ?? (getenv('PHOENIXPERPS_BASE_URL') ?: null) ?? Meta::SERVERS[$env], '/'));
@@ -93,12 +99,13 @@ final class Client extends BaseClient
     /** The key with its secret hidden (ppk_test_****abcd); empty without a key. */
     public function maskedKey(): string
     {
-        if ($this->key === null) {
+        $k = ($this->key)();
+        if ($k === null) {
             return '';
         }
-        $from = min(4, strlen($this->key));
-        $i = strpos($this->key, '_', $from);
-        return ($i === false ? '' : substr($this->key, 0, $i + 1)) . '****' . (strlen($this->key) > 4 ? substr($this->key, -4) : $this->key);
+        $from = min(4, strlen($k));
+        $i = strpos($k, '_', $from);
+        return ($i === false ? '' : substr($k, 0, $i + 1)) . '****' . (strlen($k) > 4 ? substr($k, -4) : $k);
     }
 
     /** @return array{limit: int, remaining: int, resetAt: float|null}|null what the last answer said of the rate-limit window */
@@ -134,7 +141,8 @@ final class Client extends BaseClient
     /** @internal the key, for the streams' upgrade (null without one) */
     public function bearer(): ?string
     {
-        return $this->key === null ? null : 'Bearer ' . $this->key;
+        $k = ($this->key)();
+        return $k === null ? null : 'Bearer ' . $k;
     }
 
     /**
@@ -166,20 +174,29 @@ final class Client extends BaseClient
         }
     }
 
-    private function preWait(string $scope): void
+    /**
+     * The next request of a budget this operation met with nothing left in it, when under 60 s (Q15): never the whole
+     * window, never a bucket only other operations draw on.
+     *
+     * @param array<string, mixed> $op
+     */
+    private function preWait(array $op): void
     {
-        $r = $this->budgets[$scope] ?? null;
-        if ($r === null || $r['remaining'] > 0 || $r['resetAt'] === null) {
-            return;
+        $until = 0.0;
+        foreach (array_keys($this->met[($op['scope'] ?? '') . '|' . $op['id']] ?? []) as $b) {
+            $until = max($until, $this->budgets[$b]['nextAt'] ?? 0.0);
         }
-        $wait = $r['resetAt'] - microtime(true);
+        $wait = $until - microtime(true);
         if ($wait > 0 && $wait < 60) {
             usleep((int) ($wait * 1e6));
         }
     }
 
-    /** @param array<string, string> $h */
-    private function remember(array $h, string $scope): void
+    /**
+     * @param array<string, string> $h
+     * @param array<string, mixed> $op
+     */
+    private function remember(array $h, array $op): void
     {
         // any answer may say so, also one without the rate-limit headers (a 401, an unknown route)
         $dep = $h['deprecation'] ?? null;
@@ -196,7 +213,15 @@ final class Client extends BaseClient
             // Reset as epoch seconds (above a year in seconds) or as seconds from now
             $resetAt = $reset > 31536000 ? $reset : microtime(true) + $reset;
         }
-        $this->rateLimit = $this->budgets[$scope] = ['limit' => (int) $h['x-ratelimit-limit'], 'remaining' => (int) ($h['x-ratelimit-remaining'] ?? 0), 'resetAt' => $resetAt];
+        $perMin = (float) $h['x-ratelimit-limit'];
+        $remaining = (int) (float) ($h['x-ratelimit-remaining'] ?? 0);
+        $bucket = $h['x-ratelimit-scope'] ?? null;
+        // with nothing left, its next request comes back after a 429's Retry-After, else 60 s / the per-minute limit
+        $nextAt = $remaining > 0 ? null : microtime(true) + (self::retryAfter($h) ?? ($perMin > 0 ? 60 / $perMin : 0.0));
+        $budget = ($op['scope'] ?? '') . ':' . ($bucket ?? '');
+        $this->budgets[$budget] = ['limit' => (int) $perMin, 'remaining' => $remaining, 'resetAt' => $resetAt, 'scope' => $bucket, 'nextAt' => $nextAt];
+        $this->rateLimit = ['limit' => (int) $perMin, 'remaining' => $remaining, 'resetAt' => $resetAt, 'scope' => $bucket];
+        $this->met[($op['scope'] ?? '') . '|' . $op['id']][$budget] = true;
     }
 
     /** @param array<string, string> $h */
@@ -216,7 +241,8 @@ final class Client extends BaseClient
     /** A text quoting the key, with it masked. */
     private function hideKey(string $text): string
     {
-        return $this->key === null ? $text : str_replace($this->key, $this->maskedKey(), $text);
+        $k = ($this->key)();
+        return $k === null ? $text : str_replace($k, $this->maskedKey(), $text);
     }
 
     private static function jitter(int $attempt): float
@@ -252,15 +278,14 @@ final class Client extends BaseClient
     {
         $key = $o?->idempotencyKey ?? ($op['idempotent'] ? self::uuid4() : null);
         $safe = $op['retrySafe'] || $key !== null; // sent again only when that is safe: a read, a retry-safe route, a key
-        $scope = $op['scope'] ?? ''; // its budget
         $max = $o?->maxRetries ?? $this->maxRetries;
         $timeout = $o?->timeout ?? $this->timeout;
         $url = $this->url($op, $path, $query);
         for ($attempt = 0;; $attempt++) {
-            $this->preWait($scope);
+            $this->preWait($op);
             $headers = ['Accept' => 'application/json', 'User-Agent' => $this->userAgent()] + ($o?->headers ?? []);
-            if ($this->key !== null) {
-                $headers['Authorization'] = 'Bearer ' . $this->key;
+            if (($k = ($this->key)()) !== null) {
+                $headers['Authorization'] = 'Bearer ' . $k;
             }
             if ($key !== null) {
                 $headers['Idempotency-Key'] = $key;
@@ -284,7 +309,7 @@ final class Client extends BaseClient
                 foreach ($res->getHeaders() as $name => $values) {
                     $h[strtolower($name)] = implode(',', $values);
                 }
-                $this->remember($h, $scope);
+                $this->remember($h, $op);
                 $raw = new RawResponse($res->getStatusCode(), $h, (string) $res->getBody(), $h['x-request-id'] ?? null, $key);
                 if ($o?->onResponse !== null) {
                     ($o->onResponse)($raw);
@@ -296,6 +321,11 @@ final class Client extends BaseClient
                 }
                 $ra = self::retryAfter($h);
                 $err = PhoenixPerpsException::fromAnswer($status, $h, $raw->body, $ra, $key);
+                // a cancel answered as already canceled or expired: the order no longer works, as asked (its own lost
+                // answer asked again, or a cancel made elsewhere), and the answer is that order (Q14); filled still fails
+                if ($op['id'] === 'cancelOrder' && $err->errorCode === 'order_not_working' && in_array(($err->details['status'] ?? null), ['canceled', 'expired'], true)) {
+                    return $this->send(Ops::GET_ORDER, $path, null, null, $o === null ? null : new RequestOptions(null, $o->timeout, $o->maxRetries, $o->maxItems, $o->headers, $o->onResponse));
+                }
                 // again only when the API says it may work (its retryable; without its envelope, 429 and 5xx)
                 if (!($safe && $attempt < $max && $err->retryable) || ($ra !== null && $ra > self::RETRY_AFTER_MAX)) {
                     throw $err;

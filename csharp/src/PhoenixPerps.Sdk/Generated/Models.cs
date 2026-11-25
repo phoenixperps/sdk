@@ -164,6 +164,10 @@ public sealed partial class StatusEngine
     [JsonPropertyName("started_at")]
     public long? StartedAt { get; set; }
 
+    /// <summary>Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy to take one (engine_busy).</summary>
+    [JsonPropertyName("writes")]
+    public StatusEngineWrites Writes { get; set; }
+
     /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? Extra { get; set; }
@@ -175,6 +179,10 @@ public sealed partial class StatusAccountData
     /// <summary>When your keys and accounts were last confirmed with the website.</summary>
     [JsonPropertyName("synced_at")]
     public long? SyncedAt { get; set; }
+
+    /// <summary>Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable).</summary>
+    [JsonPropertyName("state")]
+    public StatusAccountDataState State { get; set; }
 
     /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
     [JsonExtensionData]
@@ -495,6 +503,10 @@ public sealed partial class LimitsOrders
     /// <summary>The farthest, in days from now.</summary>
     [JsonPropertyName("gtd_max_days")]
     public long GtdMaxDays { get; set; }
+
+    /// <summary>The least time between two orders that can open a position on one account, in ms: the engine takes one about this often, so the next waits its turn (reduce-only orders and cancels never wait). A call that would wait past its reply time is refused 429 rate_limited, scope order_spacing.</summary>
+    [JsonPropertyName("open_spacing_ms")]
+    public long OpenSpacingMs { get; set; }
 
     /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
     [JsonExtensionData]
@@ -1055,6 +1067,10 @@ public sealed partial class AccountRisk
     /// <summary>Some figures are older than usual (the engine was busy).</summary>
     [JsonPropertyName("stale")]
     public bool Stale { get; set; }
+
+    /// <summary>The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York.</summary>
+    [JsonPropertyName("paused")]
+    public bool Paused { get; set; }
 
     /// <summary>The balance.</summary>
     [JsonPropertyName("balance")]
@@ -2336,9 +2352,27 @@ public sealed partial class OrderExits
     [JsonPropertyName("take_profit")]
     public List<OrderExitsTakeProfit>? TakeProfit { get; set; }
 
-    /// <summary>A stop on the loss side, at price, or at distance or percent from the fill; it may trail and move to break-even (as in a position's exits).</summary>
+    /// <summary>A stop on the loss side, at price, or at distance or percent from the fill; it may trail and move to break-even (as in a position's exits). ClearStopLoss() sends the null.</summary>
     [JsonPropertyName("stop_loss")]
-    public OrderExitsStopLoss? StopLoss { get; set; }
+    public OrderExitsStopLoss? StopLoss
+    {
+        get => _stopLoss;
+        set
+        {
+            _stopLoss = value;
+            if (value is not null) Extra?.Remove("stop_loss");
+        }
+    }
+
+    private OrderExitsStopLoss? _stopLoss;
+
+    /// <summary>Sends stop_loss as null (the API: null removes it).</summary>
+    public OrderExits ClearStopLoss()
+    {
+        _stopLoss = null;
+        (Extra ??= new())["stop_loss"] = JsonNull.Value;
+        return this;
+    }
 
     /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
     [JsonExtensionData]
@@ -3804,9 +3838,27 @@ public sealed partial class ChangePriceAlert
     [JsonPropertyName("price")]
     public decimal? Price { get; set; }
 
-    /// <summary>A new note; null removes it.</summary>
+    /// <summary>A new note; null removes it. ClearNote() sends the null.</summary>
     [JsonPropertyName("note")]
-    public string? Note { get; set; }
+    public string? Note
+    {
+        get => _note;
+        set
+        {
+            _note = value;
+            if (value is not null) Extra?.Remove("note");
+        }
+    }
+
+    private string? _note;
+
+    /// <summary>Sends note as null (the API: null removes it).</summary>
+    public ChangePriceAlert ClearNote()
+    {
+        _note = null;
+        (Extra ??= new())["note"] = JsonNull.Value;
+        return this;
+    }
 
     /// <summary>Fields this SDK version does not know yet (a newer API's), kept as they came.</summary>
     [JsonExtensionData]
@@ -3895,6 +3947,10 @@ public sealed partial class AccountRiskOrNull
     /// <summary>Some figures are older than usual (the engine was busy).</summary>
     [JsonPropertyName("stale")]
     public bool Stale { get; set; }
+
+    /// <summary>The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York.</summary>
+    [JsonPropertyName("paused")]
+    public bool Paused { get; set; }
 
     /// <summary>The balance.</summary>
     [JsonPropertyName("balance")]

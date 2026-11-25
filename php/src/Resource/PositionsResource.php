@@ -55,7 +55,7 @@ final class PositionsResource
     }
 
     /** Close a position. */
-    public function close(string $accountId, string $market, ClosePosition|array $body, ?RequestOptions $options = null): Order
+    public function close(string $accountId, string $market, ClosePosition|array $body = [], ?RequestOptions $options = null): Order
     {
         return Order::fromArray($this->c->one(Ops::CLOSE_POSITION, [$accountId, $market], null, $body, $options) ?? []);
     }

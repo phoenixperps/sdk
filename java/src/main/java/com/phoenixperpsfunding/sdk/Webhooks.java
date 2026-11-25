@@ -37,6 +37,11 @@ public final class Webhooks {
      * signature and time check out. raw: the body exactly as received.
      */
     public static WebhookPayload verify(String raw, Map<String, String> headers, List<String> secrets, Duration tolerance, Instant now) {
+        // no usable secret (an unset variable read as ""): an error, never a check against an empty key (Q10)
+        List<String> keys = secrets == null ? List.of() : secrets.stream().filter(k -> k != null && !k.isEmpty()).toList();
+        if (keys.isEmpty()) {
+            throw new PhoenixPerpsException.ValidationException("missing_secret", "No webhook secret: give the endpoint's signing secret (ppwhsec_...).", null);
+        }
         String ts = header(headers, "x-phoenix-timestamp");
         String sig = header(headers, "x-phoenix-signature");
         if (ts == null || ts.isEmpty() || sig == null || sig.isEmpty()) {
@@ -47,7 +52,7 @@ public final class Webhooks {
         if (!fresh(ts, at, tol)) {
             throw new VerificationException("stale", "The delivery is too old (or the clock is off).");
         }
-        for (String secret : secrets) {
+        for (String secret : keys) {
             byte[] want = ("sha256=" + hmac(secret, ts + "." + raw)).getBytes(StandardCharsets.UTF_8);
             for (String g : sig.split(",")) {
                 if (MessageDigest.isEqual(g.trim().getBytes(StandardCharsets.UTF_8), want)) {

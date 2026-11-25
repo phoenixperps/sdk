@@ -11,13 +11,15 @@ use PhoenixPerps\Decimal;
 /** AccountRisk */
 final class AccountRisk implements \JsonSerializable
 {
-    private const WIRE = ['as_of' => true, 'stale' => true, 'balance' => true, 'equity' => true, 'unrealized_pnl' => true, 'pnl_today' => true, 'realized_today' => true, 'fees_today' => true, 'trades_today' => true, 'margin_used' => true, 'margin_available' => true, 'exposure' => true, 'daily_loss' => true, 'max_drawdown' => true, 'profit_target' => true, 'trading_days' => true, 'nearest_liquidation' => true, 'trading_day_ends_at' => true, 'warnings' => true];
+    private const WIRE = ['as_of' => true, 'stale' => true, 'paused' => true, 'balance' => true, 'equity' => true, 'unrealized_pnl' => true, 'pnl_today' => true, 'realized_today' => true, 'fees_today' => true, 'trades_today' => true, 'margin_used' => true, 'margin_available' => true, 'exposure' => true, 'daily_loss' => true, 'max_drawdown' => true, 'profit_target' => true, 'trading_days' => true, 'nearest_liquidation' => true, 'trading_day_ends_at' => true, 'warnings' => true];
 
     public function __construct(
         /** When the oldest figure here was read. */
         public readonly ?int $asOf = null,
         /** Some figures are older than usual (the engine was busy). */
         public readonly ?bool $stale = null,
+        /** The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York. */
+        public readonly ?bool $paused = null,
         /** The balance. */
         public readonly ?string $balance = null,
         /** The balance plus the open P&L at the market price. */
@@ -64,6 +66,7 @@ final class AccountRisk implements \JsonSerializable
         return new self(
             asOf: $d['as_of'] ?? null,
             stale: $d['stale'] ?? null,
+            paused: $d['paused'] ?? null,
             balance: isset($d['balance']) ? (string) $d['balance'] : null,
             equity: isset($d['equity']) ? (string) $d['equity'] : null,
             unrealizedPnl: isset($d['unrealized_pnl']) ? (string) $d['unrealized_pnl'] : null,
@@ -94,6 +97,9 @@ final class AccountRisk implements \JsonSerializable
         }
         if ($this->stale !== null) {
             $out['stale'] = $this->stale;
+        }
+        if ($this->paused !== null) {
+            $out['paused'] = $this->paused;
         }
         if ($this->balance !== null) {
             $out['balance'] = $this->balance;

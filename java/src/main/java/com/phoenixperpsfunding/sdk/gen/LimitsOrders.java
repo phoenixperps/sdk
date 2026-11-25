@@ -41,6 +41,9 @@ public final class LimitsOrders {
     @JsonProperty("gtd_max_days")
     private Long gtdMaxDays;
 
+    @JsonProperty("open_spacing_ms")
+    private Long openSpacingMs;
+
     /** Working orders an account may hold. */
     public Long maxWorkingPerAccount() {
         return maxWorkingPerAccount;
@@ -140,6 +143,17 @@ public final class LimitsOrders {
         return this;
     }
 
+    /** The least time between two orders that can open a position on one account, in ms: the engine takes one about this often, so the next waits its turn (reduce-only orders and cancels never wait). A call that would wait past its reply time is refused 429 rate_limited, scope order_spacing. */
+    public Long openSpacingMs() {
+        return openSpacingMs;
+    }
+
+    /** Sets open_spacing_ms. */
+    public LimitsOrders openSpacingMs(Long value) {
+        this.openSpacingMs = value;
+        return this;
+    }
+
     @JsonIgnore
     private final Map<String, Object> extra = new LinkedHashMap<>();
 
@@ -168,16 +182,17 @@ public final class LimitsOrders {
             && Objects.equals(quoteMaxAgeS, o.quoteMaxAgeS)
             && Objects.equals(quoteMaxAgeSlowS, o.quoteMaxAgeSlowS)
             && Objects.equals(gtdMinSeconds, o.gtdMinSeconds)
-            && Objects.equals(gtdMaxDays, o.gtdMaxDays);
+            && Objects.equals(gtdMaxDays, o.gtdMaxDays)
+            && Objects.equals(openSpacingMs, o.openSpacingMs);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(maxWorkingPerAccount, maxWorkingPerCustomer, newPerMinAccount, newPerDayAccount, priceBandPct, quoteMaxAgeS, quoteMaxAgeSlowS, gtdMinSeconds, gtdMaxDays);
+        return Objects.hash(maxWorkingPerAccount, maxWorkingPerCustomer, newPerMinAccount, newPerDayAccount, priceBandPct, quoteMaxAgeS, quoteMaxAgeSlowS, gtdMinSeconds, gtdMaxDays, openSpacingMs);
     }
 
     @Override
     public String toString() {
-        return "LimitsOrders{" + "max_working_per_account=" + maxWorkingPerAccount + ", max_working_per_customer=" + maxWorkingPerCustomer + ", new_per_min_account=" + newPerMinAccount + ", new_per_day_account=" + newPerDayAccount + ", price_band_pct=" + priceBandPct + ", quote_max_age_s=" + quoteMaxAgeS + ", quote_max_age_slow_s=" + quoteMaxAgeSlowS + ", gtd_min_seconds=" + gtdMinSeconds + ", gtd_max_days=" + gtdMaxDays + "}";
+        return "LimitsOrders{" + "max_working_per_account=" + maxWorkingPerAccount + ", max_working_per_customer=" + maxWorkingPerCustomer + ", new_per_min_account=" + newPerMinAccount + ", new_per_day_account=" + newPerDayAccount + ", price_band_pct=" + priceBandPct + ", quote_max_age_s=" + quoteMaxAgeS + ", quote_max_age_slow_s=" + quoteMaxAgeSlowS + ", gtd_min_seconds=" + gtdMinSeconds + ", gtd_max_days=" + gtdMaxDays + ", open_spacing_ms=" + openSpacingMs + "}";
     }
 }

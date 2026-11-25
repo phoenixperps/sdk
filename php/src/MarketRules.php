@@ -51,14 +51,31 @@ final class MarketRules
         return $i === false ? 0 : strlen($s) - $i - 1;
     }
 
-    /** x as the decimal string bcmath takes (digits, at most one point), else the API's own refusal. */
+    /**
+     * x as the decimal string bcmath takes (digits, at most one point), else the API's own refusal. A decimal as every
+     * SDK reads it (BEHAVIOUR.md): a sign, digits with a fraction, an exponent (6.2E+4, read exactly); nothing else: no
+     * spaces, no +, no 1_000 (Q98).
+     */
     private static function dec(string|int|float $x, string $field): string
     {
         $s = Decimal::of($x);
-        if (!preg_match('/^[+-]?(\d+(\.\d*)?|\.\d+)$/', $s)) {
+        if (!preg_match('/^(-?)(\d+\.?\d*|\.\d+)(?:[eE]([+-]?\d{1,3}))?$/', $s, $m)) {
             throw new ValidationException('invalid_request', "{$field} is not a decimal: '{$s}'.", details: [['field' => $field, 'issue' => 'a decimal: digits and at most one point']]);
         }
-        return $s;
+        if (!isset($m[3]) || $m[3] === '') {
+            return $s;
+        }
+        // the exponent spelled out, its digits unchanged: never through a float
+        [$int, $frac] = array_pad(explode('.', $m[2], 2), 2, '');
+        $digits = $int . $frac;
+        $point = strlen($int) + (int) $m[3];
+        if ($point <= 0) {
+            return $m[1] . '0.' . str_repeat('0', -$point) . $digits;
+        }
+        if ($point >= strlen($digits)) {
+            return $m[1] . $digits . str_repeat('0', $point - strlen($digits));
+        }
+        return $m[1] . substr($digits, 0, $point) . '.' . substr($digits, $point);
     }
 
     /** x as a multiple of step (nearest: a tie goes away from zero), as the decimal string the API takes. */
@@ -67,7 +84,7 @@ final class MarketRules
         $x = self::dec($x, 'x');
         $step = self::dec($step, 'step');
         if (bccomp($step, '0', self::SCALE) <= 0) {
-            throw new \InvalidArgumentException('The step is not above zero.');
+            throw new ValidationException('invalid_parameter', 'The step is not above zero.');
         }
         $q = bcdiv($x, $step, self::SCALE);
         $whole = bcadd($q, '0', 0); // toward zero

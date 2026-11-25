@@ -182,3 +182,7 @@ internal static class ErrorReader
 
     internal static string Clip(string s) => s.Length > 200 ? s[..200] : s;
 }
+
+/// <summary>304 while auto-paging: nothing changed since the If-None-Match given (a plain list call answers null for it;
+/// an iteration says so instead of yielding nothing, Q102).</summary>
+public sealed class NotModifiedException() : PhoenixPerpsException("not_modified", "Nothing changed since the If-None-Match given (304).", 304);

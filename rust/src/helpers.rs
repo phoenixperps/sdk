@@ -43,7 +43,23 @@ impl DecimalArg for Decimal {
 
 impl DecimalArg for &str {
     fn decimal(self) -> Result<Decimal> {
-        Decimal::from_str_exact(self.trim()).map_err(|_| invalid(format!("{self:?} is not a decimal.")))
+        let bad = || invalid(format!("{self:?} is not a decimal."));
+        // as every SDK reads it (BEHAVIOUR.md): a sign, digits with a fraction, an exponent (read exactly); nothing else:
+        // no spaces around it, no 1_000 (Q97 Q98)
+        let (mantissa, exponent) = match self.find(['e', 'E']) {
+            Some(i) => (&self[..i], Some(&self[i + 1..])),
+            None => (self, None),
+        };
+        let m = mantissa.strip_prefix('-').unwrap_or(mantissa);
+        let digits = !m.is_empty() && m != "." && m.matches('.').count() <= 1 && m.chars().all(|c| c.is_ascii_digit() || c == '.');
+        let power = exponent.is_none_or(|e| {
+            let e = e.strip_prefix(['+', '-']).unwrap_or(e);
+            !e.is_empty() && e.len() <= 3 && e.chars().all(|c| c.is_ascii_digit())
+        });
+        if !digits || !power {
+            return Err(bad());
+        }
+        if exponent.is_some() { Decimal::from_scientific(self) } else { Decimal::from_str_exact(self) }.map_err(|_| bad())
     }
 }
 
@@ -164,13 +180,18 @@ where
     let (Some(ts), Some(sig)) = (ts.filter(|t| !t.is_empty()), sig.filter(|s| !s.is_empty())) else {
         return Err(refused("missing_headers", "X-Phoenix-Timestamp and X-Phoenix-Signature are required."));
     };
+    // no usable secret (an unset variable read as ""): an error, never a check against an empty key (Q10)
+    let secrets: Vec<&str> = secrets.iter().copied().filter(|s| !s.is_empty()).collect();
+    if secrets.is_empty() {
+        return Err(Error::new(ErrorKind::Validation, "missing_secret", "No webhook secret: give the endpoint's signing secret (ppwhsec_...)."));
+    }
     let stale = || refused("stale", "The delivery is too old (or the clock is off).");
     let t: u64 = ts.parse().map_err(|_| stale())?;
     let at = now.unwrap_or_else(SystemTime::now).duration_since(UNIX_EPOCH).unwrap_or_default().as_secs_f64();
     if (at - t as f64).abs() > tolerance.unwrap_or(Duration::from_secs(300)).as_secs_f64() {
         return Err(stale());
     }
-    for secret in secrets {
+    for secret in &secrets {
         let mut mac = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).expect("any key length");
         mac.update(format!("{ts}.{raw}").as_bytes());
         let want = format!("sha256={}", mac.finalize().into_bytes().iter().map(|b| format!("{b:02x}")).collect::<String>());

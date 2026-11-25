@@ -61,7 +61,11 @@ public sealed class RawResponse
 }
 
 /// <summary>What the last answer said of the rate-limit window.</summary>
-public sealed record RateLimit(int Limit, int Remaining, DateTimeOffset? ResetAt);
+public sealed record RateLimit(int Limit, int Remaining, DateTimeOffset? ResetAt)
+{
+    /// <summary>The bucket that answered (X-RateLimit-Scope: key, bulk, account_orders...), or null.</summary>
+    public string? Scope { get; init; }
+}
 
 /// <summary>The options of one call.</summary>
 public sealed record RequestOptions

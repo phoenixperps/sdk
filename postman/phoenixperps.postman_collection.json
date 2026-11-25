@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Phoenix Perpetuals API",
-    "description": "The REST API, spec 1.0.0. Pick the live or sandbox environment and set apiKey in it.",
+    "description": "The REST API, spec 1.1.0. Pick the live or sandbox environment and set apiKey in it.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -960,6 +960,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
               }
             ],
             "url": {
@@ -1292,6 +1296,10 @@
               {
                 "key": "Content-Type",
                 "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
               }
             ],
             "url": {
@@ -1330,7 +1338,7 @@
                 }
               }
             },
-            "description": "Places, changes and cancels take-profit and stop-loss legs together, against the state you read: when the position or a leg changed since, nothing is done (409 exits_changed, with the state now). The legs are reduce-only and never larger than the position."
+            "description": "Places, changes and cancels take-profit and stop-loss legs together, against the state you read: when the position or a leg changed since, nothing is done (409 exits_changed, with the state now). The legs are reduce-only and never larger than the position. With an Idempotency-Key, the same batch sent again under it (an answer lost) answers the first result and is never applied twice."
           }
         }
       ]

@@ -10,7 +10,7 @@ use PhoenixPerps\Model\WebhookPayload;
  * Webhook deliveries (docs/BEHAVIOUR.md "Helpers"): X-Phoenix-Signature is
  * sha256=<hex HMAC-SHA256(secret, "<X-Phoenix-Timestamp>.<raw body>")>, any of its comma-separated values (a rotation
  * sends two), compared in constant time; X-Phoenix-Timestamp within the tolerance (300 s). No secret (an unset
- * variable: getenv's false, or an empty one) is an InvalidArgumentException, never a check against an empty key.
+ * variable: getenv's false, or an empty one) is a ValidationException (missing_secret), never a check against an empty key.
  */
 final class Webhooks
 {
@@ -47,7 +47,8 @@ final class Webhooks
     {
         $secrets = array_filter((array) $secrets, fn ($s) => is_string($s) && $s !== '');
         if (!$secrets) {
-            throw new \InvalidArgumentException("No webhook secret: give the endpoint's signing secret (ppwhsec_...).");
+            // the SDK's own ValidationException, as in every SDK (Q10)
+            throw new Exception\ValidationException('missing_secret', "No webhook secret: give the endpoint's signing secret (ppwhsec_...).");
         }
         $h = [];
         foreach ($headers as $k => $v) {

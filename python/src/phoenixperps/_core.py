@@ -10,8 +10,9 @@
   an answer the API marks retryable (one without its envelope: 429, 500, 502, 503, 504); after Retry-After when given,
   else full jitter over min(8 s, 0.5 s x 2^n); a Retry-After over 60 s is not slept (RateLimitError with retry_after)
 - one Idempotency-Key per logical call (UUID v4 unless given), the same on every attempt
-- X-RateLimit-* kept per budget (the operation's scope) in client.rate_limits, the last in client.rate_limit; with
-  nothing left and the reset under 60 s away, the next call of that budget waits for it
+- X-RateLimit-* kept per budget (the operation's scope and the bucket that answered, "trade:bulk") in client.rate_limits, the last in client.rate_limit; with
+  nothing left, the next call of an operation that met that budget waits for the request it gives back (60 s / Limit,
+  or a 429's Retry-After), never the whole window; a Deprecation header is told once, on any answer
 - a list answers a Page (every field of the list: page.history_complete); page.auto_paging_iter(max_items=None) goes
   over every item, each page asked with the first call's options
 - a 304 (the caller's If-None-Match matched) is no error: the call answers None (a list call too); a 2xx whose body is
@@ -31,7 +32,7 @@ import time
 import uuid
 import weakref
 from decimal import Decimal
-from typing import Any, AsyncIterator, Dict, Generator, Generic, Iterator, List, Optional, TypeVar
+from typing import Any, AsyncIterator, Dict, Generator, Generic, Iterator, List, Optional, Set, Tuple, TypeVar, cast
 from urllib.parse import quote
 
 import httpx
@@ -39,7 +40,7 @@ import httpx
 from . import _errors as E
 from ._gen import OPS, RESOURCES, SERVERS, SPEC_VERSION, STREAMS, AsyncResources, Resources
 
-SDK_VERSION = "1.2.0"
+SDK_VERSION = "1.3.0"
 PREFIX = re.compile(r"^(ppk|ppo)_(live|test)_")
 RETRY_AFTER_MAX_S = 60.0
 # each client's key, outside the client's own attributes: vars(), repr and pickling never carry it
@@ -111,9 +112,11 @@ class _Base:
         self.app_info = app_info
         self.logger = logger
         self.rate_limit: Optional[Dict[str, Any]] = None  # the last answer's
-        self.rate_limits: Dict[Optional[str], Dict[str, Any]] = {}  # per budget: the operation's scope (read, trade, public)
+        # per budget: the operation's scope and the bucket that answered ("trade:bulk"); the budgets each operation met
+        self.rate_limits: Dict[str, Dict[str, Any]] = {}
+        self._met: Dict[str, Set[str]] = {}
         self.stream_urls = {"account": account_stream_url or STREAMS["account"][env], "market": market_stream_url or STREAMS["market"]}
-        self._warned: set = set()
+        self._warned: Set[str] = set()
         for name, (sync_cls, async_cls) in RESOURCES.items():
             setattr(self, name, (async_cls if isinstance(self, AsyncPhoenixPerps) else sync_cls)(self))
 
@@ -154,34 +157,50 @@ class _Base:
         h.update(extra or {})
         return h
 
-    def _remember(self, headers: httpx.Headers, budget: Optional[str]) -> None:
+    def _remember(self, headers: httpx.Headers, op: Dict[str, Any]) -> None:
+        # any answer may say its version is deprecated, with or without the rate-limit headers (Q87)
+        dep = headers.get("deprecation")
+        if dep and dep not in self._warned:
+            self._warned.add(dep)
+            if self.logger is not None:
+                self.logger.warning("phoenixperps: this API version is deprecated (Deprecation: %s, sunset %s)", dep, headers.get("sunset"))
         limit = headers.get("x-ratelimit-limit")
         if limit is None:
             return
         try:
             reset = float(headers.get("x-ratelimit-reset", ""))
-            reset_at = reset if reset > 31536000 else time.time() + reset  # epoch seconds, or seconds from now
+            reset_at: Optional[float] = reset if reset > 31536000 else time.time() + reset  # epoch seconds, or seconds from now
         except ValueError:
             reset_at = None
-        self.rate_limit = self.rate_limits[budget] = {"limit": int(limit), "remaining": int(headers.get("x-ratelimit-remaining", "0")), "reset_at": reset_at}
-        dep = headers.get("deprecation")
-        if dep and dep not in self._warned:
-            self._warned.add(dep)
-            if self.logger is not None:
-                self.logger.warning("phoenixperps: this API version is deprecated (sunset %s)", headers.get("sunset"))
+        scope = headers.get("x-ratelimit-scope")
+        remaining = int(float(headers.get("x-ratelimit-remaining", "0") or 0))
+        # with nothing left, the next request comes back after a 429's Retry-After, else 60 s / the per-minute limit (Q15)
+        after = E.retry_after_s(headers)
+        per_token = 60.0 / float(limit) if float(limit) > 0 else 0.0
+        next_at = None if remaining > 0 else time.time() + (after if after is not None else per_token)
+        budget = f"{op.get('scope') or ''}:{scope or ''}"
+        lim = float(limit)
+        self.rate_limit = self.rate_limits[budget] = {"limit": int(lim) if lim.is_integer() else lim, "remaining": remaining, "reset_at": reset_at, "scope": scope, "next_at": next_at}
+        self._met.setdefault(f"{op.get('scope') or ''}|{op['id']}", set()).add(budget)
 
-    def _pre_wait_s(self, budget: Optional[str]) -> float:
-        r = self.rate_limits.get(budget)
-        if not r or r["remaining"] > 0 or r["reset_at"] is None:
-            return 0.0
-        wait = r["reset_at"] - time.time()
+    def _pre_wait_s(self, op: Dict[str, Any]) -> float:
+        """The wait for the next request of a budget this operation met with nothing left in it, when under 60 s."""
+        until = max([(self.rate_limits.get(b) or {}).get("next_at") or 0.0 for b in self._met.get(f"{op.get('scope') or ''}|{op['id']}", ())] or [0.0])
+        wait = until - time.time()
         return wait if 0 < wait < 60 else 0.0
+
+    @staticmethod
+    def _lost_cancel(op: Dict[str, Any], attempt: int, failure: Any) -> bool:
+        """A cancel answered as already canceled or expired: the order no longer works, as asked (its own lost answer
+        asked again, or a cancel made elsewhere): the answer is that order (Q14); filled still fails."""
+        return op["id"] == "cancelOrder" and getattr(failure, "code", None) == "order_not_working" \
+            and isinstance(failure.details, dict) and failure.details.get("status") in ("canceled", "expired")
 
     @staticmethod
     def _query(query: Optional[Dict[str, Any]]) -> Dict[str, str]:
         return {k: ("true" if v is True else "false" if v is False else str(v)) for k, v in (query or {}).items() if v is not None}
 
-    def _plan(self, op: Dict[str, Any], opts: Dict[str, Any]) -> tuple:
+    def _plan(self, op: Dict[str, Any], opts: Dict[str, Any]) -> Tuple[Optional[str], bool, int]:
         # any call carrying a key (an order change given one too) is safe to send again: the API does it once
         key = (opts.get("idempotency_key") or str(uuid.uuid4())) if op["idempotent"] else opts.get("idempotency_key")
         return key, bool(op["retry_safe"] or key), opts.get("max_retries", self.max_retries)
@@ -194,7 +213,7 @@ class _Base:
             raw.request_id, raw.idempotency_key = res.headers.get("x-request-id"), key
 
     @staticmethod
-    def _read(res: httpx.Response, op: Dict[str, Any], key: Optional[str]) -> tuple:
+    def _read(res: httpx.Response, op: Dict[str, Any], key: Optional[str]) -> Tuple[Any, Optional[E.PhoenixPerpsError]]:
         """(the body, None), or (None, the error it is): a 304 or a 204 is None, the raw call's body is not read, and a
         2xx that is not JSON (a proxy's page, nothing at all) is an error like any other answer."""
         if res.status_code in (304, 204) or (res.is_success and op.get("raw")):
@@ -214,8 +233,9 @@ class _Base:
             raise E.ValidationError("The path starts with /.", code="invalid_request")
         m = method.upper()
         known = next((o for o in OPS.values() if o["http"] == m and re.fullmatch("[^/]+".join(re.escape(p) for p in re.split(r"\{[^}]+\}", o["path"])), path.split("?")[0])), {})
-        return {"id": "request", "http": m, "path": path, "idempotent": False, "retry_safe": m == "GET" or bool(known.get("retry_safe")),
-                "paging": None, "scope": known.get("scope"), "raw": True}
+        # a known route keeps its Idempotency-Key (the same on every attempt) and its retries (Q39)
+        return {"id": known.get("id", "request"), "http": m, "path": path, "idempotent": bool(known.get("idempotent")),
+                "retry_safe": m == "GET" or bool(known.get("retry_safe")), "paging": None, "scope": known.get("scope"), "raw": True}
 
     @staticmethod
     def _data(body: Any) -> Any:
@@ -295,7 +315,7 @@ class PhoenixPerps(_Base, Resources):
         content = None if body is None else json.dumps(_decimals_as_strings(body), default=_json_default)
         attempt = 0
         while True:
-            wait = self._pre_wait_s(op.get("scope"))
+            wait = self._pre_wait_s(op)
             if wait:
                 time.sleep(wait)
             res = None
@@ -308,11 +328,14 @@ class PhoenixPerps(_Base, Resources):
             except httpx.HTTPError as err:
                 failure = E.APIConnectionError(str(err)[:200], code="connection_failed", idempotency_key=key, retryable=True)
             if res is not None:
-                self._remember(res.headers, op.get("scope"))
+                self._remember(res.headers, op)
                 self._keep(res, key, opts)
-                answer, failure = self._read(res, op, key)
-                if failure is None:
+                answer, refused = self._read(res, op, key)
+                if refused is None:
                     return answer
+                failure = refused
+            if self._lost_cancel(op, attempt, failure):
+                return self._send(OPS["getOrder"], {"path": call.get("path")}, {**opts, "idempotency_key": None})
             if not (retryable and attempt < max_retries and failure.retryable):
                 raise failure
             ra = E.retry_after_s(res.headers) if res is not None else None
@@ -330,11 +353,11 @@ class PhoenixPerps(_Base, Resources):
     def _one(self, op: Dict[str, Any], path: Optional[Dict[str, Any]] = None, body: Any = None, query: Any = None, opts: Optional[Dict[str, Any]] = None) -> Any:
         return self._data(self._send(op, {"path": path, "body": body, "query": query}, opts or {}))
 
-    def _list(self, op: Dict[str, Any], call: Dict[str, Any], opts: Optional[Dict[str, Any]] = None) -> Optional[Page]:
+    def _list(self, op: Dict[str, Any], call: Dict[str, Any], opts: Optional[Dict[str, Any]] = None) -> Optional[Page[Any]]:
         body = self._send(op, call, opts or {})
         return None if body is None else Page(self, op, call, body, opts)  # None: a 304, nothing changed
 
-    def _page(self, op: Dict[str, Any], path: Optional[Dict[str, Any]] = None, query: Any = None, opts: Optional[Dict[str, Any]] = None) -> Optional[Page]:
+    def _page(self, op: Dict[str, Any], path: Optional[Dict[str, Any]] = None, query: Any = None, opts: Optional[Dict[str, Any]] = None) -> Optional[Page[Any]]:
         o = dict(opts or {})
         max_items = o.pop("max_items", None)
         page = self._list(op, {"path": path, "query": query}, o)
@@ -352,8 +375,8 @@ class PhoenixPerps(_Base, Resources):
 
 
 class AsyncPage(_Fields, Generic[T]):
-    """One page of a list (async): its data (iterated, like Page) and every other field of the list, next_page() and
-    auto_paging_iter(max_items=None) as an async iterator."""
+    """One page of a list (async): every item across pages with async for (like Page's for, Q91), this page's own data in
+    page.data (and with a plain for), every other field of the list, next_page() and auto_paging_iter(max_items=None)."""
 
     def __init__(self, client: "AsyncPhoenixPerps", op: Dict[str, Any], call: Dict[str, Any], body: Dict[str, Any], opts: Optional[Dict[str, Any]] = None) -> None:
         self.data: List[T] = body.get("data") or []
@@ -382,6 +405,9 @@ class AsyncPage(_Fields, Generic[T]):
                 return
             page = await page.next_page()
 
+    def __aiter__(self) -> AsyncIterator[T]:
+        return self.auto_paging_iter(self.__dict__.get("_max"))
+
     def __iter__(self) -> Iterator[T]:
         return iter(self.data)
 
@@ -397,8 +423,9 @@ class _AsyncPageCall(Generic[T]):
             self._task = asyncio.ensure_future(self._load())
         return self._task
 
-    def __await__(self) -> Generator[Any, None, Optional[AsyncPage[T]]]:
-        return self._first().__await__()
+    def __await__(self) -> Generator[Any, None, AsyncPage[T]]:
+        # None only on a 304 (an If-None-Match the caller sent), typed as the sync list is: the answer (Q90)
+        return cast(Generator[Any, None, AsyncPage[T]], self._first().__await__())
 
     async def __aiter__(self) -> AsyncIterator[T]:
         page = await self._first()
@@ -429,7 +456,7 @@ class AsyncPhoenixPerps(_Base, AsyncResources):
         content = None if body is None else json.dumps(_decimals_as_strings(body), default=_json_default)
         attempt = 0
         while True:
-            wait = self._pre_wait_s(op.get("scope"))
+            wait = self._pre_wait_s(op)
             if wait:
                 await asyncio.sleep(wait)
             res = None
@@ -442,11 +469,14 @@ class AsyncPhoenixPerps(_Base, AsyncResources):
             except httpx.HTTPError as err:
                 failure = E.APIConnectionError(str(err)[:200], code="connection_failed", idempotency_key=key, retryable=True)
             if res is not None:
-                self._remember(res.headers, op.get("scope"))
+                self._remember(res.headers, op)
                 self._keep(res, key, opts)
-                answer, failure = self._read(res, op, key)
-                if failure is None:
+                answer, refused = self._read(res, op, key)
+                if refused is None:
                     return answer
+                failure = refused
+            if self._lost_cancel(op, attempt, failure):
+                return await self._send(OPS["getOrder"], {"path": call.get("path")}, {**opts, "idempotency_key": None})
             if not (retryable and attempt < max_retries and failure.retryable):
                 raise failure
             ra = E.retry_after_s(res.headers) if res is not None else None
@@ -464,11 +494,11 @@ class AsyncPhoenixPerps(_Base, AsyncResources):
     async def _one(self, op: Dict[str, Any], path: Optional[Dict[str, Any]] = None, body: Any = None, query: Any = None, opts: Optional[Dict[str, Any]] = None) -> Any:
         return self._data(await self._send(op, {"path": path, "body": body, "query": query}, opts or {}))
 
-    async def _list(self, op: Dict[str, Any], call: Dict[str, Any], opts: Optional[Dict[str, Any]] = None) -> Optional[AsyncPage]:
+    async def _list(self, op: Dict[str, Any], call: Dict[str, Any], opts: Optional[Dict[str, Any]] = None) -> Optional[AsyncPage[Any]]:
         body = await self._send(op, call, opts or {})
         return None if body is None else AsyncPage(self, op, call, body, opts)  # None: a 304, nothing changed
 
-    def _page(self, op: Dict[str, Any], path: Optional[Dict[str, Any]] = None, query: Any = None, opts: Optional[Dict[str, Any]] = None) -> _AsyncPageCall:
+    def _page(self, op: Dict[str, Any], path: Optional[Dict[str, Any]] = None, query: Any = None, opts: Optional[Dict[str, Any]] = None) -> _AsyncPageCall[Any]:
         o = dict(opts or {})
         max_items = o.pop("max_items", None)
         return _AsyncPageCall(lambda: self._list(op, {"path": path, "query": query}, o), max_items)

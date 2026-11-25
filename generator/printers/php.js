@@ -191,7 +191,10 @@ ${ir.operations.map((o) => `    public const ${constant(o.id)} = ['id' => ${q(o.
       if (response) uses.add(response);
       if (params) uses.add(params);
       const args = o.pathParams.map((p) => `string $${camel(p.name)}`);
-      if (body) args.push(`${body}|array${o.bodyRequired ? '' : '|null'} $body${o.bodyRequired ? '' : ' = null'}`);
+      // a body the API wants but whose every field is optional (cancel-all: only this market) may be left out: [] goes
+      // out as {} (Q106)
+      const anyBody = o.bodyRequired && !((ir.schemas[o.body] || {}).required || []).length;
+      if (body) args.push(`${body}|array${o.bodyRequired ? '' : '|null'} $body${o.bodyRequired ? (anyBody ? ' = []' : '') : ' = null'}`);
       if (params) args.push(`${params}|array|null $params = null`);
       args.push('?RequestOptions $options = null');
       const path = `[${o.pathParams.map((p) => `$${camel(p.name)}`).join(', ')}]`;

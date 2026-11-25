@@ -83,7 +83,7 @@
       }
     },
     {
-      "name": "a read is tried again after 429, waiting the Retry-After",
+      "name": "a read is tried again after 429, waiting the Retry-After, never its bucket's reset",
       "call": {
         "resource": "me",
         "method": "get"
@@ -93,7 +93,11 @@
           "respond": {
             "status": 429,
             "headers": {
-              "retry-after": "1"
+              "retry-after": "1",
+              "x-ratelimit-limit": "6",
+              "x-ratelimit-remaining": "0",
+              "x-ratelimit-reset": "40",
+              "x-ratelimit-scope": "bulk"
             },
             "body": {
               "error": {
@@ -120,7 +124,8 @@
       "expect": {
         "ok": true,
         "requests": 2,
-        "min_elapsed_ms": 900
+        "min_elapsed_ms": 900,
+        "max_elapsed_ms": 5000
       }
     },
     {
@@ -183,14 +188,14 @@
     {
       "name": "a change without a key is never sent twice",
       "call": {
-        "resource": "orders",
+        "resource": "alerts",
         "method": "modify",
         "path": {
           "account_id": "SANDBOX-00042-001",
-          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+          "alert_id": "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W"
         },
         "body": {
-          "limit_price": "61900"
+          "note": "x"
         }
       },
       "exchanges": [
@@ -368,14 +373,14 @@
     {
       "name": "an HTML body still becomes an error: http_<status>",
       "call": {
-        "resource": "orders",
+        "resource": "alerts",
         "method": "modify",
         "path": {
           "account_id": "SANDBOX-00042-001",
-          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+          "alert_id": "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W"
         },
         "body": {
-          "size": "0.02"
+          "note": "x"
         }
       },
       "exchanges": [
@@ -398,14 +403,14 @@
     {
       "name": "a bare { error: text } body becomes an error too",
       "call": {
-        "resource": "orders",
+        "resource": "alerts",
         "method": "modify",
         "path": {
           "account_id": "SANDBOX-00042-001",
-          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+          "alert_id": "alr_01JAB7Q8XK4M2N5P7R9S3T5V7W"
         },
         "body": {
-          "size": "0.02"
+          "note": "x"
         }
       },
       "exchanges": [
@@ -686,7 +691,7 @@
       }
     },
     {
-      "name": "with no request left in the window, the next call waits for its reset",
+      "name": "with no request left in its budget, the next call of that budget waits for the next request it gives back, never the whole window",
       "calls": [
         {
           "resource": "me",
@@ -702,9 +707,10 @@
           "respond": {
             "status": 200,
             "headers": {
-              "x-ratelimit-limit": "10",
+              "x-ratelimit-limit": "60",
               "x-ratelimit-remaining": "0",
-              "x-ratelimit-reset": "1"
+              "x-ratelimit-reset": "30",
+              "x-ratelimit-scope": "key"
             },
             "body": {
               "data": {
@@ -727,7 +733,8 @@
       "expect": {
         "ok": true,
         "requests": 2,
-        "min_elapsed_ms": 800
+        "min_elapsed_ms": 900,
+        "max_elapsed_ms": 5000
       }
     },
     {
@@ -1023,6 +1030,329 @@
         "requests": 2,
         "min_elapsed_ms": 1400
       }
+    },
+    {
+      "name": "a bucket another operation emptied never holds this one (budgets by X-RateLimit-Scope)",
+      "calls": [
+        {
+          "resource": "me",
+          "method": "get"
+        },
+        {
+          "resource": "accounts",
+          "method": "list"
+        }
+      ],
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "headers": {
+              "x-ratelimit-limit": "6",
+              "x-ratelimit-remaining": "0",
+              "x-ratelimit-reset": "40",
+              "x-ratelimit-scope": "bulk"
+            },
+            "body": {
+              "data": {
+                "n": 1
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": [],
+              "has_more": false,
+              "next_cursor": null
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "max_elapsed_ms": 800
+      }
+    },
+    {
+      "name": "a cancel whose answer was lost, asked again and refused as already canceled, answers the canceled order",
+      "call": {
+        "resource": "orders",
+        "method": "cancel",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "drop": true
+          }
+        },
+        {
+          "respond": {
+            "status": 409,
+            "body": {
+              "error": {
+                "type": "conflict",
+                "code": "order_not_working",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false,
+                "details": {
+                  "status": "canceled"
+                }
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+                "status": "canceled"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 3,
+        "result": {
+          "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+          "status": "canceled"
+        },
+        "paths": [
+          "/v1/accounts/SANDBOX-00042-001/orders/ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+          "/v1/accounts/SANDBOX-00042-001/orders/ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+          "/v1/accounts/SANDBOX-00042-001/orders/ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        ]
+      }
+    },
+    {
+      "name": "a cancel whose answer was lost, asked again and refused as filled, is that refusal: the order was not canceled",
+      "call": {
+        "resource": "orders",
+        "method": "cancel",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "drop": true
+          }
+        },
+        {
+          "respond": {
+            "status": 409,
+            "body": {
+              "error": {
+                "type": "conflict",
+                "code": "order_not_working",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false,
+                "details": {
+                  "status": "filled"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "error": {
+          "class": "ConflictError",
+          "code": "order_not_working",
+          "status": 409
+        },
+        "requests": 2
+      }
+    },
+    {
+      "name": "a cancel of an order already canceled answers that order: the order no longer works either way",
+      "call": {
+        "resource": "orders",
+        "method": "cancel",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "order_id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 409,
+            "body": {
+              "error": {
+                "type": "conflict",
+                "code": "order_not_working",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false,
+                "details": {
+                  "status": "canceled"
+                }
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+                "status": "canceled"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "result": {
+          "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+          "status": "canceled"
+        }
+      }
+    },
+    {
+      "name": "an exits batch whose answer was lost is asked again with the same Idempotency-Key",
+      "call": {
+        "resource": "exits",
+        "method": "set",
+        "path": {
+          "account_id": "SANDBOX-00042-001",
+          "market": "BTC-USD"
+        },
+        "body": {
+          "expected_position": {
+            "side": "long",
+            "size": "0.5"
+          },
+          "expected_exits": [],
+          "operations": [
+            {
+              "op": "add",
+              "kind": "stop_loss",
+              "price": "61000"
+            }
+          ]
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "drop": true
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "headers": {
+              "idempotent-replayed": "true"
+            },
+            "body": {
+              "data": {}
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "checks": [
+          "same_idempotency_key"
+        ]
+      }
+    },
+    {
+      "name": "a raw POST to a route that takes an Idempotency-Key carries one, the same when asked again",
+      "call": {
+        "raw": {
+          "method": "POST",
+          "path": "/v1/accounts/SANDBOX-00042-001/orders",
+          "body": {
+            "market": "BTC-USD",
+            "side": "buy",
+            "type": "market",
+            "size": "0.001"
+          }
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 500,
+            "body": {
+              "error": {
+                "type": "server",
+                "code": "internal_error",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": true
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 201,
+            "body": {
+              "data": {
+                "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+                "status": "filled"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "checks": [
+          "same_idempotency_key"
+        ]
+      }
+    },
+    {
+      "name": "a Deprecation header is told on an answer without rate-limit headers",
+      "call": {
+        "resource": "me",
+        "method": "get"
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 200,
+            "headers": {
+              "deprecation": "@1798761600"
+            },
+            "body": {
+              "data": {
+                "ok": true
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 1,
+        "logged_deprecation": true
+      }
     }
   ],
   "local": [
@@ -1116,7 +1446,23 @@
           "test": true
         }
       }
-    ]
+    ],
+    "no_secret": {
+      "secrets": [
+        [
+          ""
+        ],
+        [
+          "",
+          ""
+        ]
+      ],
+      "error_code": "missing_secret",
+      "with_one": [
+        "",
+        "ppwhsec_TestSecret0123456789abcdefghijklmnop"
+      ]
+    }
   },
   "rules_vectors": {
     "market": {
@@ -1259,6 +1605,66 @@
           "62000"
         ],
         "want": "0.000"
+      },
+      {
+        "fn": "round_price",
+        "args": [
+          "6.2E+4"
+        ],
+        "mode": "nearest",
+        "want": "62000.0"
+      },
+      {
+        "fn": "round_size",
+        "args": [
+          "1.1e-2"
+        ],
+        "want": "0.011"
+      },
+      {
+        "fn": "round_size",
+        "args": [
+          "1/3"
+        ],
+        "error": true
+      },
+      {
+        "fn": "round_size",
+        "args": [
+          "0x10"
+        ],
+        "error": true
+      },
+      {
+        "fn": "round_price",
+        "args": [
+          " 100 "
+        ],
+        "mode": "nearest",
+        "error": true
+      },
+      {
+        "fn": "round_size",
+        "args": [
+          "1_000"
+        ],
+        "error": true
+      },
+      {
+        "fn": "size_for_risk",
+        "args": [
+          "50",
+          "0"
+        ],
+        "error": true
+      },
+      {
+        "fn": "size_for_notional",
+        "args": [
+          "100",
+          "0"
+        ],
+        "error": true
       }
     ]
   },
@@ -2254,13 +2660,332 @@
           "interval_ms": 250
         }
       }
+    },
+    {
+      "name": "market: a subscription of more symbols than one message holds is sent in parts, again after a reconnect",
+      "stream": "market",
+      "subscribe": {
+        "channel": "ticker",
+        "symbols": [
+          "M00-USD",
+          "M01-USD",
+          "M02-USD",
+          "M03-USD",
+          "M04-USD",
+          "M05-USD",
+          "M06-USD",
+          "M07-USD",
+          "M08-USD",
+          "M09-USD",
+          "M10-USD",
+          "M11-USD",
+          "M12-USD",
+          "M13-USD",
+          "M14-USD",
+          "M15-USD",
+          "M16-USD",
+          "M17-USD",
+          "M18-USD",
+          "M19-USD",
+          "M20-USD",
+          "M21-USD",
+          "M22-USD",
+          "M23-USD",
+          "M24-USD",
+          "M25-USD",
+          "M26-USD",
+          "M27-USD",
+          "M28-USD",
+          "M29-USD",
+          "M30-USD",
+          "M31-USD",
+          "M32-USD",
+          "M33-USD",
+          "M34-USD",
+          "M35-USD",
+          "M36-USD",
+          "M37-USD",
+          "M38-USD",
+          "M39-USD",
+          "M40-USD",
+          "M41-USD",
+          "M42-USD",
+          "M43-USD",
+          "M44-USD",
+          "M45-USD",
+          "M46-USD",
+          "M47-USD",
+          "M48-USD",
+          "M49-USD",
+          "M50-USD",
+          "M51-USD",
+          "M52-USD",
+          "M53-USD",
+          "M54-USD",
+          "M55-USD",
+          "M56-USD",
+          "M57-USD",
+          "M58-USD",
+          "M59-USD"
+        ],
+        "params": {}
+      },
+      "connections": [
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "M00-USD",
+                "M01-USD",
+                "M02-USD",
+                "M03-USD",
+                "M04-USD",
+                "M05-USD",
+                "M06-USD",
+                "M07-USD",
+                "M08-USD",
+                "M09-USD",
+                "M10-USD",
+                "M11-USD",
+                "M12-USD",
+                "M13-USD",
+                "M14-USD",
+                "M15-USD",
+                "M16-USD",
+                "M17-USD",
+                "M18-USD",
+                "M19-USD",
+                "M20-USD",
+                "M21-USD",
+                "M22-USD",
+                "M23-USD",
+                "M24-USD",
+                "M25-USD",
+                "M26-USD",
+                "M27-USD",
+                "M28-USD",
+                "M29-USD",
+                "M30-USD",
+                "M31-USD",
+                "M32-USD",
+                "M33-USD",
+                "M34-USD",
+                "M35-USD",
+                "M36-USD",
+                "M37-USD",
+                "M38-USD",
+                "M39-USD",
+                "M40-USD",
+                "M41-USD",
+                "M42-USD",
+                "M43-USD",
+                "M44-USD",
+                "M45-USD",
+                "M46-USD",
+                "M47-USD",
+                "M48-USD",
+                "M49-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "M50-USD",
+                "M51-USD",
+                "M52-USD",
+                "M53-USD",
+                "M54-USD",
+                "M55-USD",
+                "M56-USD",
+                "M57-USD",
+                "M58-USD",
+                "M59-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "send": {
+              "type": "ticker",
+              "symbol": "M59-USD",
+              "data": {
+                "last": "1"
+              }
+            }
+          },
+          {
+            "close": 1012
+          }
+        ],
+        [
+          {
+            "send": {
+              "type": "hello",
+              "session": "mds_1",
+              "heartbeat_ms": 15000,
+              "channels": [
+                "ticker",
+                "book",
+                "trades",
+                "candles",
+                "stats",
+                "status"
+              ],
+              "limits": {
+                "subscriptions": 200,
+                "symbols_per_subscribe": 50,
+                "messages_per_s": 20
+              }
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "M00-USD",
+                "M01-USD",
+                "M02-USD",
+                "M03-USD",
+                "M04-USD",
+                "M05-USD",
+                "M06-USD",
+                "M07-USD",
+                "M08-USD",
+                "M09-USD",
+                "M10-USD",
+                "M11-USD",
+                "M12-USD",
+                "M13-USD",
+                "M14-USD",
+                "M15-USD",
+                "M16-USD",
+                "M17-USD",
+                "M18-USD",
+                "M19-USD",
+                "M20-USD",
+                "M21-USD",
+                "M22-USD",
+                "M23-USD",
+                "M24-USD",
+                "M25-USD",
+                "M26-USD",
+                "M27-USD",
+                "M28-USD",
+                "M29-USD",
+                "M30-USD",
+                "M31-USD",
+                "M32-USD",
+                "M33-USD",
+                "M34-USD",
+                "M35-USD",
+                "M36-USD",
+                "M37-USD",
+                "M38-USD",
+                "M39-USD",
+                "M40-USD",
+                "M41-USD",
+                "M42-USD",
+                "M43-USD",
+                "M44-USD",
+                "M45-USD",
+                "M46-USD",
+                "M47-USD",
+                "M48-USD",
+                "M49-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "expect": "subscribe"
+          },
+          {
+            "reply": {
+              "type": "subscribed",
+              "channel": "ticker",
+              "symbols": [
+                "M50-USD",
+                "M51-USD",
+                "M52-USD",
+                "M53-USD",
+                "M54-USD",
+                "M55-USD",
+                "M56-USD",
+                "M57-USD",
+                "M58-USD",
+                "M59-USD"
+              ],
+              "rejected": []
+            }
+          },
+          {
+            "send": {
+              "type": "ticker",
+              "symbol": "M59-USD",
+              "data": {
+                "last": "2"
+              }
+            }
+          },
+          {
+            "wait_ms": 3000
+          }
+        ]
+      ],
+      "expect": {
+        "frames": [
+          "1",
+          "2"
+        ],
+        "connections": 2,
+        "subscribe_sizes": [
+          50,
+          10
+        ]
+      }
     }
   ],
   "vocabulary": {
-    "scenarios": "call { resource, method, path, body, query, iterate, max_items }; client { base_url_suffix } (the mock URL plus it as baseUrl); expect { ok, requests, result (null: the call answered nothing), error { code, status, retryable, doc_url }, items, cursors, first_body, min_elapsed_ms, checks [bearer, user_agent, same_idempotency_key], page_fields (the page keeps them, in the language's naming), paths (the request paths, in order) }",
+    "scenarios": "call { resource, method, path, body, query, iterate, max_items } | call { raw { method, path, body } } (the SDK's raw request); client { base_url_suffix } (the mock URL plus it as baseUrl); expect { ok, requests, result (null: the call answered nothing), error { code, status, retryable, doc_url }, items, cursors, first_body, min_elapsed_ms, max_elapsed_ms (first request to last), logged_deprecation (the client's logger got one warning naming the deprecation), checks [bearer, user_agent, same_idempotency_key], page_fields (the page keeps them, in the language's naming), paths (the request paths, in order) }; exchange respond { drop: true }: the connection closed with no answer (the API took the call, its answer was lost)",
     "local": "check: redaction | webhook_vectors | keyless (a client with api_key null is made; a public call sends no Authorization)",
-    "webhook_vectors": "the base vector (signature, rotation, now_ms, want) and extra[]: { signature, body, timestamp, want | error } verified with secret and now_ms",
-    "rules_vectors": "cases[]: { fn, args, mode?, want | error: true (a ValidationError of the SDK's own) }",
-    "streams": "steps send | expect | reply | close | wait_ms | refuse { refuse, retry_after, body }; subscribe / unsubscribe (market: the calls the runner makes, in order); expect { events, connections, resume, first_message, error { code, account_id }, frames, resubscribe, unsubscribe_sent, limits (the stream's limits from the hello), gap (the event id the gap is told after) }"
+    "webhook_vectors": "the base vector (signature, rotation, now_ms, want) and extra[]: { signature, body, timestamp, want | error } verified with secret and now_ms; no_secret { secrets (each list verifies to a ValidationError with error_code, never a check against an empty key), with_one (empty ones dropped: verifies) }",
+    "rules_vectors": "cases[]: { fn, args, mode?, want | error: true (a ValidationError of the SDK's own) }; a decimal string is an optional sign, digits with an optional fraction and an optional exponent (6.2E+4, 1.1e-2), nothing else: no spaces, no 1/3, no 0x10, no 1_000",
+    "streams": "steps send | expect | reply | close | wait_ms | refuse { refuse, retry_after, body }; subscribe / unsubscribe (market: the calls the runner makes, in order); expect { events, connections, resume, first_message, error { code, account_id }, frames, resubscribe, unsubscribe_sent, limits (the stream's limits from the hello), subscribe_sizes (the symbol counts of the subscribe messages on each connection), gap (the event id the gap is told after) }"
   }
 }

@@ -79,20 +79,21 @@ public sealed class SdkTests(MockServer mock) : IClassFixture<MockServer>
         Assert.Single(await Requests());
     }
 
-    // I78: the envelope's retryable and doc_url reach the exception (null when there is no envelope)
+    // I78: the envelope's retryable and doc_url reach the exception (null when there is no envelope); asked once
+    // (MaxRetries 0: orders.modify takes an Idempotency-Key, so it is tried again otherwise)
     [Fact]
     public async Task ErrorsKeepRetryableAndDocUrl()
     {
         using var c = Client();
         await mock.Load(Exchanges(Error(409, "account_not_ready", true)));
-        var e = await Assert.ThrowsAsync<ConflictException>(() => c.Orders.ModifyAsync("SANDBOX-00042-001", "ord_1", new ModifyOrder { Size = 0.02m }));
+        var e = await Assert.ThrowsAsync<ConflictException>(() => c.Orders.ModifyAsync("SANDBOX-00042-001", "ord_1", new ModifyOrder { Size = 0.02m }, new RequestOptions { MaxRetries = 0 }));
         Assert.Equal((true, "https://docs.phoenixperpsfunding.com/reference/errors#account_not_ready"), (e.Retryable, e.DocUrl));
         Assert.StartsWith("application/json", e.Headers!["content-type"]);
         // without the envelope, by the status
         await mock.Load(Exchanges("""{"respond":{"status":502,"body":"<html>Bad Gateway</html>"}}"""));
-        Assert.True((await Assert.ThrowsAsync<ServerException>(() => c.Orders.ModifyAsync("SANDBOX-00042-001", "ord_1", new ModifyOrder { Size = 0.02m }))).Retryable);
+        Assert.True((await Assert.ThrowsAsync<ServerException>(() => c.Orders.ModifyAsync("SANDBOX-00042-001", "ord_1", new ModifyOrder { Size = 0.02m }, new RequestOptions { MaxRetries = 0 }))).Retryable);
         await mock.Load(Exchanges("""{"respond":{"status":400,"body":"<html>Bad Request</html>"}}"""));
-        Assert.False((await Assert.ThrowsAsync<ValidationException>(() => c.Orders.ModifyAsync("SANDBOX-00042-001", "ord_1", new ModifyOrder { Size = 0.02m }))).Retryable);
+        Assert.False((await Assert.ThrowsAsync<ValidationException>(() => c.Orders.ModifyAsync("SANDBOX-00042-001", "ord_1", new ModifyOrder { Size = 0.02m }, new RequestOptions { MaxRetries = 0 }))).Retryable);
     }
 
     // a change sent with an Idempotency-Key is safe to send again: it is, with the same key
@@ -502,5 +503,29 @@ public sealed class SdkTests(MockServer mock) : IClassFixture<MockServer>
         await using var m = c.OpenMarketStream();
         await m.PingAsync().WaitAsync(Wait);
         Assert.False((await Requests())[0].GetProperty("headers").TryGetProperty("authorization", out _));
+    }
+
+    // Q88: a field the API takes as null goes out as null after Clear<Field>(), never otherwise; set again, it wins
+    [Fact]
+    public void ClearSendsTheNull()
+    {
+        Assert.Equal("""{"note":null}""", JsonSerializer.Serialize(new ChangePriceAlert().ClearNote(), Json.Default.ChangePriceAlert));
+        Assert.Equal("""{"price":"62000"}""", JsonSerializer.Serialize(new ChangePriceAlert { Price = 62000m }, Json.Default.ChangePriceAlert));
+        var again = new ChangePriceAlert().ClearNote();
+        again.Note = "moved";
+        Assert.Equal("""{"note":"moved"}""", JsonSerializer.Serialize(again, Json.Default.ChangePriceAlert));
+    }
+
+    // Q102: a 304 while auto-paging says so (NotModifiedException), never an empty list
+    [Fact]
+    public async Task AutoPagingNotModified()
+    {
+        using var c = Client();
+        await mock.Load(Exchanges("""{"respond":{"status":304}}"""));
+        var options = new RequestOptions { Headers = new Dictionary<string, string> { ["If-None-Match"] = "\"e1\"" } };
+        await Assert.ThrowsAsync<NotModifiedException>(async () =>
+        {
+            await foreach (var _ in c.Orders.ListAutoPagingAsync("SANDBOX-00042-001", null, options)) { }
+        });
     }
 }

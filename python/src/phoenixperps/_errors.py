@@ -7,7 +7,7 @@ import email.utils
 import json
 import math
 import time
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, Type
 
 # an answer without the API's envelope (a proxy's 502 page) is retryable by its status alone
 RETRY_STATUS = {429, 500, 502, 503, 504}
@@ -47,7 +47,7 @@ class APITimeoutError(PhoenixPerpsError): pass
 class StreamClosedError(PhoenixPerpsError): pass
 
 
-def class_for(status: int) -> type:
+def class_for(status: int) -> "Type[PhoenixPerpsError]":
     if status == 401: return AuthenticationError
     if status == 403: return PermissionDeniedError
     if status == 404: return NotFoundError
@@ -76,7 +76,7 @@ def retry_after_s(headers: Mapping[str, str]) -> Optional[float]:
 
 
 def from_response(status: int, headers: Mapping[str, str], text: str, idempotency_key: Optional[str]) -> PhoenixPerpsError:
-    cls = class_for(status)
+    cls: Type[PhoenixPerpsError] = class_for(status)
     request_id = headers.get("x-request-id")
     retry_after = retry_after_s(headers)
     retryable = status in RETRY_STATUS

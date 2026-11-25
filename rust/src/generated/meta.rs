@@ -1,7 +1,7 @@
 // Generated from the API spec by generator/printers/rust.js. Do not edit: run `node generator`.
 
 /// The version of the API spec this SDK was generated from.
-pub const SPEC_VERSION: &str = "1.0.0";
+pub const SPEC_VERSION: &str = "1.1.0";
 
 pub(crate) fn server(environment: &str) -> &'static str {
     match environment {

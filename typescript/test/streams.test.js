@@ -312,3 +312,29 @@ test('market: an upgrade refused with 503 reconnects after its Retry-After; with
   await new Promise((r) => setTimeout(r, 500)); // time enough for a wrong reconnect to show
   assert.equal((await requests()).length, 1);
 });
+
+test('market: a refused change leaves the live subscription as the server holds it, made again so after a reconnect (Q38)', { timeout: 20000 }, async () => {
+  const refuse = { reply: { type: 'error', code: 'invalid_parameter', message: 'interval_ms: 100, 250, 500 or 1000' } };
+  await play([
+    [marketHello(), { expect: 'subscribe' }, subscribed('ticker', ['BTC-USD']), { expect: 'subscribe' }, refuse, { wait_ms: 300 }, { close: 1012 }],
+    [marketHello(), { expect: 'subscribe' }, subscribed('ticker', ['BTC-USD']), { wait_ms: 3000 }],
+  ]);
+  const m = client().marketStream();
+  await m.subscribe('ticker', ['BTC-USD'], { interval_ms: 250 });
+  await assert.rejects(m.subscribe('ticker', ['BTC-USD'], { interval_ms: 333 }), (e) => e.code === 'invalid_parameter');
+  await within(once(m, 'hello')); // the reconnect's
+  await new Promise((r) => setTimeout(r, 300));
+  m.close();
+  const got = await requests();
+  assert.deepEqual(sent(got[1].messages[0]), { op: 'subscribe', channel: 'ticker', symbols: ['BTC-USD'], interval_ms: 250 });
+});
+
+test('account: ping() and once(stream, "ready") start the stream by themselves (Q92)', { timeout: 20000 }, async () => {
+  await play([[hello, { expect: 'subscribe' }, { send: { type: 'snapshot_end' } }, { expect: 'ping' }, { reply: { type: 'pong' } }, { wait_ms: 2000 }]]);
+  const s = client().accountStream();
+  const ready = once(s, 'ready');
+  const pong = s.ping();
+  await within(ready);
+  assert.equal((await within(pong)).type, 'pong');
+  s.close();
+});

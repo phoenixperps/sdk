@@ -95,14 +95,39 @@ public final class MarketStream implements AutoCloseable, Iterable<MarketStream.
      */
     public JsonNode subscribe(String channel, List<String> symbols, Map<String, Object> params, Duration wait) {
         Map<String, Object> p = params == null ? Map.of() : new LinkedHashMap<>(params);
-        // what the server took (its reply's symbols) is made again after a reconnect, as this subscribe set it
-        return ask(message("subscribe", channel, symbols == null ? List.of() : symbols, p), reply -> {
-            for (JsonNode s : reply.path("symbols")) {
-                String k = key(channel, s.asText(), p.get("interval"));
-                subs.remove(k); // the last subscribed goes last
-                subs.put(k, new Sub(channel, s.asText(), p.get("interval"), p));
+        List<String> all = symbols == null ? List.of() : symbols;
+        // at most the hello's symbols_per_subscribe a message (Q16), answered as one: every part's symbols and refusals
+        int per = limits == null ? 50 : Math.max(1, limits.path("symbols_per_subscribe").asInt(50));
+        if (all.size() <= per) {
+            return ask(message("subscribe", channel, all, p), reply -> took(channel, p, reply), wait);
+        }
+        com.fasterxml.jackson.databind.node.ObjectNode merged = null;
+        com.fasterxml.jackson.databind.node.ArrayNode syms = Json.MAPPER.createArrayNode();
+        com.fasterxml.jackson.databind.node.ArrayNode rejected = Json.MAPPER.createArrayNode();
+        for (int i = 0; i < all.size(); i += per) {
+            JsonNode r = ask(message("subscribe", channel, all.subList(i, Math.min(all.size(), i + per)), p), reply -> took(channel, p, reply), wait);
+            if (merged == null && r.isObject()) {
+                merged = ((com.fasterxml.jackson.databind.node.ObjectNode) r).deepCopy();
+                merged.remove("id");
             }
-        }, wait);
+            r.path("symbols").forEach(syms::add);
+            r.path("rejected").forEach(rejected::add);
+        }
+        if (merged == null) {
+            merged = Json.MAPPER.createObjectNode();
+        }
+        merged.set("symbols", syms);
+        merged.set("rejected", rejected);
+        return merged;
+    }
+
+    // what the server took (its reply's symbols) is made again after a reconnect, as this subscribe set it
+    private void took(String channel, Map<String, Object> p, JsonNode reply) {
+        for (JsonNode s : reply.path("symbols")) {
+            String k = key(channel, s.asText(), p.get("interval"));
+            subs.remove(k); // the last subscribed goes last
+            subs.put(k, new Sub(channel, s.asText(), p.get("interval"), p));
+        }
     }
 
     /**
@@ -363,7 +388,14 @@ public final class MarketStream implements AutoCloseable, Iterable<MarketStream.
                         pending.values().forEach(p -> again.add(p.message()));
                         socket = s;
                     }
-                    again.forEach(s::send);
+                    // at most messages_per_s a second: a replay of many asks never trips the server's 4009 (Q104)
+                    int perSecond = Math.max(1, f.path("limits").path("messages_per_s").asInt(20));
+                    for (int i = 0; i < again.size(); i++) {
+                        if (i > 0 && i % perSecond == 0) {
+                            PhoenixPerpsClient.sleep(Duration.ofSeconds(1));
+                        }
+                        s.send(again.get(i));
+                    }
                 }
                 case "subscribed", "unsubscribed", "error", "list", "pong" -> {
                     Pending p;

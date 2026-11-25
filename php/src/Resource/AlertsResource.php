@@ -52,7 +52,7 @@ final class AlertsResource
     }
 
     /** Move a price alert. */
-    public function modify(string $accountId, string $alertId, ChangePriceAlert|array $body, ?RequestOptions $options = null): PriceAlert
+    public function modify(string $accountId, string $alertId, ChangePriceAlert|array $body = [], ?RequestOptions $options = null): PriceAlert
     {
         return PriceAlert::fromArray($this->c->one(Ops::CHANGE_ALERT, [$accountId, $alertId], null, $body, $options) ?? []);
     }

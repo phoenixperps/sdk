@@ -1,4 +1,28 @@
-import { EventEmitter } from 'node:events';
+/**
+ * The streams' events: Node's EventEmitter at run time, declared here so these types need nothing else installed
+ * (no @types/node: Q94); it matches NodeJS.EventEmitter, so events.once(stream, 'ready') type-checks where those are.
+ */
+declare class EventEmitter {
+  addListener(eventName: string | symbol, listener: (...args: any[]) => void): this;
+  on(eventName: string | symbol, listener: (...args: any[]) => void): this;
+  once(eventName: string | symbol, listener: (...args: any[]) => void): this;
+  removeListener(eventName: string | symbol, listener: (...args: any[]) => void): this;
+  off(eventName: string | symbol, listener: (...args: any[]) => void): this;
+  removeAllListeners(eventName?: string | symbol): this;
+  setMaxListeners(n: number): this;
+  getMaxListeners(): number;
+  listeners(eventName: string | symbol): Function[];
+  rawListeners(eventName: string | symbol): Function[];
+  emit(eventName: string | symbol, ...args: any[]): boolean;
+  listenerCount(eventName: string | symbol, listener?: Function): number;
+  prependListener(eventName: string | symbol, listener: (...args: any[]) => void): this;
+  prependOnceListener(eventName: string | symbol, listener: (...args: any[]) => void): this;
+  eventNames(): Array<string | symbol>;
+}
+/** Headers as fetch gives them (or any object with get). */
+export interface HeaderBag {
+  get(name: string): string | null;
+}
 import type { ClientOptions, RateLimit, Page, PagePromise, RequestOptions, ListOptions, ResponseMeta, RawResponse } from './src/core';
 import type { Resources, Market, Event, WebhookPayload } from './src/gen/types';
 
@@ -117,7 +141,7 @@ export declare class MarketRules {
 
 export declare const Webhooks: {
   /** The WebhookPayload of a delivery, once its signature and time check out (raw: the body exactly as received). */
-  verify(raw: string | Buffer, headers: Record<string, string | string[] | undefined> | Headers, secrets: string | string[], toleranceSeconds?: number): WebhookPayload;
+  verify(raw: string | Uint8Array, headers: Record<string, string | string[] | undefined> | HeaderBag, secrets: string | string[], toleranceSeconds?: number): WebhookPayload;
 };
 /** A delivery refused; a PhoenixPerpsError. */
 export declare class WebhookVerificationError extends PhoenixPerpsError {
@@ -142,7 +166,7 @@ export declare class PhoenixPerpsError extends Error {
   accountId: string | null;
   type: string | null;
   /** The answer's headers (Idempotent-Replayed, ...), null when no answer came. Not enumerable. */
-  readonly headers: Headers | null;
+  readonly headers: HeaderBag | null;
 }
 export declare class AuthenticationError extends PhoenixPerpsError {}
 export declare class PermissionError extends PhoenixPerpsError {}

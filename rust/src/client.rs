@@ -124,7 +124,10 @@ pub(crate) struct Inner {
     pub(crate) account_stream_url: String,
     pub(crate) market_stream_url: String,
     rate: Mutex<Option<RateLimit>>,
-    rates: Mutex<HashMap<&'static str, RateLimit>>,
+    // per budget: the operation's scope and the bucket that answered ("trade:bulk"), with when its next request comes
+    // back (None while some are left); the budgets each operation ("scope|id") met
+    rates: Mutex<HashMap<String, (RateLimit, Option<SystemTime>)>>,
+    met: Mutex<HashMap<String, HashSet<String>>>,
     warned: Mutex<HashSet<String>>,
 }
 
@@ -254,6 +257,7 @@ impl ClientBuilder {
                 logger: self.logger,
                 rate: Mutex::new(None),
                 rates: Mutex::new(HashMap::new()),
+                met: Mutex::new(HashMap::new()),
                 warned: Mutex::new(HashSet::new()),
             }),
         })
@@ -349,23 +353,30 @@ impl Client {
         }
     }
 
-    /// With nothing left in the budget's window and its reset under 60 s away, waits for the reset.
-    async fn pre_wait(&self, scope: &'static str) {
-        let r = self.inner.rates.lock().unwrap().get(scope).cloned();
-        let Some(r) = r else { return };
-        if r.remaining > 0 {
-            return;
-        }
-        if let Some(wait) = r.reset_at.and_then(|at| at.duration_since(SystemTime::now()).ok()) {
+    /// Waits for the next request of a budget this operation met with nothing left in it, when under 60 s (Q15):
+    /// never for the whole window, never for a bucket only other operations draw on.
+    async fn pre_wait(&self, op: &Operation) {
+        let until = {
+            let met = self.inner.met.lock().unwrap();
+            let rates = self.inner.rates.lock().unwrap();
+            met.get(&format!("{}|{}", op.scope, op.id)).into_iter().flatten().filter_map(|b| rates.get(b).and_then(|(_, next)| *next)).max()
+        };
+        if let Some(wait) = until.and_then(|at| at.duration_since(SystemTime::now()).ok()) {
             if wait < Duration::from_secs(60) {
                 tokio::time::sleep(wait).await;
             }
         }
     }
 
-    /// Keeps the window an answer gives, as the last one and as its budget's.
-    fn remember(&self, scope: &'static str, h: &HeaderMap) {
+    /// Keeps the window an answer gives, as the last one and as its budget's; tells a deprecation once.
+    fn remember(&self, op: &Operation, h: &HeaderMap) {
         let get = |n: &str| h.get(n).and_then(|v| v.to_str().ok()).map(str::to_string);
+        // any answer may say its version is deprecated, with or without the rate-limit headers (Q87)
+        if let Some(dep) = get("deprecation") {
+            if self.inner.warned.lock().unwrap().insert(dep.clone()) {
+                self.log("warn", &format!("phoenixperps: this API version is deprecated (Deprecation: {dep})"));
+            }
+        }
         let Some(limit) = get("x-ratelimit-limit") else { return };
         let reset_at = get("x-ratelimit-reset").and_then(|v| v.parse::<f64>().ok()).map(|reset| {
             // Reset as epoch seconds (above a year in seconds) or as seconds from now
@@ -375,14 +386,15 @@ impl Client {
                 SystemTime::now() + Duration::from_secs_f64(reset.max(0.0))
             }
         });
-        let r = RateLimit { limit: limit.parse().unwrap_or(0), remaining: get("x-ratelimit-remaining").and_then(|v| v.parse().ok()).unwrap_or(0), reset_at };
-        self.inner.rates.lock().unwrap().insert(scope, r.clone());
+        let per_min = limit.parse::<f64>().unwrap_or(0.0);
+        let remaining = get("x-ratelimit-remaining").and_then(|v| v.parse::<f64>().ok()).unwrap_or(0.0);
+        let r = RateLimit { limit: per_min as u32, remaining: remaining.max(0.0) as u32, reset_at };
+        // with nothing left, its next request comes back after a 429's Retry-After, else 60 s / the per-minute limit
+        let next = (r.remaining == 0).then(|| SystemTime::now() + retry_after(h).unwrap_or_else(|| if per_min > 0.0 { Duration::from_secs_f64(60.0 / per_min) } else { Duration::ZERO }));
+        let budget = format!("{}:{}", op.scope, get("x-ratelimit-scope").unwrap_or_default());
+        self.inner.rates.lock().unwrap().insert(budget.clone(), (r.clone(), next));
+        self.inner.met.lock().unwrap().entry(format!("{}|{}", op.scope, op.id)).or_default().insert(budget);
         *self.inner.rate.lock().unwrap() = Some(r);
-        if let Some(dep) = get("deprecation") {
-            if self.inner.warned.lock().unwrap().insert(dep.clone()) {
-                self.log("warn", &format!("phoenixperps: this API version is deprecated (Deprecation: {dep})"));
-            }
-        }
     }
 
     fn url(&self, op: &Operation, path: &[&str], query: &Option<Vec<(String, String)>>) -> Result<reqwest::Url> {
@@ -432,8 +444,9 @@ impl Client {
         if !query.is_empty() {
             url.query_pairs_mut().extend_pairs(query);
         }
-        let known = route(method, path);
-        let op = Operation { id: "request", method, path: "", idempotent: false, retry_safe: method == "GET" || known.is_some_and(|k| k.retry_safe), cursor: None, scope: known.map_or("", |k| k.scope) };
+        // a known route keeps its Idempotency-Key (the same on every attempt), its retries and its budget (Q39)
+        let known = route(method, path.split('?').next().unwrap_or(path));
+        let op = Operation { id: known.map_or("request", |k| k.id), method, path: "", idempotent: known.is_some_and(|k| k.idempotent), retry_safe: method == "GET" || known.is_some_and(|k| k.retry_safe), cursor: None, scope: known.map_or("", |k| k.scope) };
         self.attempts(&op, url, body.map(|b| b.to_string().into_bytes()), options).await
     }
 
@@ -453,7 +466,7 @@ impl Client {
         let method = reqwest::Method::from_bytes(op.method.as_bytes()).expect("an HTTP method");
         let mut attempt = 0u32;
         loop {
-            self.pre_wait(op.scope).await;
+            self.pre_wait(op).await;
             let mut req = self
                 .inner
                 .http
@@ -482,7 +495,7 @@ impl Client {
                     let headers = res.headers().clone();
                     match res.bytes().await {
                         Ok(bytes) => {
-                            self.remember(op.scope, &headers);
+                            self.remember(op, &headers);
                             let raw = RawResponse { status, request_id: headers.get("x-request-id").and_then(|v| v.to_str().ok()).map(str::to_string), headers, body: bytes.to_vec(), idempotency_key: key.clone() };
                             if let Some(hook) = &o.on_response {
                                 hook(&raw);
@@ -492,6 +505,14 @@ impl Client {
                                 return Ok(raw);
                             }
                             let err = Error::from_answer(status, &raw.headers, &raw.body, key.clone());
+                            // a cancel answered as already canceled or expired: the order no longer works, as asked (its
+                            // own lost answer asked again, or a cancel made elsewhere), and the answer is that order (Q14);
+                            // filled still fails
+                            let gone = err.details.as_ref().and_then(|d| d.get("status")).and_then(Value::as_str).is_some_and(|s| s == "canceled" || s == "expired");
+                            if op.id == "cancelOrder" && err.code == "order_not_working" && gone {
+                                let get = RequestOptions { idempotency_key: None, ..o.clone() };
+                                return Box::pin(self.attempts(&crate::generated::resources::ops::GET_ORDER, url.clone(), None, &get)).await;
+                            }
                             // asked again only when the API says it may work (its flag, else the status)
                             let again = retryable && attempt < max && err.retryable == Some(true);
                             if !again || err.retry_after.is_some_and(|d| d > RETRY_AFTER_MAX) {

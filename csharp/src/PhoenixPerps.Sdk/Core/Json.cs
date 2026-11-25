@@ -62,3 +62,9 @@ public sealed class NullableDecimalStringConverter : JsonConverter<decimal?>
         else Inner.Write(writer, value.Value, options);
     }
 }
+
+/// <summary>A JSON null, for a field the API takes as null (Clear&lt;Field&gt;() of a request body).</summary>
+internal static class JsonNull
+{
+    internal static readonly JsonElement Value = JsonDocument.Parse("null").RootElement.Clone();
+}

@@ -1,108 +1,114 @@
 # Generated from the API spec by generator/printers/python.js. Do not edit: run `node generator`.
 from __future__ import annotations
 
+import sys
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, TypedDict, Union
+
+if sys.version_info >= (3, 11):
+    from typing import Required
+else:  # 3.10
+    from typing_extensions import Required
 
 __all__ = ["Error", "Platform", "Status", "Limits", "Market", "MarketStats", "Rule", "Account", "Limit", "Warning", "AccountRisk", "Progress", "TradingPolicy", "EquityHistory", "DailyResult", "MarginSetting", "ExitLeg", "Position", "ClosedPosition", "Order", "Fill", "Me", "CreateOrder", "OrderExits", "CreateStrategy", "ModifyOrder", "ClosePosition", "CancelAll", "MarginSettingInput", "MarginSettingResult", "WhatIf", "Event", "WebhookPayload", "ExitsLeg", "Exits", "ExitsBatch", "Strategy", "WebhookEndpoint", "WebhookDelivery", "WebhookEventType", "DeletedEndpoint", "TradingViewHook", "TradingViewAlert", "TradingViewParseInput", "TradingViewParse", "DeletedHook", "PriceAlert", "CreatePriceAlert", "ChangePriceAlert", "DeletedAlert", "RestrictedCountry", "CancelAllResult", "FlattenResult", "AccountRiskOrNull", "AccountDetail", "LimitStanding"]
 
 
 class Error(TypedDict, total=False):
     """Every error has this shape."""
-    error: Dict[str, Any]
+    error: Required[Dict[str, Any]]
 
 
 class Platform(TypedDict, total=False):
-    environment: str
-    version: str
-    server_time: int
-    docs_url: str
-    spec_url: str
-    status: Dict[str, Any]
+    environment: Required[str]
+    version: Required[str]
+    server_time: Required[int]
+    docs_url: Required[str]
+    spec_url: Required[str]
+    status: Required[Dict[str, Any]]
 
 
 class Status(TypedDict, total=False):
-    environment: str
-    api: str
-    engine: Dict[str, Any]
-    account_data: Dict[str, Any]
-    market_data: Dict[str, Any]
-    features: Dict[str, Any]
-    server_time: int
+    environment: Required[str]
+    api: Required[str]
+    engine: Required[Dict[str, Any]]
+    account_data: Required[Dict[str, Any]]
+    market_data: Required[Dict[str, Any]]
+    features: Required[Dict[str, Any]]
+    server_time: Required[int]
 
 
 class Limits(TypedDict, total=False):
-    environment: str
-    rate: Dict[str, Any]
-    keys: Dict[str, Any]
-    orders: Dict[str, Any]
+    environment: Required[str]
+    rate: Required[Dict[str, Any]]
+    keys: Required[Dict[str, Any]]
+    orders: Required[Dict[str, Any]]
     sandbox: Dict[str, Any]
-    strategies: Dict[str, Any]
-    alerts: Dict[str, Any]
-    body_max_bytes: int
-    page_limit: Dict[str, Any]
+    strategies: Required[Dict[str, Any]]
+    alerts: Required[Dict[str, Any]]
+    body_max_bytes: Required[int]
+    page_limit: Required[Dict[str, Any]]
 
 
 class Market(TypedDict, total=False):
-    market: str
-    name: str
-    status: str
-    venue: Optional[str]
-    trading_hours: str
-    option_of: Optional[str]
-    options: Optional[List[Dict[str, Any]]]
-    tick_size: str
-    size_step: str
-    min_size: str
-    min_notional: Optional[str]
-    max_leverage: int
-    fee_rate_pct: str
-    exposure_cap: Optional[str]
-    max_slippage_pct: Optional[Dict[str, Any]]
+    market: Required[str]
+    name: Required[str]
+    status: Required[str]
+    venue: Required[Optional[str]]
+    trading_hours: Required[str]
+    option_of: Required[Optional[str]]
+    options: Required[Optional[List[Dict[str, Any]]]]
+    tick_size: Required[str]
+    size_step: Required[str]
+    min_size: Required[str]
+    min_notional: Required[Optional[str]]
+    max_leverage: Required[int]
+    fee_rate_pct: Required[str]
+    exposure_cap: Required[Optional[str]]
+    max_slippage_pct: Required[Optional[Dict[str, Any]]]
 
 
 class MarketStats(TypedDict, total=False):
     """A market's 24-hour figures and open interest. A figure not known yet is null."""
-    market: str
-    last: Optional[str]
-    change_24h: Optional[str]
-    change_24h_pct: Optional[str]
-    high_24h: Optional[str]
-    low_24h: Optional[str]
-    volume_24h: Optional[str]
-    notional_volume_24h: Optional[str]
-    open_interest: Optional[str]
-    notional_open_interest: Optional[str]
+    market: Required[str]
+    last: Required[Optional[str]]
+    change_24h: Required[Optional[str]]
+    change_24h_pct: Required[Optional[str]]
+    high_24h: Required[Optional[str]]
+    low_24h: Required[Optional[str]]
+    volume_24h: Required[Optional[str]]
+    notional_volume_24h: Required[Optional[str]]
+    open_interest: Required[Optional[str]]
+    notional_open_interest: Required[Optional[str]]
 
 
 class Rule(TypedDict, total=False):
     """The account's rule, as the trading engine enforces it."""
-    start_balance: str
-    daily_loss: Optional[Dict[str, Any]]
-    max_drawdown: Optional[Dict[str, Any]]
-    weekly_loss: Optional[Dict[str, Any]]
-    profit_target: Optional[Dict[str, Any]]
-    min_trading_days: Optional[int]
-    min_calendar_days: Optional[int]
-    consistency: Optional[Dict[str, Any]]
-    overnight_holding: bool
-    weekend_holding: bool
-    inactivity_days: Optional[int]
+    start_balance: Required[str]
+    daily_loss: Required[Optional[Dict[str, Any]]]
+    max_drawdown: Required[Optional[Dict[str, Any]]]
+    weekly_loss: Required[Optional[Dict[str, Any]]]
+    profit_target: Required[Optional[Dict[str, Any]]]
+    min_trading_days: Required[Optional[int]]
+    min_calendar_days: Required[Optional[int]]
+    consistency: Required[Optional[Dict[str, Any]]]
+    overnight_holding: Required[bool]
+    weekend_holding: Required[bool]
+    inactivity_days: Required[Optional[int]]
 
 
 class Account(TypedDict, total=False):
-    id: str
-    environment: str
-    stage: str
-    status: str
-    product: Optional[str]
-    tier: Optional[str]
-    start_balance: Optional[str]
-    balance: Optional[str]
-    rule: "Rule"
-    payout_eligible: bool
+    id: Required[str]
+    environment: Required[str]
+    stage: Required[str]
+    status: Required[str]
+    product: Required[Optional[str]]
+    tier: Required[Optional[str]]
+    start_balance: Required[Optional[str]]
+    balance: Required[Optional[str]]
+    rule: Required["Rule"]
+    payout_eligible: Required[bool]
     parked: bool
-    created_at: Optional[int]
+    created_at: Required[Optional[int]]
 
 
 class Limit(TypedDict, total=False):
@@ -116,179 +122,180 @@ class Limit(TypedDict, total=False):
     estimated: bool
     mode: str
     at_least: bool
-    lifted: bool
+    lifted: Required[bool]
 
 
 class Warning(TypedDict, total=False):
-    code: str
-    level: str
+    code: Required[str]
+    level: Required[str]
     market: str
     value: str
 
 
 class AccountRisk(TypedDict, total=False):
-    as_of: int
-    stale: bool
-    balance: str
-    equity: str
-    unrealized_pnl: str
-    pnl_today: str
-    realized_today: str
-    fees_today: str
-    trades_today: int
-    margin_used: str
-    margin_available: Optional[str]
-    exposure: Dict[str, Any]
-    daily_loss: "Limit"
-    max_drawdown: "Limit"
-    profit_target: Optional[Dict[str, Any]]
-    trading_days: Dict[str, Any]
-    nearest_liquidation: Optional[Dict[str, Any]]
-    trading_day_ends_at: int
-    warnings: List["Warning"]
+    as_of: Required[int]
+    stale: Required[bool]
+    paused: Required[bool]
+    balance: Required[str]
+    equity: Required[str]
+    unrealized_pnl: Required[str]
+    pnl_today: Required[str]
+    realized_today: Required[str]
+    fees_today: Required[str]
+    trades_today: Required[int]
+    margin_used: Required[str]
+    margin_available: Required[Optional[str]]
+    exposure: Required[Dict[str, Any]]
+    daily_loss: Required["Limit"]
+    max_drawdown: Required["Limit"]
+    profit_target: Required[Optional[Dict[str, Any]]]
+    trading_days: Required[Dict[str, Any]]
+    nearest_liquidation: Required[Optional[Dict[str, Any]]]
+    trading_day_ends_at: Required[int]
+    warnings: Required[List["Warning"]]
 
 
 class Progress(TypedDict, total=False):
-    stage: str
-    objectives: Dict[str, Any]
-    limits: Dict[str, Any]
-    payout: Optional[Dict[str, Any]]
-    as_of: int
+    stage: Required[str]
+    objectives: Required[Dict[str, Any]]
+    limits: Required[Dict[str, Any]]
+    payout: Required[Optional[Dict[str, Any]]]
+    as_of: Required[int]
 
 
 class TradingPolicy(TypedDict, total=False):
-    rule: "Rule"
-    trading_day: Dict[str, Any]
-    slippage_pct: Dict[str, Any]
-    margin: Dict[str, Any]
-    orders: Dict[str, Any]
-    controls: Dict[str, Any]
-    budgets: Dict[str, Any]
-    as_of: int
+    rule: Required["Rule"]
+    trading_day: Required[Dict[str, Any]]
+    slippage_pct: Required[Dict[str, Any]]
+    margin: Required[Dict[str, Any]]
+    orders: Required[Dict[str, Any]]
+    controls: Required[Dict[str, Any]]
+    budgets: Required[Dict[str, Any]]
+    as_of: Required[int]
 
 
 class EquityHistory(TypedDict, total=False):
-    resolution: str
-    points: List[Dict[str, Any]]
-    live: Dict[str, Any]
+    resolution: Required[str]
+    points: Required[List[Dict[str, Any]]]
+    live: Required[Dict[str, Any]]
 
 
 class DailyResult(TypedDict, total=False):
-    date: str
-    trades: int
-    gross_pnl: str
-    fees: str
-    pnl: str
-    withdrawn: str
-    balance_end: Optional[str]
+    date: Required[str]
+    trades: Required[int]
+    gross_pnl: Required[str]
+    fees: Required[str]
+    pnl: Required[str]
+    withdrawn: Required[str]
+    balance_end: Required[Optional[str]]
 
 
 class MarginSetting(TypedDict, total=False):
-    market: str
-    leverage: int
-    margin_mode: str
-    max_leverage: Optional[int]
-    source: str
-    locked: bool
+    market: Required[str]
+    leverage: Required[int]
+    margin_mode: Required[str]
+    max_leverage: Required[Optional[int]]
+    source: Required[str]
+    locked: Required[bool]
 
 
 class ExitLeg(TypedDict, total=False):
-    order_id: str
-    type: str
-    price: Optional[str]
-    size: Optional[str]
+    order_id: Required[str]
+    type: Required[str]
+    price: Required[Optional[str]]
+    size: Required[Optional[str]]
 
 
 class Position(TypedDict, total=False):
-    id: str
-    market: str
-    side: str
-    size: str
-    entry_price: Optional[str]
-    mark_price: Optional[str]
-    notional: Optional[str]
-    unrealized_pnl: Optional[str]
-    leverage: int
-    margin_mode: str
-    initial_margin: Optional[str]
-    added_margin: Optional[str]
-    margin: Optional[str]
-    liquidation: Optional[Dict[str, Any]]
-    breach_prices: Dict[str, Any]
-    exits: Dict[str, Any]
-    protected: bool
-    opened_at: Optional[int]
+    id: Required[str]
+    market: Required[str]
+    side: Required[str]
+    size: Required[str]
+    entry_price: Required[Optional[str]]
+    mark_price: Required[Optional[str]]
+    notional: Required[Optional[str]]
+    unrealized_pnl: Required[Optional[str]]
+    leverage: Required[int]
+    margin_mode: Required[str]
+    initial_margin: Required[Optional[str]]
+    added_margin: Required[Optional[str]]
+    margin: Required[Optional[str]]
+    liquidation: Required[Optional[Dict[str, Any]]]
+    breach_prices: Required[Dict[str, Any]]
+    exits: Required[Dict[str, Any]]
+    protected: Required[bool]
+    opened_at: Required[Optional[int]]
 
 
 class ClosedPosition(TypedDict, total=False):
-    market: str
-    side: str
-    size: str
-    entry_price: Optional[str]
-    exit_price: Optional[str]
-    gross_pnl: str
-    fees: str
-    pnl: str
-    opened_at: int
-    closed_at: int
-    lots: List[Dict[str, Any]]
+    market: Required[str]
+    side: Required[str]
+    size: Required[str]
+    entry_price: Required[Optional[str]]
+    exit_price: Required[Optional[str]]
+    gross_pnl: Required[str]
+    fees: Required[str]
+    pnl: Required[str]
+    opened_at: Required[int]
+    closed_at: Required[int]
+    lots: Required[List[Dict[str, Any]]]
 
 
 class Order(TypedDict, total=False):
-    id: str
-    client_order_id: Optional[str]
-    account_id: str
-    market: str
-    side: Optional[str]
-    type: Optional[str]
-    status: str
-    size: Optional[str]
-    filled_size: Optional[str]
-    limit_price: Optional[str]
-    stop_price: Optional[str]
-    average_fill_price: Optional[str]
-    fee: Optional[str]
-    reduce_only: Optional[bool]
-    time_in_force: str
-    expires_at: Optional[int]
-    post_only: Optional[bool]
-    source: str
-    strategy_id: Optional[str]
-    exits: Optional[Dict[str, Any]]
-    cancel_reason: Optional[str]
-    reject: Optional[Dict[str, Any]]
-    created_at: Optional[int]
-    filled_at: Optional[int]
-    canceled_at: Optional[int]
+    id: Required[str]
+    client_order_id: Required[Optional[str]]
+    account_id: Required[str]
+    market: Required[str]
+    side: Required[Optional[str]]
+    type: Required[Optional[str]]
+    status: Required[str]
+    size: Required[Optional[str]]
+    filled_size: Required[Optional[str]]
+    limit_price: Required[Optional[str]]
+    stop_price: Required[Optional[str]]
+    average_fill_price: Required[Optional[str]]
+    fee: Required[Optional[str]]
+    reduce_only: Required[Optional[bool]]
+    time_in_force: Required[str]
+    expires_at: Required[Optional[int]]
+    post_only: Required[Optional[bool]]
+    source: Required[str]
+    strategy_id: Required[Optional[str]]
+    exits: Required[Optional[Dict[str, Any]]]
+    cancel_reason: Required[Optional[str]]
+    reject: Required[Optional[Dict[str, Any]]]
+    created_at: Required[Optional[int]]
+    filled_at: Required[Optional[int]]
+    canceled_at: Required[Optional[int]]
     updated_at: Optional[int]
 
 
 class Fill(TypedDict, total=False):
-    id: str
-    order_id: str
-    market: str
-    side: Optional[str]
-    size: str
-    price: str
-    fee: Optional[str]
-    liquidation: bool
-    time: int
+    id: Required[str]
+    order_id: Required[str]
+    market: Required[str]
+    side: Required[Optional[str]]
+    size: Required[str]
+    price: Required[str]
+    fee: Required[Optional[str]]
+    liquidation: Required[bool]
+    time: Required[int]
 
 
 class Me(TypedDict, total=False):
-    credential: Dict[str, Any]
-    accounts: List[str]
-    account_scope: str
-    controls: Dict[str, Any]
-    budgets: Dict[str, Any]
-    assistant: Optional[Dict[str, Any]]
+    credential: Required[Dict[str, Any]]
+    accounts: Required[List[str]]
+    account_scope: Required[str]
+    controls: Required[Dict[str, Any]]
+    budgets: Required[Dict[str, Any]]
+    assistant: Required[Optional[Dict[str, Any]]]
 
 
 class CreateOrder(TypedDict, total=False):
     """A new order."""
-    market: str
-    side: str
-    type: str
+    market: Required[str]
+    side: Required[str]
+    type: Required[str]
     size: Union[str, int, float, Decimal]
     notional_usd: Union[str, int, float, Decimal]
     limit_price: Union[str, int, float, Decimal]
@@ -311,8 +318,8 @@ class OrderExits(TypedDict, total=False):
 
 class CreateStrategy(TypedDict, total=False):
     """A new strategy. trailing_stop and break_even act on the position's exits: the answer is that exits strategy."""
-    type: str
-    market: str
+    type: Required[str]
+    market: Required[str]
     side: str
     size: Union[str, int, float, Decimal]
     distance: Union[str, int, float, Decimal]
@@ -371,214 +378,214 @@ class CancelAll(TypedDict, total=False):
 
 class MarginSettingInput(TypedDict, total=False):
     """The market's setting. The mode cannot change while a position or a working order is open on the market."""
-    margin_mode: str
-    leverage: int
+    margin_mode: Required[str]
+    leverage: Required[int]
 
 
 class MarginSettingResult(TypedDict, total=False):
-    market: str
-    margin_mode: str
-    leverage: int
+    market: Required[str]
+    margin_mode: Required[str]
+    leverage: Required[int]
 
 
 class WhatIf(TypedDict, total=False):
-    result: str
-    reject: Optional[Dict[str, Any]]
-    market: str
-    side: str
-    type: str
-    size: Optional[str]
-    execution: Optional[Dict[str, Any]]
-    notional: Optional[str]
-    fee: Optional[str]
-    margin: Optional[Dict[str, Any]]
-    position_after: Optional[Dict[str, Any]]
-    exposure: Optional[Dict[str, Any]]
+    result: Required[str]
+    reject: Required[Optional[Dict[str, Any]]]
+    market: Required[str]
+    side: Required[str]
+    type: Required[str]
+    size: Required[Optional[str]]
+    execution: Required[Optional[Dict[str, Any]]]
+    notional: Required[Optional[str]]
+    fee: Required[Optional[str]]
+    margin: Required[Optional[Dict[str, Any]]]
+    position_after: Required[Optional[Dict[str, Any]]]
+    exposure: Required[Optional[Dict[str, Any]]]
 
 
 class Event(TypedDict, total=False):
-    id: str
-    type: str
-    account_id: str
-    time: int
-    source: str
-    data: Dict[str, Any]
+    id: Required[str]
+    type: Required[str]
+    account_id: Required[str]
+    time: Required[int]
+    source: Required[str]
+    data: Required[Dict[str, Any]]
 
 
 class WebhookPayload(TypedDict, total=False):
     """What a json webhook endpoint receives: the event as GET /v1/events shows it, with the endpoint's API version and environment."""
-    id: str
-    type: str
+    id: Required[str]
+    type: Required[str]
     account_id: str
-    time: int
-    source: str
-    data: Dict[str, Any]
-    api_version: str
-    environment: str
+    time: Required[int]
+    source: Required[str]
+    data: Required[Dict[str, Any]]
+    api_version: Required[str]
+    environment: Required[str]
     test: bool
 
 
 class ExitsLeg(TypedDict, total=False):
-    id: str
-    group: str
-    type: str
-    status: str
-    size: str
-    price: Optional[str]
-    limit_price: Optional[str]
-    trail: Optional[Dict[str, Any]]
-    break_even: Optional[Dict[str, Any]]
+    id: Required[str]
+    group: Required[str]
+    type: Required[str]
+    status: Required[str]
+    size: Required[str]
+    price: Required[Optional[str]]
+    limit_price: Required[Optional[str]]
+    trail: Required[Optional[Dict[str, Any]]]
+    break_even: Required[Optional[Dict[str, Any]]]
 
 
 class Exits(TypedDict, total=False):
-    account_id: str
-    market: str
-    strategy_id: Optional[str]
-    position: Optional[Dict[str, Any]]
-    take_profit: List["ExitsLeg"]
-    stop_loss: List["ExitsLeg"]
-    resize_with_position: bool
+    account_id: Required[str]
+    market: Required[str]
+    strategy_id: Required[Optional[str]]
+    position: Required[Optional[Dict[str, Any]]]
+    take_profit: Required[List["ExitsLeg"]]
+    stop_loss: Required[List["ExitsLeg"]]
+    resize_with_position: Required[bool]
 
 
 class ExitsBatch(TypedDict, total=False):
     """The take-profit and stop-loss legs of a position, changed together."""
-    expected_position: Optional[Dict[str, Any]]
-    expected_exits: List[Dict[str, Any]]
-    operations: List[Dict[str, Any]]
+    expected_position: Required[Optional[Dict[str, Any]]]
+    expected_exits: Required[List[Dict[str, Any]]]
+    operations: Required[List[Dict[str, Any]]]
     resize_with_position: bool
 
 
 class Strategy(TypedDict, total=False):
-    id: str
-    client_strategy_id: Optional[str]
-    account_id: str
-    type: str
-    market: str
-    side: Optional[str]
-    status: str
-    end_reason: Optional[str]
-    params: Dict[str, Any]
-    progress: Dict[str, Any]
-    orders: List["Order"]
-    created_at: int
-    updated_at: int
-    ended_at: Optional[int]
+    id: Required[str]
+    client_strategy_id: Required[Optional[str]]
+    account_id: Required[str]
+    type: Required[str]
+    market: Required[str]
+    side: Required[Optional[str]]
+    status: Required[str]
+    end_reason: Required[Optional[str]]
+    params: Required[Dict[str, Any]]
+    progress: Required[Dict[str, Any]]
+    orders: Required[List["Order"]]
+    created_at: Required[int]
+    updated_at: Required[int]
+    ended_at: Required[Optional[int]]
 
 
 class WebhookEndpoint(TypedDict, total=False):
-    id: str
-    url: Optional[str]
-    format: str
-    events: List[str]
-    status: str
-    api_version: str
-    environment: str
+    id: Required[str]
+    url: Required[Optional[str]]
+    format: Required[str]
+    events: Required[List[str]]
+    status: Required[str]
+    api_version: Required[str]
+    environment: Required[str]
 
 
 class WebhookDelivery(TypedDict, total=False):
-    id: str
-    endpoint_id: str
-    event_id: str
-    event_type: str
-    account_id: Optional[str]
-    test: bool
-    status: str
-    attempts: List[Dict[str, Any]]
-    next_attempt_at: Optional[int]
-    created_at: int
-    delivered_at: Optional[int]
+    id: Required[str]
+    endpoint_id: Required[str]
+    event_id: Required[str]
+    event_type: Required[str]
+    account_id: Required[Optional[str]]
+    test: Required[bool]
+    status: Required[str]
+    attempts: Required[List[Dict[str, Any]]]
+    next_attempt_at: Required[Optional[int]]
+    created_at: Required[int]
+    delivered_at: Required[Optional[int]]
 
 
 class WebhookEventType(TypedDict, total=False):
-    type: str
-    group: Optional[str]
-    description: str
+    type: Required[str]
+    group: Required[Optional[str]]
+    description: Required[str]
 
 
 class DeletedEndpoint(TypedDict, total=False):
-    id: str
-    deleted: bool
+    id: Required[str]
+    deleted: Required[bool]
 
 
 class TradingViewHook(TypedDict, total=False):
-    id: str
-    name: str
-    account_id: str
-    environment: str
-    status: str
-    markets: List[str]
-    reduce_only: bool
-    max_order_usd: Optional[str]
-    max_position_usd: Optional[str]
-    daily_loss_usd: Optional[str]
-    sizing: Dict[str, Any]
-    position_mode: str
+    id: Required[str]
+    name: Required[str]
+    account_id: Required[str]
+    environment: Required[str]
+    status: Required[str]
+    markets: Required[List[str]]
+    reduce_only: Required[bool]
+    max_order_usd: Required[Optional[str]]
+    max_position_usd: Required[Optional[str]]
+    daily_loss_usd: Required[Optional[str]]
+    sizing: Required[Dict[str, Any]]
+    position_mode: Required[str]
 
 
 class TradingViewAlert(TypedDict, total=False):
-    id: str
-    hook_id: str
-    account_id: str
-    status: str
-    reason: Optional[str]
-    reason_text: Optional[str]
-    format: Optional[str]
-    market: Optional[str]
-    action: Optional[str]
-    message: Optional[str]
-    sender: Optional[str]
-    plan: Optional[Dict[str, Any]]
-    results: List[Dict[str, Any]]
-    details: Optional[Dict[str, Any]]
-    duplicate_of: Optional[str]
-    repeat_count: int
-    received_at: int
-    finished_at: Optional[int]
+    id: Required[str]
+    hook_id: Required[str]
+    account_id: Required[str]
+    status: Required[str]
+    reason: Required[Optional[str]]
+    reason_text: Required[Optional[str]]
+    format: Required[Optional[str]]
+    market: Required[Optional[str]]
+    action: Required[Optional[str]]
+    message: Required[Optional[str]]
+    sender: Required[Optional[str]]
+    plan: Required[Optional[Dict[str, Any]]]
+    results: Required[List[Dict[str, Any]]]
+    details: Required[Optional[Dict[str, Any]]]
+    duplicate_of: Required[Optional[str]]
+    repeat_count: Required[int]
+    received_at: Required[int]
+    finished_at: Required[Optional[int]]
 
 
 class TradingViewParseInput(TypedDict, total=False):
     """A message to read, sent nowhere."""
-    message: str
+    message: Required[str]
     hook_id: str
 
 
 class TradingViewParse(TypedDict, total=False):
-    ok: bool
-    code: Optional[str]
-    field: Optional[str]
-    message: Optional[str]
-    signal: Optional[Dict[str, Any]]
-    market: Optional[str]
-    suggestion: Optional[str]
-    plan: Optional[Dict[str, Any]]
+    ok: Required[bool]
+    code: Required[Optional[str]]
+    field: Required[Optional[str]]
+    message: Required[Optional[str]]
+    signal: Required[Optional[Dict[str, Any]]]
+    market: Required[Optional[str]]
+    suggestion: Required[Optional[str]]
+    plan: Required[Optional[Dict[str, Any]]]
 
 
 class DeletedHook(TypedDict, total=False):
-    id: str
-    deleted: bool
+    id: Required[str]
+    deleted: Required[bool]
 
 
 class PriceAlert(TypedDict, total=False):
     """A level on a market, told once when the price reaches it (alert.triggered: the account stream, webhooks, GET /v1/events). It never places or changes an order."""
-    id: str
-    account_id: str
-    market: str
-    price: str
-    condition: str
-    note: Optional[str]
-    status: str
-    price_source: str
-    trigger_price: Optional[str]
-    triggered_at: Optional[int]
-    disabled_reason: Optional[str]
-    created_at: int
-    updated_at: int
+    id: Required[str]
+    account_id: Required[str]
+    market: Required[str]
+    price: Required[str]
+    condition: Required[str]
+    note: Required[Optional[str]]
+    status: Required[str]
+    price_source: Required[str]
+    trigger_price: Required[Optional[str]]
+    triggered_at: Required[Optional[int]]
+    disabled_reason: Required[Optional[str]]
+    created_at: Required[int]
+    updated_at: Required[int]
 
 
 class CreatePriceAlert(TypedDict, total=False):
     """A new price alert. Its condition (above or below) is set from the price now."""
-    market: str
-    price: Union[str, int, float, Decimal]
+    market: Required[str]
+    price: Required[Union[str, int, float, Decimal]]
     note: str
 
 
@@ -589,64 +596,65 @@ class ChangePriceAlert(TypedDict, total=False):
 
 
 class DeletedAlert(TypedDict, total=False):
-    id: str
-    deleted: bool
+    id: Required[str]
+    deleted: Required[bool]
 
 
 class RestrictedCountry(TypedDict, total=False):
-    code: str
-    name: str
+    code: Required[str]
+    name: Required[str]
 
 
 class CancelAllResult(TypedDict, total=False):
-    account_id: str
-    market: Optional[str]
-    canceled: int
+    account_id: Required[str]
+    market: Required[Optional[str]]
+    canceled: Required[int]
 
 
 class FlattenResult(TypedDict, total=False):
-    account_id: str
-    orders_canceled: int
-    closes: List["Order"]
+    account_id: Required[str]
+    orders_canceled: Required[int]
+    closes: Required[List["Order"]]
 
 
 class AccountRiskOrNull(TypedDict, total=False):
     """The live risk; null while the account is being opened."""
-    as_of: int
-    stale: bool
-    balance: str
-    equity: str
-    unrealized_pnl: str
-    pnl_today: str
-    realized_today: str
-    fees_today: str
-    trades_today: int
-    margin_used: str
-    margin_available: Optional[str]
-    exposure: Dict[str, Any]
-    daily_loss: "Limit"
-    max_drawdown: "Limit"
-    profit_target: Optional[Dict[str, Any]]
-    trading_days: Dict[str, Any]
-    nearest_liquidation: Optional[Dict[str, Any]]
-    trading_day_ends_at: int
-    warnings: List["Warning"]
+    as_of: Required[int]
+    stale: Required[bool]
+    paused: Required[bool]
+    balance: Required[str]
+    equity: Required[str]
+    unrealized_pnl: Required[str]
+    pnl_today: Required[str]
+    realized_today: Required[str]
+    fees_today: Required[str]
+    trades_today: Required[int]
+    margin_used: Required[str]
+    margin_available: Required[Optional[str]]
+    exposure: Required[Dict[str, Any]]
+    daily_loss: Required["Limit"]
+    max_drawdown: Required["Limit"]
+    profit_target: Required[Optional[Dict[str, Any]]]
+    trading_days: Required[Dict[str, Any]]
+    nearest_liquidation: Required[Optional[Dict[str, Any]]]
+    trading_day_ends_at: Required[int]
+    warnings: Required[List["Warning"]]
 
 
 class AccountDetail(TypedDict, total=False):
-    id: str
-    environment: str
-    stage: str
-    status: str
-    product: Optional[str]
-    tier: Optional[str]
-    start_balance: Optional[str]
-    balance: Optional[str]
-    rule: "Rule"
-    payout_eligible: bool
+    id: Required[str]
+    environment: Required[str]
+    stage: Required[str]
+    status: Required[str]
+    product: Required[Optional[str]]
+    tier: Required[Optional[str]]
+    start_balance: Required[Optional[str]]
+    balance: Required[Optional[str]]
+    rule: Required["Rule"]
+    payout_eligible: Required[bool]
     parked: bool
-    created_at: Optional[int]
-    risk: "AccountRiskOrNull"
+    created_at: Required[Optional[int]]
+    risk: Required["AccountRiskOrNull"]
 
 
 class LimitStanding(TypedDict, total=False):
@@ -659,5 +667,5 @@ class LimitStanding(TypedDict, total=False):
     estimated: bool
     mode: str
     at_least: bool
-    lifted: bool
-    status: str
+    lifted: Required[bool]
+    status: Required[str]

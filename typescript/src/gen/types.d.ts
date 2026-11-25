@@ -35,9 +35,11 @@ export interface Status {
   engine: {
     /** Whether the API is connected to the trading engine. */ connected: boolean;
     /** When the trading engine last started. */ started_at: number | null;
+    /** Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy to take one (engine_busy). */ writes: "operational" | "degraded" | (string & {});
   };
   account_data: {
     /** When your keys and accounts were last confirmed with the website. */ synced_at: number | null;
+    /** Account figures over the last minute: degraded when more than 5% of them were older than usual (stale) or could not be read (state_unavailable). */ state: "operational" | "degraded" | (string & {});
   };
   market_data: {
     /** Whether the market-data stream is live, with every price feed. */ live: boolean;
@@ -104,6 +106,7 @@ export interface Limits {
     /** The oldest unchanged price of a quiet market an order is checked against, while the price feed lives (other markets move), in seconds. */ quote_max_age_slow_s: number;
     /** The nearest a gtd order may expire, in seconds from now. */ gtd_min_seconds: number;
     /** The farthest, in days from now. */ gtd_max_days: number;
+    /** The least time between two orders that can open a position on one account, in ms: the engine takes one about this often, so the next waits its turn (reduce-only orders and cancels never wait). A call that would wait past its reply time is refused 429 rate_limited, scope order_spacing. */ open_spacing_ms: number;
   };
   sandbox?: {
     /** Sandbox accounts you may open, ever. */ accounts_for_life: number;
@@ -247,6 +250,7 @@ export interface Warning {
 export interface AccountRisk {
   /** When the oldest figure here was read. */ as_of: number;
   /** Some figures are older than usual (the engine was busy). */ stale: boolean;
+  /** The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York. */ paused: boolean;
   /** The balance. */ balance: string;
   /** The balance plus the open P&L at the market price. */ equity: string;
   /** The open P&L. */ unrealized_pnl: string;
@@ -964,6 +968,7 @@ export interface FlattenResult {
 export type AccountRiskOrNull = {
     /** When the oldest figure here was read. */ as_of: number;
     /** Some figures are older than usual (the engine was busy). */ stale: boolean;
+    /** The daily loss limit paused trading on the account (its positions were closed): it trades again from midnight New York. */ paused: boolean;
     /** The balance. */ balance: string;
     /** The balance plus the open P&L at the market price. */ equity: string;
     /** The open P&L. */ unrealized_pnl: string;

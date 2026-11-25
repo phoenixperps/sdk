@@ -20,6 +20,9 @@ public final class StatusEngine {
     @JsonProperty("started_at")
     private Long startedAt;
 
+    @JsonProperty("writes")
+    private StatusEngineWrites writes;
+
     /** Whether the API is connected to the trading engine. */
     public Boolean connected() {
         return connected;
@@ -39,6 +42,17 @@ public final class StatusEngine {
     /** Sets started_at. */
     public StatusEngine startedAt(Long value) {
         this.startedAt = value;
+        return this;
+    }
+
+    /** Closes, flattens, cancel-alls and margin changes over the last minute: degraded when the engine was too busy to take one (engine_busy). */
+    public StatusEngineWrites writes() {
+        return writes;
+    }
+
+    /** Sets writes. */
+    public StatusEngine writes(StatusEngineWrites value) {
+        this.writes = value;
         return this;
     }
 
@@ -63,16 +77,17 @@ public final class StatusEngine {
         }
         StatusEngine o = (StatusEngine) other;
         return Objects.equals(connected, o.connected)
-            && Objects.equals(startedAt, o.startedAt);
+            && Objects.equals(startedAt, o.startedAt)
+            && Objects.equals(writes, o.writes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(connected, startedAt);
+        return Objects.hash(connected, startedAt, writes);
     }
 
     @Override
     public String toString() {
-        return "StatusEngine{" + "connected=" + connected + ", started_at=" + startedAt + "}";
+        return "StatusEngine{" + "connected=" + connected + ", started_at=" + startedAt + ", writes=" + writes + "}";
     }
 }

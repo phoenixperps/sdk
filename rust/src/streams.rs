@@ -482,7 +482,24 @@ impl MarketStream {
     /// Follows symbols on a channel with its params (candles: its interval; the others are settings, the last
     /// subscribe's); the server's reply (the symbols taken and the ones it refused).
     pub async fn subscribe(&self, channel: &str, symbols: &[&str], params: Map<String, Value>) -> Result<Value> {
-        self.ask(sub_message("subscribe", channel, symbols, &params)).await
+        // at most the hello's symbols_per_subscribe a message (Q16), answered as one: every part's symbols and refusals
+        let per = per_subscribe(self.limits.lock().unwrap().as_ref());
+        if symbols.len() <= per {
+            return self.ask(sub_message("subscribe", channel, symbols, &params)).await;
+        }
+        let (mut merged, mut took, mut rejected) = (Map::new(), Vec::new(), Vec::new());
+        for part in symbols.chunks(per) {
+            let Value::Object(r) = self.ask(sub_message("subscribe", channel, part, &params)).await? else { continue };
+            took.extend(r.get("symbols").and_then(Value::as_array).cloned().unwrap_or_default());
+            rejected.extend(r.get("rejected").and_then(Value::as_array).cloned().unwrap_or_default());
+            for (k, v) in r {
+                merged.entry(k).or_insert(v);
+            }
+        }
+        merged.remove("id");
+        merged.insert("symbols".into(), Value::Array(took));
+        merged.insert("rejected".into(), Value::Array(rejected));
+        Ok(Value::Object(merged))
     }
 
     /// Stops following symbols on a channel: params names the interval (candles) and nothing else; without one, every
@@ -603,7 +620,7 @@ impl Market {
     }
 
     /// Every subscription again, as few subscribes as its channels, intervals and settings allow.
-    fn again(&mut self) -> Vec<Value> {
+    fn again(&mut self, per: usize) -> Vec<Value> {
         // by channel, interval and settings (as JSON): their markets
         let mut groups: BTreeMap<(String, Option<String>, String), Vec<String>> = BTreeMap::new();
         for ((channel, symbol, interval), settings) in &self.subs {
@@ -611,12 +628,18 @@ impl Market {
         }
         groups
             .into_iter()
-            .map(|((channel, interval, settings), symbols)| {
+            .flat_map(|((channel, interval, settings), symbols)| {
                 let mut params: Map<String, Value> = serde_json::from_str(&settings).unwrap_or_default();
                 if let Some(i) = interval {
                     params.insert("interval".into(), json!(i));
                 }
-                let symbols: Vec<&str> = symbols.iter().map(String::as_str).collect();
+                let symbols: Vec<String> = symbols;
+                // at most symbols_per_subscribe a message (Q16)
+                let parts: Vec<Vec<String>> = if symbols.is_empty() { vec![vec![]] } else { symbols.chunks(per).map(<[String]>::to_vec).collect() };
+                parts.into_iter().map(move |part| (channel.clone(), part, params.clone())).collect::<Vec<_>>()
+            })
+            .map(|(channel, part, params)| {
+                let symbols: Vec<&str> = part.iter().map(String::as_str).collect();
                 let mut m = sub_message("subscribe", &channel, &symbols, &params);
                 self.next_id += 1;
                 m.insert("id".into(), json!(self.next_id));
@@ -624,6 +647,11 @@ impl Market {
             })
             .collect()
     }
+}
+
+/// The hello's symbols_per_subscribe (50 before a hello).
+fn per_subscribe(limits: Option<&Value>) -> usize {
+    limits.and_then(|l| l["symbols_per_subscribe"].as_u64()).filter(|n| *n > 0).unwrap_or(50) as usize
 }
 
 async fn run_market(c: Client, mut cmd: mpsc::UnboundedReceiver<Command>, frames: broadcast::Sender<Result<MarketFrame>>, limits: Arc<Mutex<Option<Value>>>) {
@@ -676,10 +704,15 @@ async fn run_market(c: Client, mut cmd: mpsc::UnboundedReceiver<Command>, frames
                                         heartbeat = Duration::from_millis(ms);
                                     }
                                     *limits.lock().unwrap() = f.get("limits").cloned();
-                                    // every subscription the server took, again; then the asks still unanswered
-                                    let mut again = st.again();
+                                    // every subscription the server took, again, at most symbols_per_subscribe a message;
+                                    // then the asks still unanswered; at most messages_per_s a second (Q16)
+                                    let per_s = f["limits"]["messages_per_s"].as_u64().filter(|n| *n > 0).unwrap_or(20) as usize;
+                                    let mut again = st.again(per_subscribe(f.get("limits")));
                                     again.extend(st.pending.values().map(|p| Value::Object(p.message.clone())));
-                                    for m in again {
+                                    for (i, m) in again.into_iter().enumerate() {
+                                        if i > 0 && i % per_s == 0 {
+                                            tokio::time::sleep(Duration::from_secs(1)).await;
+                                        }
                                         let _ = ws.send(Message::text(m.to_string())).await;
                                     }
                                 }

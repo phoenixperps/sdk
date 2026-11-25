@@ -35,7 +35,7 @@ internal static class Ops
     internal static readonly Operation ListOrders = new("listOrders", "GET", "/v1/accounts/{account_id}/orders", false, true, "cursor", "read");
     internal static readonly Operation PlaceOrder = new("placeOrder", "POST", "/v1/accounts/{account_id}/orders", true, false, null, "trade");
     internal static readonly Operation GetOrder = new("getOrder", "GET", "/v1/accounts/{account_id}/orders/{order_id}", false, true, null, "read");
-    internal static readonly Operation ModifyOrder = new("modifyOrder", "PATCH", "/v1/accounts/{account_id}/orders/{order_id}", false, false, null, "trade");
+    internal static readonly Operation ModifyOrder = new("modifyOrder", "PATCH", "/v1/accounts/{account_id}/orders/{order_id}", true, false, null, "trade");
     internal static readonly Operation CancelOrder = new("cancelOrder", "DELETE", "/v1/accounts/{account_id}/orders/{order_id}", false, true, null, "trade");
     internal static readonly Operation TestOrder = new("testOrder", "POST", "/v1/accounts/{account_id}/orders/test", false, true, null, "read");
     internal static readonly Operation CancelAllOrders = new("cancelAllOrders", "POST", "/v1/accounts/{account_id}/orders/cancel-all", true, false, null, "trade");
@@ -44,7 +44,7 @@ internal static class Ops
     internal static readonly Operation SetMargin = new("setMargin", "PUT", "/v1/accounts/{account_id}/margin/{market}", false, true, null, "trade");
     internal static readonly Operation ListEvents = new("listEvents", "GET", "/v1/events", false, true, "after", "read");
     internal static readonly Operation GetExits = new("getExits", "GET", "/v1/accounts/{account_id}/positions/{market}/exits", false, true, null, "read");
-    internal static readonly Operation SetExits = new("setExits", "PUT", "/v1/accounts/{account_id}/positions/{market}/exits", false, true, null, "trade");
+    internal static readonly Operation SetExits = new("setExits", "PUT", "/v1/accounts/{account_id}/positions/{market}/exits", true, true, null, "trade");
     internal static readonly Operation SetOrderExits = new("setOrderExits", "PUT", "/v1/accounts/{account_id}/orders/{order_id}/exits", false, true, null, "trade");
     internal static readonly Operation CreateStrategy = new("createStrategy", "POST", "/v1/accounts/{account_id}/strategies", true, false, null, "trade");
     internal static readonly Operation ListStrategies = new("listStrategies", "GET", "/v1/accounts/{account_id}/strategies", false, true, "cursor", "read");

@@ -55,7 +55,7 @@ final class OrdersResource
     }
 
     /** Change an order. */
-    public function modify(string $accountId, string $orderId, ModifyOrder|array $body, ?RequestOptions $options = null): Order
+    public function modify(string $accountId, string $orderId, ModifyOrder|array $body = [], ?RequestOptions $options = null): Order
     {
         return Order::fromArray($this->c->one(Ops::MODIFY_ORDER, [$accountId, $orderId], null, $body, $options) ?? []);
     }
@@ -73,13 +73,13 @@ final class OrdersResource
     }
 
     /** Cancel all orders. */
-    public function cancelAll(string $accountId, CancelAll|array $body, ?RequestOptions $options = null): CancelAllResult
+    public function cancelAll(string $accountId, CancelAll|array $body = [], ?RequestOptions $options = null): CancelAllResult
     {
         return CancelAllResult::fromArray($this->c->one(Ops::CANCEL_ALL_ORDERS, [$accountId], null, $body, $options) ?? []);
     }
 
     /** Attach exits to an order. */
-    public function setExits(string $accountId, string $orderId, OrderExits|array $body, ?RequestOptions $options = null): Order
+    public function setExits(string $accountId, string $orderId, OrderExits|array $body = [], ?RequestOptions $options = null): Order
     {
         return Order::fromArray($this->c->one(Ops::SET_ORDER_EXITS, [$accountId, $orderId], null, $body, $options) ?? []);
     }
