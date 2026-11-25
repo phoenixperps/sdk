@@ -4,9 +4,9 @@
   "items": [
     {
       "@id": "https://phoenixperps.github.io/sdk/nuget/registration/phoenixperps.sdk/index.json#page",
-      "count": 3,
+      "count": 4,
       "lower": "1.0.0",
-      "upper": "1.2.0",
+      "upper": "1.3.0",
       "items": [
         {
           "@id": "https://phoenixperps.github.io/sdk/nuget/registration/phoenixperps.sdk/1.0.0.json",
@@ -49,6 +49,20 @@
             "licenseExpression": "MIT"
           },
           "packageContent": "https://phoenixperps.github.io/sdk/nuget/flatcontainer/phoenixperps.sdk/1.2.0/phoenixperps.sdk.1.2.0.nupkg"
+        },
+        {
+          "@id": "https://phoenixperps.github.io/sdk/nuget/registration/phoenixperps.sdk/1.3.0.json",
+          "catalogEntry": {
+            "@id": "https://phoenixperps.github.io/sdk/nuget/registration/phoenixperps.sdk/1.3.0.json#entry",
+            "id": "PhoenixPerps.Sdk",
+            "version": "1.3.0",
+            "listed": true,
+            "dependencyGroups": [],
+            "description": "The Phoenix Perpetuals API: REST, the account stream and market data.",
+            "projectUrl": "https://docs.phoenixperpsfunding.com",
+            "licenseExpression": "MIT"
+          },
+          "packageContent": "https://phoenixperps.github.io/sdk/nuget/flatcontainer/phoenixperps.sdk/1.3.0/phoenixperps.sdk.1.3.0.nupkg"
         }
       ]
     }
