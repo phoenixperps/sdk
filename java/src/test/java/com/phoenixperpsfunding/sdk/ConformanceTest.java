@@ -373,7 +373,7 @@ class ConformanceTest {
                 case "keyless" -> keyless(l.get("client"));
                 case "" -> {
                     JsonNode cl = l.get("client");
-                    PhoenixPerpsException e = assertThrows(PhoenixPerpsException.class, () -> PhoenixPerpsClient.builder().apiKey(cl.get("api_key").asText()).environment(cl.get("environment").asText()).baseUrl("http://127.0.0.1:9").build());
+                    PhoenixPerpsException e = assertThrows(PhoenixPerpsException.class, () -> PhoenixPerpsClient.builder().apiKey(cl.get("api_key").asText()).environment(cl.get("environment").asText()).baseUrl(cl.has("base_url") ? cl.get("base_url").asText() : "http://127.0.0.1:9").build());
                     assertEquals(l.get("expect").get("error_code").asText(), e.code());
                 }
                 default -> throw new AssertionError("a check this runner does not play: " + l.get("check"));

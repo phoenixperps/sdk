@@ -30,7 +30,7 @@ import json
 import logging
 import random
 from collections import OrderedDict, deque
-from typing import Any, Deque, Dict, List, Optional, Set, Tuple
+from typing import Any, Deque, Dict, List, Optional, Set, Tuple, cast
 from urllib.parse import quote
 
 from . import _errors as E
@@ -246,14 +246,14 @@ class AccountStream:
         self.start()
         return self
 
-    async def __anext__(self) -> Any:
+    async def __anext__(self) -> Dict[str, Any]:
         item = await self._queue.get()
         if item is None:
             raise StopAsyncIteration
         if isinstance(item, Exception):
             self._closed = True
             raise item
-        return item
+        return cast(Dict[str, Any], item)  # a frame: an event, a notice, risk (the account stream's)
 
 
 class MarketStream:
@@ -332,9 +332,12 @@ class MarketStream:
                                     fut.set_exception(E.ValidationError(f.get("message") or f.get("code"), code=f.get("code") or "stream_refused", details=f.get("details")))
                                 else:
                                     fut.set_result(f)
-                            elif fut is None and t == "error":
-                                # an error no ask is waiting for (a subscribe made again, refused): told to the reader as
-                                # a frame, never dropped (Q16)
+                            elif fut is None and (t == "error" or (t == "subscribed" and f.get("rejected"))):
+                                # an answer no ask is waiting for (a subscribe made again, refused in all or in part):
+                                # told to the reader as a frame, never dropped (Q16); the markets it refused are not
+                                # asked again after the next reconnect (R7)
+                                if t == "subscribed":
+                                    self._drop(f.get("channel") or "", [r.get("symbol") for r in f["rejected"] if r.get("symbol")], f.get("interval"))
                                 await self._put(f)
                         elif t != "heartbeat":
                             await self._put(f)
@@ -441,10 +444,10 @@ class MarketStream:
         self.start()
         return self
 
-    async def __anext__(self) -> Any:
+    async def __anext__(self) -> Dict[str, Any]:
         item = await self._queue.get()
         if item is None:
             raise StopAsyncIteration
         if isinstance(item, Exception):
             raise item
-        return item
+        return cast(Dict[str, Any], item)  # a frame: market data, status, snapshot_end, an untold reply

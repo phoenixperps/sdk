@@ -129,6 +129,9 @@ class Core {
     this.environment = environment;
     // the REST host: the REST address as the docs write it (.../v1) is taken as its host
     this.baseUrl = String(opts.baseUrl ?? env.PHOENIXPERPS_BASE_URL ?? SERVERS[environment]).replace(/\/+$/, '').replace(/\/v1$/, '');
+    // a key of one environment sent to the other one's API host fails here, never at the API (R7: it counts against the address's bad-credential budget)
+    const other = inferred === 'live' ? 'sandbox' : 'live';
+    if (inferred && this.baseUrl.toLowerCase() === SERVERS[other].toLowerCase()) throw new E.AuthenticationError({ code: 'wrong_environment', message: `This key is a ${inferred} key, and ${this.baseUrl} is the ${other} API.`, details: { key_environment: inferred } });
     this.timeout = opts.timeout ?? 30000;
     this.maxRetries = opts.maxRetries ?? 2;
     this.appInfo = opts.appInfo ?? null;
@@ -268,7 +271,9 @@ class Core {
       // asked again, a client resending it, or a cancel made elsewhere), and the answer is that order (Q14); filled
       // still fails (the order was not canceled)
       if (op.id === 'cancelOrder' && err.code === 'order_not_working' && ['canceled', 'expired'].includes(err.details && err.details.status)) {
-        return this._send(OPS.getOrder, { path: call.path }, { ...opts, idempotencyKey: undefined });
+        // a raw cancel names no path values: the order read at the path it was sent to (R7: the route's template)
+        const get = call.path ? OPS.getOrder : { ...OPS.getOrder, path: String(op.path).split('?')[0] };
+        return this._send(get, { path: call.path }, { ...opts, idempotencyKey: undefined });
       }
       // tried again only when safe to send twice, and only after what the API marks retryable
       if (!retryable || attempt >= max || !err.retryable) throw err;

@@ -30,7 +30,14 @@ var order = await client.Orders.CreateAsync(account, new CreateOrder
 });
 Console.WriteLine($"market order {order.Id}: {order.Status} at {order.AverageFillPrice?.ToString() ?? "-"}");
 
+// the API places the legs once the fill is in, the stop first: read them until both are placed (5 s at most)
+static bool Placed(Exits e) => e.TakeProfit.Count > 0 && e.StopLoss.Count > 0 && e.TakeProfit.Concat(e.StopLoss).All(x => x.Status != ExitsLegStatus.Pending);
 var exits = await client.Exits.GetAsync(account, "BTC-USD");
+for (var i = 0; i < 10 && !Placed(exits); i++)
+{
+    await Task.Delay(500);
+    exits = await client.Exits.GetAsync(account, "BTC-USD");
+}
 foreach (var tp in exits.TakeProfit) Console.WriteLine($"take profit: {tp.Size} at {tp.Price} ({tp.Status})");
 foreach (var sl in exits.StopLoss) Console.WriteLine($"stop loss:   {sl.Size} at {sl.Price} ({sl.Status})");
 

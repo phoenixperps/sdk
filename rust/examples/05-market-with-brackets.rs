@@ -31,7 +31,16 @@ async fn main() -> phoenixperps::Result<()> {
     let fill = order.average_fill_price.map(|p| p.to_string()).unwrap_or_else(|| "-".into());
     println!("market order {}: {} at {fill}", order.id, order.status);
 
-    let exits = client.exits().get(&account, "BTC-USD").await?;
+    // the API places the legs once the fill is in, the stop first: read them until both are placed (5 s at most)
+    let placed = |e: &phoenixperps::Exits| !e.take_profit.is_empty() && !e.stop_loss.is_empty() && e.take_profit.iter().chain(&e.stop_loss).all(|x| x.status.as_str() != "pending");
+    let mut exits = client.exits().get(&account, "BTC-USD").await?;
+    for _ in 0..10 {
+        if placed(&exits) {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        exits = client.exits().get(&account, "BTC-USD").await?;
+    }
     for tp in &exits.take_profit {
         println!("take profit: {} at {:?} ({})", tp.size, tp.price, tp.status);
     }

@@ -2,6 +2,26 @@
 
 One version for every SDK (`VERSION`). Inside v1 the API only adds; a release says what each SDK gained or fixed.
 
+## 1.3.1
+
+What the second QA run found, fixed; spec 1.1.2.
+
+- Every SDK: a raw cancel (the raw request) of an order already canceled or expired answers that order, read at the
+  path it was sent to; it read the route's template before (Go answered 404 account_not_found, TypeScript, Python, C#,
+  Java and PHP the same way).
+- Every SDK: a key of one environment with the other one's API host as its base URL fails before any request
+  (`wrong_environment`), as a key of the other environment does.
+- Every SDK: the error code `account_closed` (a closed sandbox account's figures) and the spec 1.1.2.
+- Go, C#, Java: the exits batch's `trail` and `break_even` take an explicit null (`TrailNull`, `BreakEvenNull`;
+  `ClearTrail()`, `ClearBreakEven()`), as every field the API takes as null.
+- Go: `Page` has `Stale` (a list read from figures older than usual); examples 04 (the lookup checked before the
+  cancel) and 09 (the equity points' values) as the cookbook has them.
+- Python: an async list call awaited, then iterated, stops at its `max_items`; a subscription made again after a
+  reconnect that the server takes only in part is told to the reader, and the refused markets are not asked again;
+  `account_stream()` and `market_stream()` answer their stream types and frames are dicts (mypy --strict clean on the
+  package and every example).
+- READMEs: webhook verification without a secret (`missing_secret`), in every SDK.
+
 ## 1.3.0
 
 Rate limits that never stall other calls, safer retries, stricter webhook checks, and the same rules in every SDK.

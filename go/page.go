@@ -17,6 +17,9 @@ type Page[T any] struct {
 	// HistoryComplete is false when the history reaches further back than the list covers (the orders list; nil on
 	// the others).
 	HistoryComplete *bool `json:"history_complete"`
+	// Stale is true when some figures of an account list are older than usual (the trading servers were busy: at most
+	// a minute, then the call is 503 state_unavailable); nil on the lists that never say.
+	Stale *bool `json:"stale"`
 	// Raw is the answer the page came in.
 	Raw  *RawResponse `json:"-"`
 	next func(ctx context.Context, cursor string) (*Page[T], error)

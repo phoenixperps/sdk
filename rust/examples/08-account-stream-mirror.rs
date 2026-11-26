@@ -18,7 +18,9 @@ const FINAL: [&str; 4] = ["filled", "canceled", "rejected", "expired"];
 
 fn show(mirror: &HashMap<String, Copy>, why: &str) {
     for (id, c) in mirror {
-        let positions: Vec<String> = c.positions.values().map(|p| format!("{} {} {}", p["market"], p["side"], p["size"])).collect();
+        // each value as text (a JSON string printed as it is, never quoted)
+        let text = |v: &serde_json::Value| v.as_str().map_or_else(|| v.to_string(), str::to_string);
+        let positions: Vec<String> = c.positions.values().map(|p| format!("{} {} {}", text(&p["market"]), text(&p["side"]), text(&p["size"]))).collect();
         let positions = if positions.is_empty() { "none".to_string() } else { positions.join(", ") };
         println!("[{why}] {id}: positions {positions}; {} working orders", c.orders.len());
     }

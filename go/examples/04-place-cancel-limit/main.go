@@ -61,11 +61,15 @@ func main() {
 	}
 	fmt.Printf("placed %s: %s, %s at %s\n", order.ID, order.Status, size, limit)
 
-	found, err := client.Orders.List(ctx, account, &phoenixperps.OrdersListParams{ClientOrderID: phoenixperps.Ptr(clientOrderID)})
-	if err != nil {
-		log.Fatal(err)
+	// found again by your own id; whatever the lookup answers, the cancel goes by the id the order answered
+	switch found, err := client.Orders.List(ctx, account, &phoenixperps.OrdersListParams{ClientOrderID: phoenixperps.Ptr(clientOrderID)}); {
+	case err != nil:
+		fmt.Printf("the lookup failed (%v): canceling by the order's id\n", err)
+	case len(found.Data) == 0:
+		fmt.Println("not listed yet")
+	default:
+		fmt.Printf("found by client_order_id: %s\n", found.Data[0].ID)
 	}
-	fmt.Printf("found by client_order_id: %s\n", found.Data[0].ID)
 
 	canceled, err := client.Orders.Cancel(ctx, account, order.ID)
 	if err != nil {

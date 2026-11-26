@@ -26,7 +26,13 @@ $order = $client->orders->create($account, [
 ]);
 printf("market order %s: %s at %s\n", $order->id, $order->status, $order->averageFillPrice ?? '-');
 
+// the API places the legs once the fill is in, the stop first: read them until both are placed (5 s at most)
+$placed = fn ($e) => $e->takeProfit && $e->stopLoss && !array_filter([...$e->takeProfit, ...$e->stopLoss], fn ($x) => $x->status === 'pending');
 $exits = $client->exits->get($account, 'BTC-USD');
+for ($i = 0; $i < 10 && !$placed($exits); $i++) {
+    usleep(500000);
+    $exits = $client->exits->get($account, 'BTC-USD');
+}
 foreach ($exits->takeProfit ?? [] as $tp) {
     printf("take profit: %s at %s (%s)\n", $tp->size, $tp->price ?? '-', $tp->status);
 }

@@ -29,8 +29,13 @@ const order = await client.orders.create(account.id, {
 }, { idempotencyKey: randomUUID() });
 console.log(`placed ${order.id}: ${order.status}, ${order.size} at ${order.limit_price}`);
 
-const found = (await client.orders.list(account.id, { client_order_id: clientOrderId })).data[0];
-console.log(`found by client_order_id: ${found.id}`);
+// found again by your own id; whatever the lookup answers, the cancel goes by the id the order answered
+try {
+  const [found] = (await client.orders.list(account.id, { client_order_id: clientOrderId })).data;
+  console.log(found ? `found by client_order_id: ${found.id}` : 'not listed yet');
+} catch (err) {
+  console.log(`the lookup failed (${(err as Error).message}): canceling by the order's id`);
+}
 
 const canceled = await client.orders.cancel(account.id, order.id);
 console.log(`canceled: ${canceled.status} (${canceled.cancel_reason})`);

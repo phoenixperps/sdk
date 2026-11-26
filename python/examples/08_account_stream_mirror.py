@@ -5,7 +5,7 @@ read by REST, so the copy never misses one. Ctrl+C to stop.
     python examples/08_account_stream_mirror.py
 """
 import asyncio
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from phoenixperps import PhoenixPerps
 from phoenixperps.types import Event
@@ -57,7 +57,7 @@ async def main() -> None:
                         apply(missed)
                 show(f'gap after {event["after"]}')
                 continue
-            apply(event)
+            apply(cast(Event, event))  # an event frame: GET /v1/events' own shape
             show(event["type"])
 
 

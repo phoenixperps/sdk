@@ -10,7 +10,7 @@ namespace PhoenixPerps;
 public static partial class SdkInfo
 {
     /// <summary>The version of the API spec.</summary>
-    public const string SpecVersion = "1.1.0";
+    public const string SpecVersion = "1.1.2";
 
     internal static readonly IReadOnlyDictionary<string, string> Servers = new Dictionary<string, string>
     {
@@ -214,6 +214,8 @@ public static class ErrorCodes
     /// <summary>409 conflict</summary>
     public const string AccountNotReady = "account_not_ready";
     /// <summary>409 conflict</summary>
+    public const string AccountClosed = "account_closed";
+    /// <summary>409 conflict</summary>
     public const string SandboxOpening = "sandbox_opening";
     /// <summary>400 invalid_request</summary>
     public const string IdempotencyKeyRequired = "idempotency_key_required";
@@ -333,6 +335,7 @@ public static class ErrorCodes
         ["unsupported_media_type"] = new("payload", 415, false),
         ["sandbox_limit_reached"] = new("conflict", 409, false),
         ["account_not_ready"] = new("conflict", 409, true),
+        ["account_closed"] = new("conflict", 409, false),
         ["sandbox_opening"] = new("conflict", 409, true),
         ["idempotency_key_required"] = new("invalid_request", 400, false),
         ["invalid_idempotency_key"] = new("invalid_request", 400, false),

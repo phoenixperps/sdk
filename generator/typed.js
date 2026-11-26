@@ -112,4 +112,23 @@ function model(ir) {
   return { structs, enums, params };
 }
 
-module.exports = { model, pascal, singular, typeName };
+/**
+ * The structs a request body is or holds, as far down as they go (a batch's operations): where an optional field the API
+ * takes as null (null removes it) needs its explicit null (Q88; R7: the exits batch's trail and break_even).
+ */
+function bodyStructs(ir, structs) {
+  const bodies = new Set(ir.operations.map((o) => o.body).filter(Boolean));
+  const byName = new Map(structs.map((x) => [x.name, x]));
+  const refsOf = (t) => (t.kind === 'ref' ? [t.name] : t.kind === 'array' ? refsOf(t.of) : []);
+  for (let grew = true; grew;) {
+    grew = false;
+    for (const name of [...bodies]) {
+      for (const f of (byName.get(name) || { fields: [] }).fields) {
+        for (const r of refsOf(f.type)) if (byName.has(r) && !bodies.has(r)) { bodies.add(r); grew = true; }
+      }
+    }
+  }
+  return bodies;
+}
+
+module.exports = { model, pascal, singular, typeName , bodyStructs };

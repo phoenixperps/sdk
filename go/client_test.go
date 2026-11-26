@@ -176,7 +176,7 @@ func TestPageHistoryComplete(t *testing.T) {
 	c, _ := NewClient(WithAPIKey(S.Key), WithBaseURL(mockURL))
 	load(t, []json.RawMessage{
 		json.RawMessage(`{"respond":{"status":200,"body":{"data":[],"has_more":false,"next_cursor":null,"as_of":1,"history_complete":false}}}`),
-		json.RawMessage(`{"respond":{"status":200,"body":{"data":[],"has_more":false,"next_cursor":null,"as_of":1}}}`),
+		json.RawMessage(`{"respond":{"status":200,"body":{"data":[],"has_more":false,"next_cursor":null,"as_of":1,"stale":true}}}`),
 	})
 	orders, err := c.Orders.List(context.Background(), "SANDBOX-00042-001", nil)
 	if err != nil || orders.HistoryComplete == nil || *orders.HistoryComplete {
@@ -185,6 +185,10 @@ func TestPageHistoryComplete(t *testing.T) {
 	fills, err := c.Fills.List(context.Background(), "SANDBOX-00042-001", nil)
 	if err != nil || fills.HistoryComplete != nil {
 		t.Fatalf("fills: %+v %v", fills, err)
+	}
+	// R7: a list read from figures older than usual says so (stale), as on every account list
+	if fills.Stale == nil || !*fills.Stale || orders.Stale != nil {
+		t.Fatalf("stale: fills %v, orders %v", fills.Stale, orders.Stale)
 	}
 }
 

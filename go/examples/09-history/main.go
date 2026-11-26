@@ -34,8 +34,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	last := equity.Points[max(0, len(equity.Points)-3):]
-	fmt.Printf("equity: %d points, last %+v\n", len(equity.Points), last)
+	fmt.Printf("equity: %d points\n", len(equity.Points))
+	for _, p := range equity.Points[max(0, len(equity.Points)-3):] {
+		// a point's trading day with resolution day; else its time (ms)
+		when := fmt.Sprint(p.Time)
+		if p.Date != nil {
+			when = *p.Date
+		}
+		fmt.Printf("  %s: balance %s\n", when, p.Balance)
+	}
 
 	daily, err := client.History.Daily(ctx, account)
 	if err != nil {

@@ -143,6 +143,10 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 	}
 	// the host; the REST address as the docs write it (https://api.phoenixperpsfunding.com/v1) means the same
 	base = strings.TrimSuffix(strings.TrimRight(base, "/"), "/v1")
+	// a key of one environment sent to the other one's API host fails here, never at the API (R7: it counts against the address's bad-credential budget)
+	if other := map[string]string{"live": "sandbox", "sandbox": "live"}[inferred]; inferred != "" && strings.EqualFold(base, servers[other]) {
+		return nil, &Error{Kind: KindAuthentication, Code: "wrong_environment", Message: fmt.Sprintf("This key is a %s key, and %s is the %s API.", inferred, base, other), Details: json.RawMessage(fmt.Sprintf(`{"key_environment":%q}`, inferred))}
+	}
 	h := cfg.http
 	if h == nil {
 		h = &http.Client{}
@@ -476,7 +480,14 @@ func (c *Client) send(ctx context.Context, op *operation, path []string, query u
 		// a cancel answered as already canceled or expired: the order no longer works, as asked (its own lost answer
 		// asked again, or a cancel made elsewhere), and the answer is that order (Q14); filled still fails
 		if op.id == "cancelOrder" && failure.Code == "order_not_working" && lostCancel(failure) {
-			return c.send(ctx, opGetOrder, path, nil, nil, append(opts, WithIdempotencyKey("")))
+			// a raw cancel (Do) names no path values: the order read at the path it was sent to (R7: the route's template)
+			get := opGetOrder
+			if path == nil {
+				g := *opGetOrder
+				g.path = strings.SplitN(op.path, "?", 2)[0]
+				get = &g
+			}
+			return c.send(ctx, get, path, nil, nil, append(opts, WithIdempotencyKey("")))
 		}
 		if !retryable || attempt >= cfg.maxRetries || !failure.Retryable {
 			return nil, failure

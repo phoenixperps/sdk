@@ -3,7 +3,7 @@
 package phoenixperps
 
 // SpecVersion is the version of the API spec this SDK was generated from.
-const SpecVersion = "1.1.0"
+const SpecVersion = "1.1.2"
 
 var servers = map[string]string{
 	"live":    "https://api.phoenixperpsfunding.com",
@@ -109,6 +109,7 @@ const (
 	ErrCodeUnsupportedMediaType     = "unsupported_media_type"
 	ErrCodeSandboxLimitReached      = "sandbox_limit_reached"
 	ErrCodeAccountNotReady          = "account_not_ready"
+	ErrCodeAccountClosed            = "account_closed"
 	ErrCodeSandboxOpening           = "sandbox_opening"
 	ErrCodeIdempotencyKeyRequired   = "idempotency_key_required"
 	ErrCodeInvalidIdempotencyKey    = "invalid_idempotency_key"
@@ -223,6 +224,7 @@ var ErrorCodes = map[string]ErrorCodeInfo{
 	"unsupported_media_type":      {"payload", 415, false},
 	"sandbox_limit_reached":       {"conflict", 409, false},
 	"account_not_ready":           {"conflict", 409, true},
+	"account_closed":              {"conflict", 409, false},
 	"sandbox_opening":             {"conflict", 409, true},
 	"idempotency_key_required":    {"invalid_request", 400, false},
 	"invalid_idempotency_key":     {"invalid_request", 400, false},

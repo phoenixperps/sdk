@@ -3246,13 +3246,49 @@ public sealed partial class ExitsBatchOperation
     [JsonPropertyName("size")]
     public decimal? Size { get; set; }
 
-    /// <summary>A stop-loss that follows the price: { distance } (a price difference) or { percent }, with activation_price to start only once the price reaches it. Without a price and an activation price it starts from the price now. null removes it.</summary>
+    /// <summary>A stop-loss that follows the price: { distance } (a price difference) or { percent }, with activation_price to start only once the price reaches it. Without a price and an activation price it starts from the price now. null removes it. ClearTrail() sends the null.</summary>
     [JsonPropertyName("trail")]
-    public ExitsBatchOperationTrail? Trail { get; set; }
+    public ExitsBatchOperationTrail? Trail
+    {
+        get => _trail;
+        set
+        {
+            _trail = value;
+            if (value is not null) Extra?.Remove("trail");
+        }
+    }
 
-    /// <summary>Move the stop-loss to the entry price (plus offset_ticks) once the price has gone your way by trigger_distance, trigger_percent or to trigger_price. Without a price, the stop is placed only then. null removes it.</summary>
+    private ExitsBatchOperationTrail? _trail;
+
+    /// <summary>Sends trail as null (the API: null removes it).</summary>
+    public ExitsBatchOperation ClearTrail()
+    {
+        _trail = null;
+        (Extra ??= new())["trail"] = JsonNull.Value;
+        return this;
+    }
+
+    /// <summary>Move the stop-loss to the entry price (plus offset_ticks) once the price has gone your way by trigger_distance, trigger_percent or to trigger_price. Without a price, the stop is placed only then. null removes it. ClearBreakEven() sends the null.</summary>
     [JsonPropertyName("break_even")]
-    public ExitsBatchOperationBreakEven? BreakEven { get; set; }
+    public ExitsBatchOperationBreakEven? BreakEven
+    {
+        get => _breakEven;
+        set
+        {
+            _breakEven = value;
+            if (value is not null) Extra?.Remove("break_even");
+        }
+    }
+
+    private ExitsBatchOperationBreakEven? _breakEven;
+
+    /// <summary>Sends break_even as null (the API: null removes it).</summary>
+    public ExitsBatchOperation ClearBreakEven()
+    {
+        _breakEven = null;
+        (Extra ??= new())["break_even"] = JsonNull.Value;
+        return this;
+    }
 
     /// <summary>modify: the settings to remove from a stop-loss (the same as sending them null).</summary>
     [JsonPropertyName("clear")]

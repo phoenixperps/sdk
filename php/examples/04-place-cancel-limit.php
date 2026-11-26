@@ -38,8 +38,13 @@ $order = $client->orders->create($account, [
 ], new RequestOptions(idempotencyKey: bin2hex(random_bytes(16))));
 printf("placed %s: %s, %s at %s\n", $order->id, $order->status, $order->size, $order->limitPrice);
 
-$found = $client->orders->list($account, ['client_order_id' => $clientOrderId])->data[0];
-printf("found by client_order_id: %s\n", $found->id);
+// found again by your own id; whatever the lookup answers, the cancel goes by the id the order answered
+try {
+    $found = $client->orders->list($account, ['client_order_id' => $clientOrderId])->data;
+    echo $found ? "found by client_order_id: {$found[0]->id}\n" : "not listed yet\n";
+} catch (PhoenixPerps\Exception\PhoenixPerpsException $e) {
+    printf("the lookup failed (%s): canceling by the order's id\n", $e->getMessage());
+}
 
 $canceled = $client->orders->cancel($account, $order->id);
 printf("canceled: %s (%s)\n", $canceled->status, $canceled->cancelReason);

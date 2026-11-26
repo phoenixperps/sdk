@@ -1,5 +1,5 @@
 'use strict';
-const { model, typeName } = require('../typed');
+const { model, typeName, bodyStructs } = require('../typed');
 
 /*
  * The C# SDK's generated surface (csharp/src/PhoenixPerps.Sdk/Generated, namespace PhoenixPerps):
@@ -137,7 +137,7 @@ ${members.join('\n')}
 
   // a request body's optional field the API takes as null ("null removes it"): a null property is no field (the
   // options skip nulls), so Clear<Field>() sends the null through Extra (Q88); setting the field again drops it
-  const bodies = new Set(ir.operations.map((o) => o.body).filter(Boolean));
+  const bodies = bodyStructs(ir, m.structs);
   const classes = m.structs.map((s) => {
     const nullable = (f) => !s.query && bodies.has(s.name) && !f.required && f.type.nullable;
     const props = s.fields.map((f) => {

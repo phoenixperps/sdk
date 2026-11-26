@@ -23,7 +23,13 @@ const order = await client.orders.create(account.id, {
 });
 console.log(`market order ${order.id}: ${order.status} at ${order.average_fill_price ?? '-'}`);
 
-const exits = await client.exits.get(account.id, 'BTC-USD');
+// the API places the legs once the fill is in, the stop first: read them until both are placed (5 s at most)
+let exits = await client.exits.get(account.id, 'BTC-USD');
+const placed = (e: typeof exits) => e.take_profit.length > 0 && e.stop_loss.length > 0 && [...e.take_profit, ...e.stop_loss].every((x) => x.status !== 'pending');
+for (let i = 0; i < 10 && !placed(exits); i += 1) {
+  await new Promise((r) => setTimeout(r, 500));
+  exits = await client.exits.get(account.id, 'BTC-USD');
+}
 for (const tp of exits.take_profit) console.log(`take profit: ${JSON.stringify(tp)}`);
 for (const sl of exits.stop_loss) console.log(`stop loss:   ${JSON.stringify(sl)}`);
 

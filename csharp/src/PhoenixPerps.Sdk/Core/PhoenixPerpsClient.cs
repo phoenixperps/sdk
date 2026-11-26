@@ -91,6 +91,10 @@ public sealed partial class PhoenixPerpsClient : IDisposable
         // the host: every path already starts with /v1, so the REST address the docs show (host/v1) loses it here
         var baseUrl = (o.BaseUrl ?? System.Environment.GetEnvironmentVariable("PHOENIXPERPS_BASE_URL") ?? SdkInfo.Servers[env]).TrimEnd('/');
         BaseUrl = baseUrl.EndsWith("/v1", StringComparison.OrdinalIgnoreCase) ? baseUrl[..^3] : baseUrl;
+        // a key of one environment sent to the other one's API host fails here, never at the API (R7: it counts against the address's bad-credential budget)
+        var other = inferred == "live" ? "sandbox" : "live";
+        if (inferred is not null && string.Equals(BaseUrl, SdkInfo.Servers[other], StringComparison.OrdinalIgnoreCase))
+            throw new AuthenticationException("wrong_environment", $"This key is a {inferred} key, and {BaseUrl} is the {other} API.");
         Timeout = o.Timeout;
         MaxRetries = o.MaxRetries;
         AppInfo = o.AppInfo;
@@ -323,7 +327,9 @@ public sealed partial class PhoenixPerpsClient : IDisposable
                     if (op.Id == "cancelOrder" && error.Code == "order_not_working" && error.Details is { ValueKind: JsonValueKind.Object } det
                         && det.TryGetProperty("status", out var st) && st.GetString() is "canceled" or "expired")
                     {
-                        return await SendAsync(Ops.GetOrder, path, null, null, options is null ? null : options with { IdempotencyKey = null }, ct).ConfigureAwait(false);
+                        // a raw cancel names no path values: the order read at the path it was sent to (R7: the route's template)
+                        var get = path is { Length: > 0 } ? Ops.GetOrder : Ops.GetOrder with { Path = op.Path.Split('?')[0] };
+                        return await SendAsync(get, path, null, null, options is null ? null : options with { IdempotencyKey = null }, ct).ConfigureAwait(false);
                     }
                     // the API's own retryable (a 409 operation_in_progress is, a 503 sandbox_disabled is not); an answer
                     // without its envelope (a proxy's 502 page) by its status

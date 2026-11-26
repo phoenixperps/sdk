@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Phoenix Perpetuals API",
-    "description": "The REST API, spec 1.1.0. Pick the live or sandbox environment and set apiKey in it.",
+    "description": "The REST API, spec 1.1.2. Pick the live or sandbox environment and set apiKey in it.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {

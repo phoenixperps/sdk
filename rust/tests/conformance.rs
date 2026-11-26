@@ -348,7 +348,7 @@ fn every_local_check_is_played() {
 #[test]
 fn wrong_environment() {
     let l = local("wrong_environment");
-    let e = Client::builder().api_key(l["client"]["api_key"].as_str().unwrap()).environment(l["client"]["environment"].as_str().unwrap()).base_url("http://127.0.0.1:9").build().unwrap_err();
+    let e = Client::builder().api_key(l["client"]["api_key"].as_str().unwrap()).environment(l["client"]["environment"].as_str().unwrap()).base_url(l["client"]["base_url"].as_str().unwrap_or("http://127.0.0.1:9")).build().unwrap_err();
     assert_eq!(l["expect"]["error_code"].as_str().unwrap(), e.code);
     assert_eq!("AuthenticationError", e.kind.class());
 }

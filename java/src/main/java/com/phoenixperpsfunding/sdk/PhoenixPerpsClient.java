@@ -57,7 +57,7 @@ import java.util.regex.Pattern;
  */
 public final class PhoenixPerpsClient implements Resources.Access {
     /** This SDK's version (lockstep with every other Phoenix Perpetuals SDK). */
-    public static final String SDK_VERSION = "1.3.0";
+    public static final String SDK_VERSION = "1.3.1";
 
     private static final Pattern PREFIX = Pattern.compile("^(ppk|ppo)_(live|test)_");
     static final Set<Integer> RETRY_STATUS = Set.of(429, 500, 502, 503, 504);
@@ -114,6 +114,11 @@ public final class PhoenixPerpsClient implements Resources.Access {
         this.environment = env;
         // the host; the REST address as the docs write it (https://api.phoenixperpsfunding.com/v1) is taken as its host
         this.baseUrl = (base != null ? base : Meta.SERVERS.get(env)).replaceAll("(/v1)?/*$", "");
+        // a key of one environment sent to the other one's API host fails here, never at the API (R7: it counts against the address's bad-credential budget)
+        String other = "live".equals(inferred) ? "sandbox" : "live";
+        if (inferred != null && this.baseUrl.equalsIgnoreCase(Meta.SERVERS.get(other))) {
+            throw new AuthenticationException("wrong_environment", "This key is a " + inferred + " key, and " + this.baseUrl + " is the " + other + " API.", null);
+        }
         this.timeout = b.timeout;
         this.maxRetries = b.maxRetries;
         this.appInfo = b.appInfo;
@@ -648,7 +653,10 @@ public final class PhoenixPerpsClient implements Resources.Access {
                     // still fails
                     if ("cancelOrder".equals(op.id()) && "order_not_working".equals(err.code()) && err.details() != null
                             && err.details().has("status") && ("canceled".equals(err.details().get("status").asText()) || "expired".equals(err.details().get("status").asText()))) {
-                        return send(GET_ORDER, path, null, null, o.withIdempotencyKey(null));
+                        // a raw cancel names no path values: the order read at the path it was sent to (R7: the route's template)
+                        Operation get = path != null && path.length > 0 ? GET_ORDER
+                                : new Operation(GET_ORDER.id(), GET_ORDER.method(), op.path().split("\\?", 2)[0], GET_ORDER.idempotent(), GET_ORDER.retrySafe(), GET_ORDER.cursor(), GET_ORDER.scope());
+                        return send(get, path, null, null, o.withIdempotencyKey(null));
                     }
                     Duration ra = err.retryAfter();
                     if (!(safe && attempt < max && err.retryable()) || (ra != null && ra.compareTo(RETRY_AFTER_MAX) > 0)) {

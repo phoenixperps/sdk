@@ -4,7 +4,7 @@ The Phoenix Perpetuals API for Python: every REST call (sync and async), the acc
 retries, idempotency keys, paging and typed errors. Python 3.10 or later. Docs: https://docs.phoenixperpsfunding.com
 
 ```
-pip install https://github.com/phoenixperps/sdk/releases/download/v1.2.0/phoenixperps-1.2.0-py3-none-any.whl
+pip install https://github.com/phoenixperps/sdk/releases/download/v1.3.1/phoenixperps-1.3.1-py3-none-any.whl
 ```
 
 ```python
@@ -50,11 +50,14 @@ or a float goes out in plain decimal form, never an exponent.
   (429 or 5xx when the answer is not the API's own). Writes get one Idempotency-Key, the same on every attempt.
 - `Retry-After` is honoured (fractions too); one over 60 s is not slept: the call raises `RateLimitError` with
   `retry_after`.
-- The rate limit is kept per budget (`client.rate_limits`: read, trade, public); with one used up, the next call of that
-  budget waits for its reset instead of drawing a 429.
+- The rate limit is kept per budget: the operation's own and the bucket the answer names (`X-RateLimit-Scope`:
+  key, bulk, account_orders...) (`client.rate_limits`, keyed "trade:bulk"; `client.rate_limit`: the last answer's). With a bucket used up, the next call that draws on it waits for the request it gives
+  back (60 s / `X-RateLimit-Limit`, a minute's; or a 429's `Retry-After`), never for the whole window, and a call that
+  never met that bucket does not wait at all.
 - `raw_response=RawResponse()` keeps the answer as it came: `status_code`, `headers` (`Idempotent-Replayed`, `ETag`),
   `body`, `request_id`. With `headers={"if-none-match": etag}`, an unchanged answer is a 304: the call returns `None`
-  (a list call too), never an error. A 2xx whose body is not JSON (a proxy's page) is an error (`http_200`).
+  (a list call too), never an error. The types say the answer, as for every call without that header: when you send
+  it, check for `None` yourself (`page = ...; if page is None: ...`). A 2xx whose body is not JSON (a proxy's page) is an error (`http_200`).
 - A route this version does not know: `client.request("GET", "/v1/status", query=None, body=None)` answers a
   `RawResponse` (`.json()`, its body as it came), with the same key, retries and errors.
 
@@ -131,7 +134,7 @@ async with aclient.market_stream() as market:
   `0`): check it against `min_size` before you order.
 - `Webhooks.verify(raw_body, headers, secret_or_secrets, tolerance_seconds=300)`: the WebhookPayload (the event, with
   `api_version`, `environment` and `test`; `webhook.ping` has no `account_id`), or `WebhookVerificationError` (a
-  `PhoenixPerpsError`: `missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received.
+  `PhoenixPerpsError`: `missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received. No secret at all (none given, or only empty ones) is a `ValidationError` (code `missing_secret`), before anything is checked: a set-up fault, never a delivery to refuse.
 
 ## Examples
 

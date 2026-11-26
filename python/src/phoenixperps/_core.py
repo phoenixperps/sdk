@@ -32,7 +32,7 @@ import time
 import uuid
 import weakref
 from decimal import Decimal
-from typing import Any, AsyncIterator, Dict, Generator, Generic, Iterator, List, Optional, Set, Tuple, TypeVar, cast
+from typing import TYPE_CHECKING, Any, AsyncIterator, Dict, Generator, Generic, Iterator, List, Optional, Set, Tuple, TypeVar, cast
 from urllib.parse import quote
 
 import httpx
@@ -40,7 +40,10 @@ import httpx
 from . import _errors as E
 from ._gen import OPS, RESOURCES, SERVERS, SPEC_VERSION, STREAMS, AsyncResources, Resources
 
-SDK_VERSION = "1.3.0"
+if TYPE_CHECKING:  # the streams import this module: named for the types only (Q90)
+    from .streams import AccountStream, MarketStream
+
+SDK_VERSION = "1.3.1"
 PREFIX = re.compile(r"^(ppk|ppo)_(live|test)_")
 RETRY_AFTER_MAX_S = 60.0
 # each client's key, outside the client's own attributes: vars(), repr and pickling never carry it
@@ -107,6 +110,10 @@ class _Base:
         self.environment = env
         # the host: the docs' REST address (https://api.phoenixperpsfunding.com/v1) works too, every path has its /v1
         self.base_url = re.sub(r"/v1$", "", (base_url or os.environ.get("PHOENIXPERPS_BASE_URL") or SERVERS[env]).rstrip("/"))
+        # a key of one environment sent to the other one's API host fails here, never at the API (R7: it counts against the address's bad-credential budget)
+        other = "sandbox" if inferred == "live" else "live"
+        if inferred and self.base_url.lower() == SERVERS[other].lower():
+            raise E.AuthenticationError(f"This key is a {inferred} key, and {self.base_url} is the {other} API.", code="wrong_environment", details={"key_environment": inferred})
         self.timeout = timeout
         self.max_retries = max_retries
         self.app_info = app_info
@@ -195,6 +202,14 @@ class _Base:
         asked again, or a cancel made elsewhere): the answer is that order (Q14); filled still fails."""
         return op["id"] == "cancelOrder" and getattr(failure, "code", None) == "order_not_working" \
             and isinstance(failure.details, dict) and failure.details.get("status") in ("canceled", "expired")
+
+    @staticmethod
+    def _order_after_cancel(op: Dict[str, Any], call: Dict[str, Any]) -> Dict[str, Any]:
+        """Where the order a lost cancel answers is read: its route, or the path a raw cancel was sent to, which names
+        no path values (R7: the route's template was read)."""
+        if call.get("path"):
+            return OPS["getOrder"]
+        return {**OPS["getOrder"], "path": str(op["path"]).split("?")[0]}
 
     @staticmethod
     def _query(query: Optional[Dict[str, Any]]) -> Dict[str, str]:
@@ -335,7 +350,7 @@ class PhoenixPerps(_Base, Resources):
                     return answer
                 failure = refused
             if self._lost_cancel(op, attempt, failure):
-                return self._send(OPS["getOrder"], {"path": call.get("path")}, {**opts, "idempotency_key": None})
+                return self._send(self._order_after_cancel(op, call), {"path": call.get("path")}, {**opts, "idempotency_key": None})
             if not (retryable and attempt < max_retries and failure.retryable):
                 raise failure
             ra = E.retry_after_s(res.headers) if res is not None else None
@@ -365,11 +380,11 @@ class PhoenixPerps(_Base, Resources):
             page._max = max_items
         return page
 
-    def account_stream(self, **kw: Any) -> Any:
+    def account_stream(self, **kw: Any) -> "AccountStream":
         from .streams import AccountStream
         return AccountStream(self, **kw)
 
-    def market_stream(self, **kw: Any) -> Any:
+    def market_stream(self, **kw: Any) -> "MarketStream":
         from .streams import MarketStream
         return MarketStream(self, **kw)
 
@@ -416,12 +431,20 @@ class _AsyncPageCall(Generic[T]):
     """A list call (async): awaited, its first page; iterated with async for, every item across pages."""
 
     def __init__(self, load: Any, max_items: Optional[int]) -> None:
-        self._load, self._max, self._task = load, max_items, None
+        self._load, self._max = load, max_items
+        self._task: Optional["asyncio.Future[Any]"] = None
 
     def _first(self) -> Any:
         if self._task is None:
-            self._task = asyncio.ensure_future(self._load())
+            self._task = asyncio.ensure_future(self._loaded())
         return self._task
+
+    async def _loaded(self) -> Any:
+        # the call's max_items goes with its first page: awaited, then iterated, it still caps (R7 Q91)
+        page = await self._load()
+        if page is not None and self._max is not None:
+            page._max = self._max
+        return page
 
     def __await__(self) -> Generator[Any, None, AsyncPage[T]]:
         # None only on a 304 (an If-None-Match the caller sent), typed as the sync list is: the answer (Q90)
@@ -476,7 +499,7 @@ class AsyncPhoenixPerps(_Base, AsyncResources):
                     return answer
                 failure = refused
             if self._lost_cancel(op, attempt, failure):
-                return await self._send(OPS["getOrder"], {"path": call.get("path")}, {**opts, "idempotency_key": None})
+                return await self._send(self._order_after_cancel(op, call), {"path": call.get("path")}, {**opts, "idempotency_key": None})
             if not (retryable and attempt < max_retries and failure.retryable):
                 raise failure
             ra = E.retry_after_s(res.headers) if res is not None else None
@@ -503,11 +526,11 @@ class AsyncPhoenixPerps(_Base, AsyncResources):
         max_items = o.pop("max_items", None)
         return _AsyncPageCall(lambda: self._list(op, {"path": path, "query": query}, o), max_items)
 
-    def account_stream(self, **kw: Any) -> Any:
+    def account_stream(self, **kw: Any) -> "AccountStream":
         from .streams import AccountStream
         return AccountStream(self, **kw)
 
-    def market_stream(self, **kw: Any) -> Any:
+    def market_stream(self, **kw: Any) -> "MarketStream":
         from .streams import MarketStream
         return MarketStream(self, **kw)
 

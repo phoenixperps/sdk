@@ -276,6 +276,9 @@ public final class ErrorCodes {
     /** 409 conflict, worth trying again. */
     public static final String ACCOUNT_NOT_READY = "account_not_ready";
 
+    /** 409 conflict. */
+    public static final String ACCOUNT_CLOSED = "account_closed";
+
     /** 409 conflict, worth trying again. */
     public static final String SANDBOX_OPENING = "sandbox_opening";
 

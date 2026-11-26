@@ -22,15 +22,25 @@ One page, enforced by `conformance/scenarios.json` in every language.
   `sandbox_disabled` is not.
 - The wait: the Retry-After when the API gives one (seconds, fractions included), else full jitter over
   min(8 s, 0.5 s x 2^attempt). A Retry-After over 60 s is not slept: the call fails with RateLimitError carrying it.
-- A call that takes an Idempotency-Key gets one UUID v4 (unless given) and keeps it on every attempt.
-- `X-RateLimit-Limit / Remaining / Reset` are kept per budget: an operation's budget is its `x-pp-scope` (read, trade,
-  public). With nothing left and the reset under 60 s away, the next call of that budget waits for the reset instead of
-  drawing a 429.
+- A call that takes an Idempotency-Key (required, or optional as on `orders.modify` and `exits.set`) gets one UUID v4
+  (unless given) and keeps it on every attempt.
+- A cancel answered `order_not_working` with the order already canceled or expired (`details.status`) answers that
+  order, read by its id: the order no longer works, as asked (its own lost answer asked again, an HTTP client resending
+  it, or a cancel made elsewhere). Filled, or any other status, is the error.
+- `X-RateLimit-Limit / Remaining / Reset / Scope` are kept per budget: the operation's `x-pp-scope` (read, trade,
+  public) and the bucket the answer names (`X-RateLimit-Scope`: key, customer, ip, bulk, account, account_orders,
+  whatif, ai...). `Limit` is a minute's, `Reset` the time until the bucket is full. With nothing left in a bucket, the
+  next call of an operation that met it waits for the request it gives back (60 s / Limit, or a 429's Retry-After),
+  when that is under 60 s, never for the whole window; an operation that never met a bucket never waits for it.
+- A `Deprecation` header is told once per value to the logger, on any answer (with or without rate-limit headers).
 - Decimals go out exactly as given (strings; numbers through their decimal form, never an exponent).
 - A path parameter that is empty fails before any request (ValidationError), never retried.
 - Every SDK has one raw call for any route: `request(method, path, query, body, options)` (Go: `Client.Do`). The same
-  key, User-Agent, retries (a GET, a retry-safe route, or one sent with an Idempotency-Key) and errors; it answers the
-  answer as it came (status, headers, body).
+  key, User-Agent, retries and errors; a route of the spec keeps its own Idempotency-Key, retry safety and budget, any
+  other is tried again only as a GET or with an Idempotency-Key given. A path's own query is kept, the query given
+  added to it. A string body is the JSON as given. It answers the answer as it came (status, headers, body).
+- A request field the API takes as null ("null removes it", such as a price alert's note) can be sent as null: TypeScript,
+  Python and PHP send what the body holds; Go has `<Field>Null`, C# `Clear<Field>()`, Java `clear<Field>()`.
 
 ## Answers
 - An error has the API's `code`, `status`, `message`, `requestId`, `details`, `retryAfter`, `retryable` (the API's
@@ -41,7 +51,12 @@ One page, enforced by `conformance/scenarios.json` in every language.
   whose body is not JSON (a proxy's page, or no body at all but on a 204) is an error too (`http_<status>`), never an
   empty answer.
 - A 304 Not Modified (the caller sent `If-None-Match` and nothing changed) is no error: the call answers nothing (null,
-  None, nil; a list call too, never an empty page), and the answer's meta carries the 304 and the ETag.
+  None, nil; a list call too, never an empty page), and the answer's meta carries the 304 and the ETag. Iterating a
+  list answered 304 says so (C# and Java: NotModifiedException; elsewhere the first page is null) instead of yielding
+  nothing.
+- A deliberate stop is no network failure: a cancel through the caller's own signal is the language's cancellation
+  (TypeScript an AbortError, C# an OperationCanceledException, Python a CancelledError, Go the context's error); a
+  Java interrupt is `cancelled`, never retryable.
 - Every call's answer meta is reachable: status, headers, request id and Idempotency-Key (TypeScript `.meta`, Python
   `raw_response`, Go `WithRawResponse`, and the language's own way elsewhere).
 - An unknown enum value or field is kept, never fatal.
@@ -65,9 +80,12 @@ One page, enforced by `conformance/scenarios.json` in every language.
 - The account stream offers `ping()` and `unsubscribe(accounts)`; an unsubscribed account stays out after a reconnect
   (the subscribe sent again names what is left). Each event keeps the frame's `seq` and `replayed`.
 - The market stream reconnects after three heartbeats (`heartbeat_ms`) of silence, and makes every subscription the
-  server took (its reply's `symbols`; never one of its `rejected`) again after a reconnect; a subscribe or unsubscribe
-  still waiting for its answer is sent again on the
-  next connection, and fails only when the stream ends. Its hello's `limits` are the stream's `limits`.
+  server took (its reply's `symbols`; never one of its `rejected`) again after a reconnect, with the settings it holds
+  (a refused change leaves them as they were); a subscribe or unsubscribe still waiting for its answer is sent again on
+  the next connection, and fails only when the stream ends. Its hello's `limits` are the stream's `limits`.
+- A subscribe of more symbols than one message holds (the hello's `symbols_per_subscribe`, 50 before it) goes in parts,
+  answered as one (every part's `symbols` and `rejected`), and is made again so after a reconnect; what is sent again
+  goes at most `messages_per_s` a second.
 - A market subscription is one channel, one market and (candles) one interval; its other parameters are settings the
   last subscribe sets. An unsubscribe names the markets and (candles) the interval, nothing else; without an interval
   it ends every interval of those markets. Made again after a reconnect, a subscription asks its history again: trades
@@ -83,10 +101,14 @@ One page, enforced by `conformance/scenarios.json` in every language.
     they take one (C# `decimal`, Java `BigDecimal`, Rust and Go `Decimal`), else the decimal string (TypeScript,
     Python, PHP). Its text is the vector's `want`.
   - The side is `buy` or `sell` in any case; anything else is an error. A slippage outside the market's
-    `max_slippage_pct` min..max is an error. A string that is no decimal is a ValidationError, never the language's own.
+    `max_slippage_pct` min..max, none given on a market without a default, a zero step, price or stop distance: an
+    error. A string that is no decimal is a ValidationError, never the language's own.
+  - A decimal string is an optional `-`, digits with an optional fraction, and an optional exponent (`6.2E+4`, read
+    exactly); nothing else: no space around it, no `+`, no `1/3`, `0x10` or `1_000`.
   - A size for a notional or a risk is rounded down to the step and answered as it rounds, even below `min_size` (it
     may be 0): check it against `min_size` before you order.
-- `Webhooks.verify(raw, headers, secrets, tolerance = 300 s)`: `X-Phoenix-Signature` is
+- `Webhooks.verify(raw, headers, secrets, tolerance = 300 s)`: empty secrets are dropped, and none left (an unset or
+  empty variable) is a ValidationError `missing_secret`, never a check against an empty key. `X-Phoenix-Signature` is
   `sha256=<hex HMAC-SHA256(secret, "<X-Phoenix-Timestamp>.<raw body>")>`, any of its comma-separated values, compared
   as bytes in constant time. It answers the WebhookPayload (the event, with `api_version`, `environment` and `test`;
   `webhook.ping` is a type like any other). Its failures are a WebhookVerificationError (a family of the SDK's own

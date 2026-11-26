@@ -279,6 +279,9 @@ final class ErrorCodes
     /** 409 conflict, worth trying again. */
     public const ACCOUNT_NOT_READY = 'account_not_ready';
 
+    /** 409 conflict. */
+    public const ACCOUNT_CLOSED = 'account_closed';
+
     /** 409 conflict, worth trying again. */
     public const SANDBOX_OPENING = 'sandbox_opening';
 

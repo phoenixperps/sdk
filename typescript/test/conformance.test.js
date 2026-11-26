@@ -92,7 +92,7 @@ for (const sc of S.scenarios) {
 /** The local checks: by their `check`, or (none) a client the SDK refuses before any request. */
 const LOCAL = {
   refused(l) {
-    assert.throws(() => new sdk.PhoenixPerps({ apiKey: l.client.api_key, environment: l.client.environment, baseUrl: 'http://127.0.0.1:9' }), (e) => e.code === l.expect.error_code);
+    assert.throws(() => new sdk.PhoenixPerps({ apiKey: l.client.api_key, environment: l.client.environment, baseUrl: l.client.base_url ?? 'http://127.0.0.1:9' }), (e) => e.code === l.expect.error_code);
   },
   redaction() {
     const c = client();

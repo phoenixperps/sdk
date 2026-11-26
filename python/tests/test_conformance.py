@@ -213,7 +213,7 @@ def test_local(mock, l, monkeypatch):
     if check is None:  # a client that fails before any request
         load(mock)
         with pytest.raises(pp.PhoenixPerpsError) as e:
-            pp.PhoenixPerps(l["client"]["api_key"], environment=l["client"]["environment"], base_url=mock)
+            pp.PhoenixPerps(l["client"]["api_key"], environment=l["client"]["environment"], base_url=l["client"].get("base_url") or mock)
         assert e.value.code == l["expect"]["error_code"] and requests(mock) == []
     elif check == "redaction":
         c = pp.PhoenixPerps(S["key"], base_url=mock)
@@ -459,6 +459,48 @@ def test_a_sync_page_iterates_every_page(mock):
         assert [o["id"] for o in c.orders.list(ACCOUNT)] == ["o1", "o2", "o3"]
         assert [o["id"] for o in c.orders.list(ACCOUNT, max_items=2)] == ["o1", "o2"]
     assert len(requests(mock)) == 3
+
+
+def test_market_stream_tells_a_resubscribe_partly_refused(mock):
+    """Streams (R7): a subscription made again after a reconnect that the server takes only in part is told to the
+    reader (its subscribed frame, with what was refused), and the refused markets are not asked again after the next one."""
+    hello = {"send": {"type": "hello", "session": "mds_1", "heartbeat_ms": 15000, "channels": ["ticker"], "limits": {"subscriptions": 200, "symbols_per_subscribe": 50, "messages_per_s": 20}}}
+    both = {"reply": {"type": "subscribed", "channel": "ticker", "symbols": ["BTC-USD", "ETH-USD"], "rejected": []}}
+    part = {"reply": {"type": "subscribed", "channel": "ticker", "symbols": ["BTC-USD"], "rejected": [{"symbol": "ETH-USD", "code": "too_many_subscriptions"}]}}
+    btc = {"reply": {"type": "subscribed", "channel": "ticker", "symbols": ["BTC-USD"], "rejected": []}}
+    tick = {"send": {"type": "ticker", "symbol": "BTC-USD", "data": {"last": "62000.5"}}}
+    load(mock, connections=[[hello, {"expect": "subscribe"}, both, {"close": 1012}],
+                            [hello, {"expect": "subscribe"}, part, {"close": 1012}],
+                            [hello, {"expect": "subscribe"}, btc, tick, {"wait_ms": 1500}]])
+    told = []
+
+    async def run() -> None:
+        async with streaming(mock) as c, c.market_stream() as m:
+            await asyncio.wait_for(m.subscribe("ticker", ["BTC-USD", "ETH-USD"]), 10)
+            while True:
+                f = await asyncio.wait_for(m.__anext__(), 10)
+                told.append(f)
+                if f.get("type") == "ticker":
+                    return
+
+    asyncio.run(run())
+    refused = [f for f in told if f.get("type") == "subscribed" and f.get("rejected")]
+    assert refused and refused[0]["rejected"][0]["symbol"] == "ETH-USD", told
+    assert requests(mock)[-1]["messages"][0]["symbols"] == ["BTC-USD"], "the refused market is not asked again"
+
+
+def test_an_awaited_async_page_keeps_max_items(mock):
+    """Answers (R7 Q91): an async list call awaited, then iterated, stops at the call's max_items, as the sync one."""
+    page = lambda ids, cursor: {"respond": {"status": 200, "body": {"data": [{"id": i} for i in ids], "has_more": bool(cursor), "next_cursor": cursor}}}
+    load(mock, [page(["o1", "o2"], "c1"), page(["o3", "o4"], "c2"), page(["o5"], None)])
+
+    async def run() -> list:
+        async with pp.AsyncPhoenixPerps(S["key"], base_url=mock) as c:
+            p = await c.orders.list(ACCOUNT, max_items=3)
+            return [o["id"] async for o in p]
+
+    assert asyncio.run(run()) == ["o1", "o2", "o3"]
+    assert len(requests(mock)) == 2, "the page past the cap is never asked"
 
 
 def test_rate_limits_per_budget(mock, monkeypatch):

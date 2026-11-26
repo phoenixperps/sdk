@@ -90,6 +90,7 @@ type suite struct {
 		Client struct {
 			APIKey      *string `json:"api_key"`
 			Environment string  `json:"environment"`
+			BaseURL     *string `json:"base_url"`
 		} `json:"client"`
 		Expect struct {
 			ErrorCode string `json:"error_code"`
@@ -396,7 +397,11 @@ func TestLocal(t *testing.T) {
 		t.Run(l.Name, func(t *testing.T) {
 			switch l.Check {
 			case "":
-				_, err := NewClient(WithAPIKey(*l.Client.APIKey), WithEnvironment(l.Client.Environment), WithBaseURL("http://127.0.0.1:9"))
+				base := "http://127.0.0.1:9"
+				if l.Client.BaseURL != nil {
+					base = *l.Client.BaseURL
+				}
+				_, err := NewClient(WithAPIKey(*l.Client.APIKey), WithEnvironment(l.Client.Environment), WithBaseURL(base))
 				var e *Error
 				if !errors.As(err, &e) || e.Code != l.Expect.ErrorCode || !errors.Is(err, ErrAuthentication) {
 					t.Fatalf("got %v", err)

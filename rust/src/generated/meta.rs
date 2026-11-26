@@ -1,7 +1,7 @@
 // Generated from the API spec by generator/printers/rust.js. Do not edit: run `node generator`.
 
 /// The version of the API spec this SDK was generated from.
-pub const SPEC_VERSION: &str = "1.1.0";
+pub const SPEC_VERSION: &str = "1.1.2";
 
 pub(crate) fn server(environment: &str) -> &'static str {
     match environment {
@@ -203,6 +203,8 @@ pub mod codes {
     pub const SANDBOX_LIMIT_REACHED: &str = "sandbox_limit_reached";
     /// 409 conflict, worth trying again.
     pub const ACCOUNT_NOT_READY: &str = "account_not_ready";
+    /// 409 conflict.
+    pub const ACCOUNT_CLOSED: &str = "account_closed";
     /// 409 conflict, worth trying again.
     pub const SANDBOX_OPENING: &str = "sandbox_opening";
     /// 400 invalid_request.

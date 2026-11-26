@@ -9,7 +9,7 @@ public final class Meta {
     }
 
     /** The version of the API spec. */
-    public static final String SPEC_VERSION = "1.1.0";
+    public static final String SPEC_VERSION = "1.1.2";
 
     /** The API host of each environment. */
     public static final Map<String, String> SERVERS = Map.of("live", "https://api.phoenixperpsfunding.com", "sandbox", "https://sandbox-api.phoenixperpsfunding.com");

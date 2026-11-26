@@ -353,7 +353,7 @@ final class ConformanceTest extends TestCase
     private function clientRefused(array $l): void
     {
         try {
-            new Client(apiKey: $l['client']['api_key'], environment: $l['client']['environment'], baseUrl: 'http://127.0.0.1:9');
+            new Client(apiKey: $l['client']['api_key'], environment: $l['client']['environment'], baseUrl: $l['client']['base_url'] ?? 'http://127.0.0.1:9');
             $this->fail('no error');
         } catch (PhoenixPerpsException $e) {
             $this->assertSame($l['expect']['error_code'], $e->errorCode);

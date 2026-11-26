@@ -32,11 +32,17 @@ var order = await client.Orders.CreateAsync(accounts.Data[0].Id, new CreateOrder
   environment fails before any request.
 - Without a key the client still works for the public calls (`Markets`, `Platform.StatusAsync`); any other answers the
   API's `missing_api_key`. No Authorization header is sent without a key.
-- `BaseUrl` is the REST host; the REST address with `/v1` works too. It moves the REST calls only: the streams take
+- `BaseUrl` (else `PHOENIXPERPS_BASE_URL`) is the REST host; the REST address with `/v1` works too. It moves the REST calls only: the streams take
   `AccountStreamUrl` and `MarketStreamUrl`. A `HttpClient` of yours keeps its own `Timeout`, which caps every attempt as
   well: leave it infinite or above `Timeout`.
 - Every call takes `RequestOptions` (`IdempotencyKey`, `Timeout`, `MaxRetries`, `Headers`, `OnResponse`) and a
-  `CancellationToken`. `OnResponse` gets each answer's meta: status, headers, request id and Idempotency-Key.
+  `CancellationToken`. `OnResponse` gets each answer's meta: status, headers, request id and Idempotency-Key. A cancel
+  through your token is .NET's `OperationCanceledException`, as everywhere in .NET: the one failure that is not a
+  `PhoenixPerpsException`.
+- A field the API takes as null ("null removes it") is sent as null with `Clear<Field>()`:
+  `new ChangePriceAlert().ClearNote()` removes an alert's note. Setting the field again sends it instead.
+- Iterating a list answered 304 (your `If-None-Match` matched) throws `NotModifiedException`; a plain list call answers
+  null for it.
 - The key never appears in `ToString()` or an exception (`client.MaskedKey` shows its end).
 
 ## Calls
@@ -52,8 +58,10 @@ strings. Enums are open: a value from a newer API is kept as is, and fields this
   get one Idempotency-Key, the same on every attempt.
 - `Retry-After` is honoured (fractions of a second too); one over 60 s is not slept: the call throws
   `RateLimitException` with `RetryAfter` set.
-- With a rate-limit budget used up (read, trade or public, as the API counts them), the next call of that budget waits
-  for its reset instead of drawing a 429.
+- The rate limit is kept per budget: the operation's own and the bucket the answer names (`X-RateLimit-Scope`:
+  key, bulk, account_orders...) (`client.RateLimit`, with its `Scope`: what the last answer said). With a bucket used up, the next call that draws on it waits for the request it gives
+  back (60 s / `X-RateLimit-Limit`, a minute's; or a 429's `Retry-After`), never for the whole window, and a call that
+  never met that bucket does not wait at all.
 - A 304 Not Modified (you sent `If-None-Match` in `RequestOptions.Headers`, nothing changed) is no error: the call
   answers `null` (a list call too, never an empty page), and `OnResponse` gets the 304 with its `etag`.
 - A route newer than this SDK: `await client.SendAsync("GET", "/v1/new-route", query, body, options)` answers the
@@ -131,7 +139,7 @@ await foreach (var frame in market.ReadAllAsync())
   rounds down even below `MinSize` (to `0`): check it before ordering. What they refuse is a `ValidationException`.
 - `Webhooks.Verify(rawBody, headers, secrets)`: the `WebhookPayload` (the event with its `ApiVersion`, `Environment`
   and `Test`; `webhook.ping` is a type like any other), or a `WebhookVerificationException` (a `PhoenixPerpsException`:
-  `missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received.
+  `missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received. No secret at all (none given, or only empty ones) is a `ValidationException` (code `missing_secret`), before anything is checked: a set-up fault, never a delivery to refuse.
 
 ## Examples
 

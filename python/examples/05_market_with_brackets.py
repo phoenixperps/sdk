@@ -5,6 +5,8 @@ fills and kept on its servers. The position is closed at the end.
 """
 import json
 import os
+import time
+from typing import Any, Mapping
 
 from phoenixperps import PhoenixPerps
 
@@ -26,7 +28,18 @@ order = client.orders.create(account["id"], {
 })
 print(f'market order {order["id"]}: {order["status"]} at {order.get("average_fill_price") or "-"}')
 
+# the API places the legs once the fill is in, the stop first: read them until both are placed (5 s at most)
+def placed(e: Mapping[str, Any]) -> bool:
+    legs = e["take_profit"] + e["stop_loss"]
+    return bool(e["take_profit"]) and bool(e["stop_loss"]) and all(x["status"] != "pending" for x in legs)
+
+
 exits = client.exits.get(account["id"], "BTC-USD")
+for _ in range(10):
+    if placed(exits):
+        break
+    time.sleep(0.5)
+    exits = client.exits.get(account["id"], "BTC-USD")
 for tp in exits["take_profit"]:
     print(f"take profit: {json.dumps(tp)}")
 for sl in exits["stop_loss"]:

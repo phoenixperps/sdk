@@ -63,8 +63,10 @@ fields this version does not know land in `$extra`.
   Writes get one Idempotency-Key, the same on every attempt.
 - `Retry-After` is honoured (fractions too); one over 60 s is not slept: the call throws `RateLimitException` with
   `retryAfter`.
-- With a budget used up, the next call of that budget waits for its reset instead of drawing a 429
-  (`$client->rateLimit()`: what the last answer said).
+- The rate limit is kept per budget: the operation's own and the bucket the answer names (`X-RateLimit-Scope`:
+  key, bulk, account_orders...) (`$client->rateLimit()`: what the last answer said, with its `scope`). With a bucket used up, the next call that draws on it waits for the request it gives
+  back (60 s / `X-RateLimit-Limit`, a minute's; or a 429's `Retry-After`), never for the whole window, and a call that
+  never met that bucket does not wait at all.
 - A 2xx that is not JSON (a proxy's page) throws a `ServerException` (`http_<status>`).
 
 ## Lists
@@ -140,7 +142,7 @@ while ($running) {                 // a bot that does other things: poll() gives
   (`invalid_request`).
 - `Webhooks::verify($rawBody, $headers, $secret)`: the `WebhookPayload` (the event with `apiVersion`, `environment`
   and `test`: a `webhook.ping`, or a delivery resent as a test), or a `WebhookVerificationException` (a
-  `PhoenixPerpsException`: `missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received.
+  `PhoenixPerpsException`: `missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received. No secret at all (none given, or only empty ones) is a `ValidationException` (code `missing_secret`), before anything is checked: a set-up fault, never a delivery to refuse.
   No secret (an unset variable) is an `InvalidArgumentException`.
 
 ## Examples

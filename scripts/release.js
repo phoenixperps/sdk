@@ -20,6 +20,13 @@ const PLACES = [
   ['java/src/main/java/com/phoenixperpsfunding/sdk/PhoenixPerpsClient.java', /(public static final String SDK_VERSION = ")([^"]+)(")/],
   ['rust/Cargo.toml', /^(version = ")([^"]+)(")/m],
   ['php/src/Client.php', /(public const SDK_VERSION = ')([^']+)(')/],
+  // the install lines of the READMEs (and so of the docs' SDK pages)
+  ['typescript/README.md', /(releases\/download\/v)([^/]+)(\/phoenixperps-sdk-)/],
+  ['typescript/README.md', /(phoenixperps-sdk-)(\d+\.\d+\.\d+)(\.tgz)/],
+  ['python/README.md', /(releases\/download\/v)([^/]+)(\/phoenixperps-)/],
+  ['python/README.md', /(\/phoenixperps-)(\d+\.\d+\.\d+)(-py3)/],
+  ['java/README.md', /(phoenixperps-sdk:)(\d+\.\d+\.\d+)(")/],
+  ['rust/README.md', /(tag = "v)([^"]+)(")/],
 ];
 const SEMVER = /^\d+\.\d+\.\d+$/;
 

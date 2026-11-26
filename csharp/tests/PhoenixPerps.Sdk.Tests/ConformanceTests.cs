@@ -350,7 +350,7 @@ public sealed class ConformanceTests(MockServer mock) : IClassFixture<MockServer
         {
             case null:
                 var cl = l.GetProperty("client");
-                var e = Assert.ThrowsAny<PhoenixPerpsException>(() => new PhoenixPerpsClient(new PhoenixPerpsClientOptions { ApiKey = cl.GetProperty("api_key").GetString(), Environment = cl.GetProperty("environment").GetString(), BaseUrl = "http://127.0.0.1:9" }));
+                var e = Assert.ThrowsAny<PhoenixPerpsException>(() => new PhoenixPerpsClient(new PhoenixPerpsClientOptions { ApiKey = cl.GetProperty("api_key").GetString(), Environment = cl.GetProperty("environment").GetString(), BaseUrl = cl.TryGetProperty("base_url", out var bu) ? bu.GetString() : "http://127.0.0.1:9" }));
                 Assert.Equal(l.GetProperty("expect").GetProperty("error_code").GetString(), e.Code);
                 break;
             case "redaction":

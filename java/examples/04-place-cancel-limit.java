@@ -4,6 +4,7 @@
 import com.phoenixperpsfunding.sdk.MarketRules;
 import com.phoenixperpsfunding.sdk.MarketStream;
 import com.phoenixperpsfunding.sdk.PhoenixPerpsClient;
+import com.phoenixperpsfunding.sdk.PhoenixPerpsException;
 import com.phoenixperpsfunding.sdk.RequestOptions;
 import com.phoenixperpsfunding.sdk.gen.CreateOrder;
 import com.phoenixperpsfunding.sdk.gen.CreateOrderType;
@@ -49,8 +50,13 @@ final class Example04 {
                 RequestOptions.none().withIdempotencyKey(UUID.randomUUID().toString()));
         System.out.printf("placed %s: %s, %s at %s%n", order.id(), order.status(), order.size(), order.limitPrice());
 
-        Order found = client.orders().list(account, new OrdersListParams().clientOrderId(clientOrderId)).data().get(0);
-        System.out.printf("found by client_order_id: %s%n", found.id());
+        // found again by your own id; whatever the lookup answers, the cancel goes by the id the order answered
+        try {
+            var found = client.orders().list(account, new OrdersListParams().clientOrderId(clientOrderId)).data();
+            System.out.println(found.isEmpty() ? "not listed yet" : "found by client_order_id: " + found.get(0).id());
+        } catch (PhoenixPerpsException e) {
+            System.out.println("the lookup failed (" + e.getMessage() + "): canceling by the order's id");
+        }
 
         Order canceled = client.orders().cancel(account, order.id());
         System.out.printf("canceled: %s (%s)%n", canceled.status(), canceled.cancelReason());

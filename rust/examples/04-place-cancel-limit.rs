@@ -46,8 +46,14 @@ async fn main() -> phoenixperps::Result<()> {
     println!("placed {}: {}, {size} at {limit}", order.id, order.status);
 
     let params = OrdersListParams { client_order_id: Some(client_order_id), ..Default::default() };
-    let found = client.orders().list(&account, Some(&params)).await?;
-    println!("found by client_order_id: {}", found.data[0].id);
+    // found again by your own id; whatever the lookup answers, the cancel goes by the id the order answered
+    match client.orders().list(&account, Some(&params)).await {
+        Ok(found) => match found.data.first() {
+            Some(o) => println!("found by client_order_id: {}", o.id),
+            None => println!("not listed yet"),
+        },
+        Err(e) => println!("the lookup failed ({e}): canceling by the order's id"),
+    }
 
     let canceled = client.orders().cancel(&account, &order.id).await?;
     println!("canceled: {}", canceled.status);

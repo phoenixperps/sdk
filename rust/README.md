@@ -6,10 +6,16 @@ Docs: https://docs.phoenixperpsfunding.com
 
 ```toml
 [dependencies]
-phoenixperps = { git = "https://github.com/phoenixperps/sdk", tag = "v1.2.0" }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+phoenixperps = { git = "https://github.com/phoenixperps/sdk", tag = "v1.3.1" }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
 rust_decimal = "1"
+futures-util = "0.3"
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
 ```
+
+`futures-util` reads the streams, `serde_json` builds the market stream's settings, `uuid` makes your own
+Idempotency-Keys: the samples here and the cookbook's use all three.
 
 ```rust
 use phoenixperps::{Client, CreateOrder, CreateOrderType, OrderSide};
@@ -63,7 +69,10 @@ open: a value from a newer API lands in `Other(String)`, and fields this version
   `sandbox_disabled` is not. Writes get one Idempotency-Key, the same on every attempt.
 - `Retry-After` is honoured (fractions of a second too); one over 60 s is not slept: the call fails with
   `ErrorKind::RateLimit` and `retry_after`.
-- With the rate limit used up, the next call waits for its reset instead of drawing a 429.
+- The rate limit is kept per budget: the operation's own and the bucket the answer names (`X-RateLimit-Scope`:
+  key, bulk, account_orders...). With a bucket used up, the next call that draws on it waits for the request it gives
+  back (60 s / `X-RateLimit-Limit`, a minute's; or a 429's `Retry-After`), never for the whole window, and a call that
+  never met that bucket does not wait at all.
 - `client.request("GET", "/v1/...", &[("market", "BTC-USD")], None, &options)` calls a route this version does not know
   yet, with the key, the retries and the errors; it answers the `RawResponse`, a 304 (sent with `If-None-Match` in
   `options.headers`) as it came, with its ETag.
@@ -143,7 +152,7 @@ subscriptions and its pong; `market.limits()` are the limits its hello announced
   market's bounds is an `ErrorKind::Validation` error.
 - `verify_webhook(raw_body, headers, &[secret], None, None)`: the `WebhookPayload` (the event, with `api_version`,
   `environment` and `test`; `webhook.ping` too), or an `ErrorKind::WebhookVerification` error (`missing_headers`,
-  `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received.
+  `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received. No secret at all (none given, or only empty ones) is an `Error` of kind `Validation` (code `missing_secret`), before anything is checked: a set-up fault, never a delivery to refuse.
 
 ## Examples
 

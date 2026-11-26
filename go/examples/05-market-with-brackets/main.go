@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	phoenixperps "github.com/phoenixperps/sdk/go"
 )
@@ -52,7 +53,12 @@ func main() {
 	}
 	fmt.Printf("market order %s: %s at %s\n", order.ID, order.Status, fill)
 
+	// the API places the legs once the fill is in, the stop first: read them until both are placed (5 s at most)
 	exits, err := client.Exits.Get(ctx, account, "BTC-USD")
+	for i := 0; err == nil && i < 10 && !placed(exits); i++ {
+		time.Sleep(500 * time.Millisecond)
+		exits, err = client.Exits.Get(ctx, account, "BTC-USD")
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,4 +76,17 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("closed: %s %s (the exits went with the position)\n", closed.ID, closed.Status)
+}
+
+// placed: both legs are on the market (none pending any more)
+func placed(e *phoenixperps.Exits) bool {
+	if len(e.TakeProfit) == 0 || len(e.StopLoss) == 0 {
+		return false
+	}
+	for _, x := range append(append([]phoenixperps.ExitsLeg{}, e.TakeProfit...), e.StopLoss...) {
+		if x.Status == phoenixperps.ExitsLegStatusPending {
+			return false
+		}
+	}
+	return true
 }

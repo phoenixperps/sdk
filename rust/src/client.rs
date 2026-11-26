@@ -239,6 +239,13 @@ impl ClientBuilder {
         // every path starts with /v1: a base ending with it would call /v1/v1/..
         let base = base.trim_end_matches('/');
         let base = base.strip_suffix("/v1").unwrap_or(base);
+        // a key of one environment sent to the other one's API host fails here, never at the API (R7: it counts against the address's bad-credential budget)
+        if let Some(i) = inferred {
+            let other = if i == "live" { "sandbox" } else { "live" };
+            if base.eq_ignore_ascii_case(meta::server(other)) {
+                return Err(Error::new(ErrorKind::Authentication, "wrong_environment", format!("This key is a {i} key, and {base} is the {other} API.")));
+            }
+        }
         let http = match self.http {
             Some(h) => h,
             None => reqwest::Client::builder().connect_timeout(Duration::from_secs(10)).build().map_err(|e| Error::new(ErrorKind::Connection, "client_failed", e.to_string()))?,

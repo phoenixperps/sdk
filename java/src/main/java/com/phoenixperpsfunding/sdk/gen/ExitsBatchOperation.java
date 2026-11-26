@@ -129,6 +129,17 @@ public final class ExitsBatchOperation {
     /** Sets trail. */
     public ExitsBatchOperation trail(ExitsBatchOperationTrail value) {
         this.trail = value;
+        if (value != null) {
+            extra.remove("trail");
+        }
+        return this;
+    }
+
+    /** Sends trail as null (the API: null removes it). */
+    public ExitsBatchOperation clearTrail() {
+        this.trail = null;
+        // a NullNode, written as null (the mapper skips a Java null)
+        extra.put("trail", com.fasterxml.jackson.databind.node.NullNode.getInstance());
         return this;
     }
 
@@ -140,6 +151,17 @@ public final class ExitsBatchOperation {
     /** Sets break_even. */
     public ExitsBatchOperation breakEven(ExitsBatchOperationBreakEven value) {
         this.breakEven = value;
+        if (value != null) {
+            extra.remove("break_even");
+        }
+        return this;
+    }
+
+    /** Sends break_even as null (the API: null removes it). */
+    public ExitsBatchOperation clearBreakEven() {
+        this.breakEven = null;
+        // a NullNode, written as null (the mapper skips a Java null)
+        extra.put("break_even", com.fasterxml.jackson.databind.node.NullNode.getInstance());
         return this;
     }
 

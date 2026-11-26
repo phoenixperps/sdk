@@ -1,5 +1,5 @@
 'use strict';
-const { model, typeName } = require('../typed');
+const { model, typeName, bodyStructs } = require('../typed');
 
 /*
  * The Java SDK's generated surface (java/src/main/java/com/phoenixperpsfunding/sdk/gen, package ...sdk.gen):
@@ -151,7 +151,7 @@ ${e.values.map((v) => `            case ${str(v)}:\n                return ${con
 
   // a request body's optional field the API takes as null ("null removes it"): a null field is no field (the mapper
   // skips nulls), so clear<Field>() sends the null through extra (Q88); setting the field again drops it
-  const bodies = new Set(ir.operations.map((o) => o.body).filter(Boolean));
+  const bodies = bodyStructs(ir, m.structs);
   for (const s of m.structs) {
     const nullable = (f) => !s.query && bodies.has(s.name) && !f.required && f.type.nullable;
     const fields = s.fields.map((f) => `    @JsonProperty(${str(f.wire)})\n    private ${jType(f.type)} ${camel(f.wire)};`);

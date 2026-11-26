@@ -4,7 +4,7 @@ The Phoenix Perpetuals API for Node.js and TypeScript: every REST call, the acco
 retries, idempotency keys, paging and typed errors. Node 22 or later. Docs: https://docs.phoenixperpsfunding.com
 
 ```
-npm install https://github.com/phoenixperps/sdk/releases/download/v1.2.0/phoenixperps-sdk-1.2.0.tgz
+npm install https://github.com/phoenixperps/sdk/releases/download/v1.3.1/phoenixperps-sdk-1.3.1.tgz
 ```
 
 ```js
@@ -45,7 +45,10 @@ Resources follow the API: `platform`, `me`, `markets`, `accounts`, `history`, `m
   order (`orders.modify`) is sent once, or as often as needed when you give it an `idempotencyKey`.
 - `Retry-After` is honoured (fractions too); one over 60 s is not slept: the call throws `RateLimitError` with
   `retryAfter`.
-- With the rate limit used up, the next call waits for its reset instead of drawing a 429.
+- The rate limit is kept per budget: the operation's own and the bucket the answer names (`X-RateLimit-Scope`:
+  key, bulk, account_orders...) (`client.rateLimit`, with its `scope`: the last answer's). With a bucket used up, the next call that draws on it waits for the request it gives
+  back (60 s / `X-RateLimit-Limit`, a minute's; or a 429's `Retry-After`), never for the whole window, and a call that
+  never met that bucket does not wait at all.
 - A result carries `.meta` (not enumerable): `status`, `headers` (`Idempotent-Replayed`, ...), `requestId`,
   `idempotencyKey`. Any call also takes `onMeta(meta)`, told every answer's meta.
 - Sent with `If-None-Match` (in `headers`), a call whose answer did not change (304) answers `null`, a list call too;
@@ -127,4 +130,4 @@ in every language in the docs' cookbook (https://docs.phoenixperpsfunding.com/co
   that is not buy or sell, a slippage outside the market's, or a value that is no decimal is a `ValidationError`.
 - `Webhooks.verify(rawBody, headers, secretOrSecrets, toleranceSeconds = 300)`: the `WebhookPayload` (the event, with
   `api_version`, `environment` and `test`; `webhook.ping` too), or `WebhookVerificationError`, a `PhoenixPerpsError`
-  (`missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received.
+  (`missing_headers`, `stale`, `bad_signature`, `bad_body`). Pass the body exactly as received. No secret at all (none given, or only empty ones) is a `ValidationError` (code `missing_secret`), before anything is checked: a set-up fault, never a delivery to refuse.

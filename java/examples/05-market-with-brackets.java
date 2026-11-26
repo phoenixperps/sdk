@@ -7,6 +7,7 @@ import com.phoenixperpsfunding.sdk.gen.CreateOrder;
 import com.phoenixperpsfunding.sdk.gen.CreateOrderType;
 import com.phoenixperpsfunding.sdk.gen.Exits;
 import com.phoenixperpsfunding.sdk.gen.ExitsLeg;
+import com.phoenixperpsfunding.sdk.gen.ExitsLegStatus;
 import com.phoenixperpsfunding.sdk.gen.Market;
 import com.phoenixperpsfunding.sdk.gen.Order;
 import com.phoenixperpsfunding.sdk.gen.OrderExits;
@@ -17,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 final class Example05 {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         PhoenixPerpsClient client = PhoenixPerpsClient.fromEnv();
         if ("live".equals(client.environment()) && !"yes".equals(System.getenv("PHOENIXPERPS_ALLOW_LIVE"))) {
             System.err.println("This example trades: it runs on the sandbox (PHOENIXPERPS_ALLOW_LIVE=yes to run it on live).");
@@ -36,11 +37,22 @@ final class Example05 {
                         .stopLoss(new OrderExitsStopLoss().percent(new BigDecimal("0.5")))));
         System.out.printf("market order %s: %s at %s%n", order.id(), order.status(), order.averageFillPrice());
 
+        // the API places the legs once the fill is in, the stop first: read them until both are placed (5 s at most)
         Exits exits = client.exits().get(account, "BTC-USD");
+        for (int i = 0; i < 10 && !placed(exits); i++) {
+            Thread.sleep(500);
+            exits = client.exits().get(account, "BTC-USD");
+        }
         for (ExitsLeg tp : exits.takeProfit()) System.out.printf("take profit: %s at %s (%s)%n", tp.size(), tp.price(), tp.status());
         for (ExitsLeg sl : exits.stopLoss()) System.out.printf("stop loss:   %s at %s (%s)%n", sl.size(), sl.price(), sl.status());
 
         Order closed = client.positions().close(account, "BTC-USD", new ClosePosition());
         System.out.printf("closed: %s %s (the exits went with the position)%n", closed.id(), closed.status());
+    }
+
+    // placed: both legs are on the market (none pending any more)
+    static boolean placed(Exits e) {
+        return !e.takeProfit().isEmpty() && !e.stopLoss().isEmpty()
+                && java.util.stream.Stream.concat(e.takeProfit().stream(), e.stopLoss().stream()).noneMatch(x -> ExitsLegStatus.PENDING.equals(x.status()));
     }
 }

@@ -1229,6 +1229,53 @@
       }
     },
     {
+      "name": "a raw cancel of an order already canceled answers that order, read at its own path (never the route's template)",
+      "call": {
+        "raw": {
+          "method": "DELETE",
+          "path": "/v1/accounts/SANDBOX-00042-001/orders/ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        }
+      },
+      "exchanges": [
+        {
+          "respond": {
+            "status": 409,
+            "body": {
+              "error": {
+                "type": "conflict",
+                "code": "order_not_working",
+                "message": "x",
+                "request_id": "req_1",
+                "retryable": false,
+                "details": {
+                  "status": "canceled"
+                }
+              }
+            }
+          }
+        },
+        {
+          "respond": {
+            "status": 200,
+            "body": {
+              "data": {
+                "id": "ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+                "status": "canceled"
+              }
+            }
+          }
+        }
+      ],
+      "expect": {
+        "ok": true,
+        "requests": 2,
+        "paths": [
+          "/v1/accounts/SANDBOX-00042-001/orders/ord_01JAB7Q8XK4M2N5P7R9S3T5V7W",
+          "/v1/accounts/SANDBOX-00042-001/orders/ord_01JAB7Q8XK4M2N5P7R9S3T5V7W"
+        ]
+      }
+    },
+    {
       "name": "an exits batch whose answer was lost is asked again with the same Idempotency-Key",
       "call": {
         "resource": "exits",
@@ -1361,6 +1408,17 @@
       "client": {
         "api_key": "ppk_live_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
         "environment": "sandbox"
+      },
+      "expect": {
+        "error_code": "wrong_environment"
+      }
+    },
+    {
+      "name": "a sandbox key with the live host as its base URL fails before any request",
+      "client": {
+        "api_key": "ppk_test_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "environment": "sandbox",
+        "base_url": "https://api.phoenixperpsfunding.com/v1"
       },
       "expect": {
         "error_code": "wrong_environment"

@@ -9,7 +9,7 @@ import time
 import uuid
 from decimal import Decimal
 
-from phoenixperps import MarketRules, PhoenixPerps
+from phoenixperps import MarketRules, PhoenixPerps, PhoenixPerpsError
 
 client = PhoenixPerps()
 if client.environment == "live" and os.environ.get("PHOENIXPERPS_ALLOW_LIVE") != "yes":
@@ -23,7 +23,7 @@ async def best_bid() -> str:
         await market.subscribe("ticker", ["BTC-USD"])
         async for frame in market:
             if frame["type"] == "ticker":
-                return frame["data"]["bid"]
+                return str(frame["data"]["bid"])
     raise RuntimeError("the market stream ended")
 
 
@@ -39,8 +39,12 @@ order = client.orders.create(account["id"], {
 }, idempotency_key=str(uuid.uuid4()))
 print(f'placed {order["id"]}: {order["status"]}, {order["size"]} at {order["limit_price"]}')
 
-found = client.orders.list(account["id"], {"client_order_id": client_order_id}).data[0]
-print(f'found by client_order_id: {found["id"]}')
+# found again by your own id; whatever the lookup answers, the cancel goes by the id the order answered
+try:
+    found = client.orders.list(account["id"], {"client_order_id": client_order_id}).data
+    print(f'found by client_order_id: {found[0]["id"]}' if found else "not listed yet")
+except PhoenixPerpsError as err:
+    print(f"the lookup failed ({err}): canceling by the order's id")
 
 canceled = client.orders.cancel(account["id"], order["id"])
 print(f'canceled: {canceled["status"]} ({canceled["cancel_reason"]})')

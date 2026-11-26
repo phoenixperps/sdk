@@ -1,5 +1,5 @@
 'use strict';
-const { model, typeName } = require('../typed');
+const { model, typeName, bodyStructs } = require('../typed');
 
 /*
  * The Go SDK's generated surface (go/gen_*.go, package phoenixperps), already in gofmt's layout:
@@ -131,7 +131,7 @@ ${aligned(e.values.map((v) => row('\t', `${e.name}${goName(v)}`, e.name, `= ${JS
   }
   // a request body's optional field the API takes as null ("null removes it"): a nil pointer is no field, so a
   // <Field>Null flag sends the null (Q88)
-  const bodies = new Set(ir.operations.map((o) => o.body).filter(Boolean));
+  const bodies = bodyStructs(ir, m.structs);
   for (const s of m.structs) {
     const rows = [];
     const nulls = bodies.has(s.name) ? s.fields.filter((f) => !f.required && f.type.nullable) : [];

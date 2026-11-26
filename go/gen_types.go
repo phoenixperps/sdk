@@ -2535,6 +2535,20 @@ type ExitsBatchOperation struct {
 	BreakEven *ExitsBatchOperationBreakEven `json:"break_even,omitempty"`
 	// modify: the settings to remove from a stop-loss (the same as sending them null).
 	Clear []ExitsBatchOperationClear `json:"clear,omitempty"`
+	// TrailNull sends trail as null (the API: null removes it); a Trail set is sent instead.
+	TrailNull bool `json:"-"`
+	// BreakEvenNull sends break_even as null (the API: null removes it); a BreakEven set is sent instead.
+	BreakEvenNull bool `json:"-"`
+}
+
+// MarshalJSON sends a field marked <Field>Null as null.
+func (x ExitsBatchOperation) MarshalJSON() ([]byte, error) {
+	type plain ExitsBatchOperation
+	b, err := json.Marshal(plain(x))
+	if err != nil {
+		return nil, err
+	}
+	return withNulls(b, map[string]bool{"trail": x.TrailNull && x.Trail == nil, "break_even": x.BreakEvenNull && x.BreakEven == nil})
 }
 
 // ExitsBatchOperationTrail: A stop-loss that follows the price: { distance } (a price difference) or { percent

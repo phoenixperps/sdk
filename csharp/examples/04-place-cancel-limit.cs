@@ -43,8 +43,16 @@ var order = await client.Orders.CreateAsync(account, new CreateOrder
 }, new RequestOptions { IdempotencyKey = Guid.NewGuid().ToString() });
 Console.WriteLine($"placed {order.Id}: {order.Status}, {order.Size} at {order.LimitPrice}");
 
-var found = (await client.Orders.ListAsync(account, new OrdersListParams { ClientOrderId = clientOrderId })).Data[0];
-Console.WriteLine($"found by client_order_id: {found.Id}");
+// found again by your own id; whatever the lookup answers, the cancel goes by the id the order answered
+try
+{
+    var found = (await client.Orders.ListAsync(account, new OrdersListParams { ClientOrderId = clientOrderId })).Data;
+    Console.WriteLine(found.Count > 0 ? $"found by client_order_id: {found[0].Id}" : "not listed yet");
+}
+catch (PhoenixPerpsException e)
+{
+    Console.WriteLine($"the lookup failed ({e.Message}): canceling by the order's id");
+}
 
 var canceled = await client.Orders.CancelAsync(account, order.Id);
 Console.WriteLine($"canceled: {canceled.Status} ({canceled.CancelReason})");

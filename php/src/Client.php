@@ -25,7 +25,7 @@ use PhoenixPerps\Exception\ValidationException;
  */
 final class Client extends BaseClient
 {
-    public const SDK_VERSION = '1.3.0';
+    public const SDK_VERSION = '1.3.1';
     private const RETRY_AFTER_MAX = 60.0;
     private const PAGE = ['data' => true, 'has_more' => true, 'next_cursor' => true, 'as_of' => true]; // a list's own fields
 
@@ -90,6 +90,11 @@ final class Client extends BaseClient
         $this->environment = $env;
         // the host: every path starts with /v1, so the REST address as the docs write it (host/v1) loses it here
         $this->baseUrl = preg_replace('#/v1$#', '', rtrim($baseUrl ?? (getenv('PHOENIXPERPS_BASE_URL') ?: null) ?? Meta::SERVERS[$env], '/'));
+        // a key of one environment sent to the other one's API host fails here, never at the API (R7: it counts against the address's bad-credential budget)
+        $other = $inferred === 'live' ? 'sandbox' : 'live';
+        if ($inferred !== null && strcasecmp($this->baseUrl, Meta::SERVERS[$other]) === 0) {
+            throw new AuthenticationException('wrong_environment', "This key is a {$inferred} key, and {$this->baseUrl} is the {$other} API.", details: ['key_environment' => $inferred]);
+        }
         $this->accountStreamUrl = $accountStreamUrl ?? Meta::ACCOUNT_STREAMS[$env];
         $this->marketStreamUrl = $marketStreamUrl ?? Meta::MARKET_STREAM;
         $this->http = $httpClient ?? new Http(['http_errors' => false, 'connect_timeout' => 10]);
@@ -324,7 +329,9 @@ final class Client extends BaseClient
                 // a cancel answered as already canceled or expired: the order no longer works, as asked (its own lost
                 // answer asked again, or a cancel made elsewhere), and the answer is that order (Q14); filled still fails
                 if ($op['id'] === 'cancelOrder' && $err->errorCode === 'order_not_working' && in_array(($err->details['status'] ?? null), ['canceled', 'expired'], true)) {
-                    return $this->send(Ops::GET_ORDER, $path, null, null, $o === null ? null : new RequestOptions(null, $o->timeout, $o->maxRetries, $o->maxItems, $o->headers, $o->onResponse));
+                    // a raw cancel names no path values: the order read at the path it was sent to (R7: the route's template)
+                    $get = $path !== [] ? Ops::GET_ORDER : ['path' => explode('?', $op['path'], 2)[0]] + Ops::GET_ORDER;
+                    return $this->send($get, $path, null, null, $o === null ? null : new RequestOptions(null, $o->timeout, $o->maxRetries, $o->maxItems, $o->headers, $o->onResponse));
                 }
                 // again only when the API says it may work (its retryable; without its envelope, 429 and 5xx)
                 if (!($safe && $attempt < $max && $err->retryable) || ($ra !== null && $ra > self::RETRY_AFTER_MAX)) {
